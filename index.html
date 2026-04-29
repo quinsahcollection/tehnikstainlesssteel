@@ -6,7 +6,6 @@
     <title>Tehnik Stainless Steel - HR System</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
 
@@ -245,7 +244,7 @@
                         <div class="form-row" style="background:#fef2f2; padding:15px; border-radius:8px; border:1px solid #fecaca; margin-bottom: 30px;">
                             <div class="form-group">
                                 <label style="color:var(--danger);">Limit Maksimal Kasbon (Jatah Pinjaman)</label>
-                                <input type="number" id="emp-limit-kasbon" value="0" style="border-color:#fca5a5;">
+                                <input type="number" id="emp-limit-kasbon" value="0" style="border-color:#fca5a5;" min="0">
                                 <span style="font-size:10px; color:#ef4444; margin-top:4px;">Set 0 jika karyawan tidak diizinkan pinjam/kasbon.</span>
                             </div>
                         </div>
@@ -253,10 +252,10 @@
                         <div class="section-header" style="margin-bottom:0;"><h3 class="section-title">Gaji Dasar (Master Data)</h3></div>
                         <span class="section-subtitle">Data nominal akan otomatis ditarik saat proses penggajian.</span>
                         <div class="form-row">
-                            <div class="form-group"><label>Gaji Pokok Dasar</label><input type="number" id="emp-gaji-pokok" value="0"></div>
-                            <div class="form-group"><label>Gaji Per Kehadiran (Harian)</label><input type="number" id="emp-gaji-harian" value="0"></div>
+                            <div class="form-group"><label>Gaji Pokok Dasar</label><input type="number" id="emp-gaji-pokok" value="0" min="0"></div>
+                            <div class="form-group"><label>Gaji Per Kehadiran (Harian)</label><input type="number" id="emp-gaji-harian" value="0" min="0"></div>
                         </div>
-                        <div class="form-row" style="grid-template-columns: 1fr;"><div class="form-group"><label>Bonus Tetap Kehadiran</label><input type="number" id="emp-bonus-tetap" value="0"></div></div>
+                        <div class="form-row" style="grid-template-columns: 1fr;"><div class="form-group"><label>Bonus Tetap Kehadiran</label><input type="number" id="emp-bonus-tetap" value="0" min="0"></div></div>
                         <div style="margin-top: 20px; text-align: right; padding-top: 20px; border-top: 1px solid var(--border-color);"><button type="submit" class="btn">Simpan ke Database</button></div>
                     </form>
                 </div>
@@ -415,7 +414,7 @@
                         <div class="form-row" style="background-color: #fff1f2; padding: 15px; border-radius: var(--radius-sm); border: 1px solid #fecaca;">
                             <div class="form-group">
                                 <label style="color:var(--danger)">Potongan / Pelunasan Kasbon</label>
-                                <input type="number" id="gaji-potongan" value="0" style="border-color: #fca5a5;">
+                                <input type="number" id="gaji-potongan" value="0" style="border-color: #fca5a5;" min="0">
                                 <span style="font-size:10px; color:#ef4444; margin-top:4px;">*Otomatis ditarik dari sisa pinjaman. Bisa disesuaikan manual.</span>
                             </div>
                             <div class="form-group">
@@ -593,6 +592,8 @@ const firebaseConfig = {
             const textGaji = el('gaji-total').value;
             
             if(!nik) return alert("Pilih karyawan dan rentang tanggal terlebih dahulu!");
+            // Fix 3: Logic Potongan Minus (Bug Pencegahan)
+            if(potongan < 0) return alert("TOLAK: Potongan tidak boleh minus!");
             if(textGaji.includes('-')) return alert("TOLAK: Gaji Bersih Minus/Negatif!");
 
             const konfirmasi = confirm(`TINDAKAN PERMANEN:\nApakah Anda yakin menerbitkan slip gaji ini?\n\nCatatan: Sisa hutang kasbon karyawan akan otomatis dilunasi/dikurangi sebesar Rp ${potongan.toLocaleString('id-ID')} ke Database.`);
@@ -686,13 +687,16 @@ const firebaseConfig = {
         // FIREBASE: CREATE / UPDATE KARYAWAN
         el('form-karyawan').addEventListener('submit', function(e) {
             e.preventDefault();
+            // Fix 1: Paksa Tipe Data Firebase Menjadi Angka (Number)
             const n = { 
                 nik: el('emp-nik').value, nama: el('emp-nama').value, tempatLahir: el('emp-tempat-lahir').value, 
                 tglLahir: el('emp-tgl-lahir').value, jk: el('emp-jk').value, telp: el('emp-telp').value, 
                 alamat: el('emp-alamat').value, divisi: el('emp-divisi').value, jabatan: el('emp-jabatan').value, 
                 status: el('emp-status').value, tglMulai: el('emp-tgl-mulai').value, 
-                gajiPokok: el('emp-gaji-pokok').value, gajiHarian: el('emp-gaji-harian').value, bonusTetap: el('emp-bonus-tetap').value,
-                limitKasbon: el('emp-limit-kasbon').value
+                gajiPokok: parseFloat(el('emp-gaji-pokok').value) || 0, 
+                gajiHarian: parseFloat(el('emp-gaji-harian').value) || 0, 
+                bonusTetap: parseFloat(el('emp-bonus-tetap').value) || 0,
+                limitKasbon: parseFloat(el('emp-limit-kasbon').value) || 0
             };
             
             const existingEmp = db_karyawan.find(k => k.nik === n.nik);
@@ -809,9 +813,18 @@ const firebaseConfig = {
         };
 
         const refreshUI = () => {
+            // Fix 1: Simpan status dropdown saat ini agar tidak ter-reset
+            const currentSatuanNik = el('satuan-nik').value;
+            const currentGajiNik = el('gaji-nik').value;
+            const currentKasbonNik = el('kasbon-nik').value;
+
             let opt = '<option value="" disabled selected>Pilih Karyawan...</option>';
             db_karyawan.forEach(k => opt += `<option value="${k.nik}">${k.nama}</option>`);
-            el('satuan-nik').innerHTML = opt; el('gaji-nik').innerHTML = opt; el('kasbon-nik').innerHTML = opt;
+            
+            // Kembalikan pilihan dropdown
+            el('satuan-nik').innerHTML = opt; if(currentSatuanNik) el('satuan-nik').value = currentSatuanNik;
+            el('gaji-nik').innerHTML = opt; if(currentGajiNik) el('gaji-nik').value = currentGajiNik;
+            el('kasbon-nik').innerHTML = opt; if(currentKasbonNik) el('kasbon-nik').value = currentKasbonNik;
 
             let tbody = db_karyawan.length ? '' : '<tr><td colspan="5" align="center">Belum ada data karyawan.</td></tr>';
             let tbodyKasbon = db_karyawan.length ? '' : '<tr><td colspan="4" align="center">Belum ada data.</td></tr>';
@@ -828,6 +841,8 @@ const firebaseConfig = {
                     </td>
                 </tr>`;
 
+                // Render tabel massal hanya jika belum dirender / datanya baru, 
+                // untuk demo ini aman karena fungsi reset sangat cepat
                 tbody += `<tr data-nik="${k.nik}">
                     <td><div class="nama-karyawan">${k.nama}</div><div class="divisi-karyawan">${k.divisi}</div></td>
                     <td><select class="m-status"><option value="Hadir">Hadir</option><option value="Izin">Izin</option><option value="Absen">Absen</option></select></td>
