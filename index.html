@@ -440,10 +440,13 @@
             </div>
 
             <div id="menu-karyawan" class="menu-content hidden">
+                <!-- VIEW LIST AKTIF & ARSIP (TAB 1) -->
                 <div id="view-emp-list" class="card">
                     <div class="section-header">
                         <h3 class="section-title">Daftar Karyawan Tersimpan</h3>
-                        <div style="display:flex; gap:10px;">
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <!-- TOMBOL KELOLA ARSIP (BARU) -->
+                            <button class="btn-outline" style="font-size:13px; color:var(--danger); border-color:var(--danger);" onclick="window.bukaKelolaArsip()">🗑️ Kelola Arsip</button>
                             <button class="btn-outline" style="font-size:13px; color:#059669; border-color:#10b981;" onclick="window.exportKaryawanCSV()">📥 Export Data</button>
                             <button class="btn" style="width:auto; font-size:13px;" onclick="window.tambahKaryawanBaru()">+ Tambah Manual</button>
                         </div>
@@ -458,8 +461,24 @@
                     </div>
                 </div>
 
+                <!-- VIEW KELOLA ARSIP (HAPUS PERMANEN) (BARU) -->
+                <div id="view-emp-arsip" class="hidden">
+                    <button class="btn-outline" style="margin-bottom: 20px; border-color:var(--primary); color:var(--primary);" onclick="window.tutupKelolaArsip()">← Kembali ke Daftar</button>
+                    <div class="card">
+                        <h3 class="section-title">Kelola Data Arsip (Hapus Permanen)</h3>
+                        <span class="section-subtitle">Data karyawan nonaktif yang dihapus permanen tidak akan muncul di database lagi (Aksi tidak dapat dibatalkan).</span>
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>Nama & NIK</th><th>Divisi / Jabatan</th><th style="text-align:center;">Aksi Bahaya</th></tr></thead>
+                                <tbody id="tbody-arsip-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW FORM TAMBAH/EDIT -->
                 <div id="view-emp-form" class="hidden">
-                    <button class="btn-outline" style="margin-bottom: 20px; border-color:var(--primary); color:var(--primary);" onclick="window.tutupFormKaryawan()">← Kembali</button>
+                    <button class="btn-outline" style="margin-bottom: 20px; border-color:var(--primary); color:var(--primary);" onclick="window.tutupFormKaryawan()">← Batal / Kembali</button>
                     <div class="card">
                         <form id="form-karyawan">
                             <div class="section-header" style="margin-bottom:0;"><h3 class="section-title">Informasi Pribadi & KTP</h3></div>
@@ -524,7 +543,6 @@
                         <div class="value" id="det-hutang" style="font-size:24px; color:var(--danger)">Rp 0</div>
                         <div style="font-size:12px; color:var(--text-muted); margin-top:5px;" id="det-limit">Limit Jatah: Rp 0</div>
                     </div>
-                    <!-- Rekap Absen di Admin Detail -->
                     <div class="dash-card" style="border-top: 4px solid var(--success);">
                         <div class="title" style="color:var(--success)">Kehadiran Bulan Ini</div>
                         <div style="display:flex; justify-content:space-between; margin-top:10px; text-align:center;">
@@ -550,8 +568,19 @@
                     </div>
                 </div>
 
+                <!-- TABEL KEHADIRAN DETAIL (BARU DITAMBAHKAN) -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 class="section-title">Riwayat Kehadiran (30 Hari Terakhir)</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Tanggal</th><th>Status</th><th>Shift / Info</th><th>Catatan</th></tr></thead>
+                            <tbody id="tbody-det-absen"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="card">
-                    <h3 class="section-title">Riwayat Slip Gaji</h3>
+                    <h3 class="section-title">Riwayat Slip Gaji Terbit</h3>
                     <div class="table-responsive">
                         <table>
                             <thead><tr><th>Periode</th><th>Total Potongan</th><th>Bersih Diterima</th><th style="text-align:center;">Aksi Slip</th></tr></thead>
@@ -644,6 +673,17 @@
                         <div style="margin-top: 20px; text-align: right;"><button type="button" id="btn-terbitkan-slip" class="btn" onclick="window.terbitkanSlipGaji()">Terbitkan & Cetak Slip Gaji</button></div>
                     </form>
                 </div>
+
+                <!-- TABEL MASTER SELURUH SLIP (BARU DITAMBAHKAN) -->
+                <div class="card" style="margin-top: 25px;">
+                    <h3 class="section-title">Semua Riwayat Slip Gaji Diterbitkan</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Tgl Terbit</th><th>Periode</th><th>Karyawan</th><th>Diterima Bersih</th><th style="text-align:center;">Aksi</th></tr></thead>
+                            <tbody id="tbody-all-slips"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -682,17 +722,14 @@
         let streamKamera = null; let latGPS = null; let lonGPS = null;
         let currentDetailNik = null; let currentEditSlipId = null; let currentEditSlipData = null;
 
-        // FUNGSI WAKTU LOKAL (ZONA INDONESIA)
         const getLocalToday = () => {
             const d = new Date();
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         };
 
-        // --- NEW FIX: FITUR GEOFENCING (JARAK RADIUS ABSEN) ---
-        // Anda bisa mengganti koordinat ini sesuai titik Google Maps Kantor Anda
         const KANTOR_LAT = -6.1754; 
         const KANTOR_LON = 106.8272;
-        const RADIUS_MAKSIMAL_METER = 50; // Jarak toleransi maksimal
+        const RADIUS_MAKSIMAL_METER = 50; 
 
         function hitungJarakMeters(lat1, lon1, lat2, lon2) {
             const R = 6371e3;
@@ -744,6 +781,9 @@
             document.querySelector(`.nav-item[onclick="openMenu('${m}')"]`)?.classList.add('active');
             el(m).classList.remove('hidden');
             
+            // Auto close view arsip if opening karyawan menu
+            if(m === 'menu-karyawan') window.tutupKelolaArsip();
+
             if(m === 'menu-penggajian' && !currentEditSlipId) { el('form-penggajian').reset(); el('gaji-nik').value = ""; if(el('gaji-periode-range')._flatpickr) el('gaji-periode-range')._flatpickr.clear(false); el('gaji-total').value = "0"; el('gaji-rekap-container').classList.add('hidden'); el('peringatan-slip').classList.add('hidden'); }
             else if(m !== 'menu-penggajian' && currentEditSlipId) window.batalEditSlip();
 
@@ -773,19 +813,12 @@
             el('wrap-login').classList.toggle('hidden', view==='register'); el('wrap-register').classList.toggle('hidden', view==='login');
         };
 
-        // --- NEW FIX: FITUR LUPA PASSWORD ---
         window.resetPassword = async () => {
             const emailReset = prompt("Masukkan alamat Email akun Anda yang terdaftar:");
             if(!emailReset) return;
-            try {
-                await auth.sendPasswordResetEmail(emailReset);
-                showToast("Berhasil! Link pembuatan password baru telah dikirim ke Email Anda.");
-            } catch (err) {
-                showToast("Gagal mengirim link. Pastikan email benar.", "error");
-            }
+            try { await auth.sendPasswordResetEmail(emailReset); showToast("Berhasil! Link pembuatan password baru telah dikirim ke Email Anda."); } catch (err) { showToast("Gagal mengirim link. Pastikan email benar.", "error"); }
         };
 
-        // AUTO LOGIN LISTENER (DENGAN PENGECEKAN STATUS NONAKTIF)
         auth.onAuthStateChanged(async (user) => {
             if (user && !currentUserData && loginMode === 'karyawan') {
                 const q = await db.collection("karyawan").where("email", "==", user.email).get();
@@ -805,9 +838,7 @@
             
             try {
                 if(loginMode === 'admin') {
-                    if(usr==='admin' && pass==='admin') { 
-                        enterApp('admin', {nama: 'Super Admin', role: 'HR Director'}); 
-                    } else { showToast('Admin/Pass salah', 'error'); }
+                    if(usr==='admin' && pass==='admin') { enterApp('admin', {nama: 'Super Admin', role: 'HR Director'}); } else { showToast('Admin/Pass salah', 'error'); }
                 } else {
                     await auth.signInWithEmailAndPassword(usr, pass);
                     const q = await db.collection("karyawan").where("email", "==", usr).get();
@@ -825,15 +856,13 @@
             e.preventDefault();
             const nik = el('reg-nik').value; const nama = el('reg-nama').value;
             const email = el('reg-email').value; const pass = el('reg-pass').value;
-            const btn = el('btn-register'); 
-            btn.innerText = "Mendaftarkan..."; btn.disabled = true;
+            const btn = el('btn-register'); btn.innerText = "Mendaftarkan..."; btn.disabled = true;
 
             try {
                 await auth.createUserWithEmailAndPassword(email, pass);
                 const docData = { nik: nik, nama: nama, email: email, status: "Tetap", sisaCuti: 12, limitKasbon: 0, sisaKasbon: 0, gajiPokok: 0, gajiHarian: 0, bonusTetap: 0 };
                 await db.collection("karyawan").doc(nik).set(docData, { merge: true });
-                showToast("Berhasil mendaftar! Mengalihkan ke Dashboard...");
-                enterApp('karyawan', docData);
+                showToast("Berhasil mendaftar! Mengalihkan ke Dashboard..."); enterApp('karyawan', docData);
             } catch (err) {
                 if(err.code === 'auth/email-already-in-use') showToast("Email ini sudah pernah didaftarkan!", "error");
                 else showToast("Gagal mendaftar: " + err.message, "error");
@@ -849,30 +878,25 @@
             el('top-user-role').innerText = role === 'admin' ? 'HRD System' : (data.jabatan || 'Karyawan');
 
             if(role === 'admin') {
-                el('nav-admin').style.display = 'flex'; el('nav-karyawan').style.display = 'none';
-                openMenu('menu-dashboard');
+                el('nav-admin').style.display = 'flex'; el('nav-karyawan').style.display = 'none'; openMenu('menu-dashboard');
             } else {
-                el('nav-admin').style.display = 'none'; el('nav-karyawan').style.display = 'flex';
-                openMenu('menu-ess-dash'); renderESSDashboard();
+                el('nav-admin').style.display = 'none'; el('nav-karyawan').style.display = 'flex'; openMenu('menu-ess-dash'); renderESSDashboard();
             }
         }
 
         window.doLogout = async () => { 
             try { await auth.signOut(); } catch(e){}
-            currentUserData = null; 
-            el('app-screen').classList.add('hidden'); el('login-screen').classList.remove('hidden'); 
-            el('login-pass').value = ''; el('login-user').value = '';
-            el('btn-login').innerText = "Masuk Portal"; el('btn-login').disabled = false;
-            stopCamera(); 
+            currentUserData = null; el('app-screen').classList.add('hidden'); el('login-screen').classList.remove('hidden'); 
+            el('login-pass').value = ''; el('login-user').value = ''; el('btn-login').innerText = "Masuk Portal"; el('btn-login').disabled = false; stopCamera(); 
         };
 
         // ==========================================
         // FIREBASE REAL-TIME LISTENERS
         // ==========================================
         db.collection("karyawan").onSnapshot(snap => { db_karyawan = []; snap.forEach(doc => db_karyawan.push(doc.data())); el('fb-status').classList.add('connected'); el('fb-status').innerText = "🟢 Database Online"; updateAdminDash(); renderESSDashboard(); if(currentDetailNik) lihatDetailKaryawan(currentDetailNik);});
-        db.collection("kehadiran").onSnapshot(snap => { db_kehadiran = []; snap.forEach(doc => db_kehadiran.push(doc.data())); renderESSDashboard(); syncFormMassal(); updateAdminDash(); if(currentDetailNik) renderDetailRekapAbsen(); if(!el('menu-laporan').classList.contains('hidden')) renderLaporan(); });
+        db.collection("kehadiran").onSnapshot(snap => { db_kehadiran = []; snap.forEach(doc => db_kehadiran.push(doc.data())); renderESSDashboard(); syncFormMassal(); updateAdminDash(); if(currentDetailNik) { renderDetailRekapAbsen(); renderDetailAbsenHistory(); } if(!el('menu-laporan').classList.contains('hidden')) renderLaporan(); });
         db.collection("kasbon_log").orderBy("tanggal", "desc").onSnapshot(snap => { db_kasbon = []; snap.forEach(doc => db_kasbon.push({id: doc.id, ...doc.data()})); updateAdminDash(); renderESSDashboard(); });
-        db.collection("slip_gaji").orderBy("tanggalBuat", "desc").onSnapshot(snap => { db_slip = []; snap.forEach(doc => db_slip.push({id: doc.id, ...doc.data()})); renderESSDashboard(); updateAdminDash(); if(currentDetailNik) renderDetailSlipGaji();});
+        db.collection("slip_gaji").orderBy("tanggalBuat", "desc").onSnapshot(snap => { db_slip = []; snap.forEach(doc => db_slip.push({id: doc.id, ...doc.data()})); renderESSDashboard(); updateAdminDash(); renderAllSlips(); if(currentDetailNik) renderDetailSlipGaji();});
         
         flatpickr("input[type='date']", { locale: "id", dateFormat: "Y-m-d", disableMobile: "true" });
         flatpickr("#massal-tgl", { locale: "id", dateFormat: "Y-m-d", disableMobile: "true", onChange: () => syncFormMassal() });
@@ -889,19 +913,13 @@
             if(!currentUserData || loginMode !== 'karyawan') return;
             const nik = currentUserData.nik; const emp = db_karyawan.find(k => k.nik === nik) || currentUserData;
             
-            // Kartu Identitas Digital
             el('ess-nama-lengkap').innerText = emp.nama || '-';
             el('ess-posisi').innerText = `NIK: ${emp.nik} | Divisi: ${emp.divisi||'-'} | Jabatan: ${emp.jabatan||'-'}`;
-
             el('ess-sisa-cuti').innerText = (emp.sisaCuti || 0) + " Hari"; 
             el('ess-sisa-kasbon').innerText = "Rp " + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID');
             
-            // Rekap Absen Karyawan (Bulan Ini)
-            let tH=0, tI=0, tA=0; 
-            const now = new Date(); const currMonthPrefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-            db_kehadiran.filter(a => a.nik === nik && a.date.startsWith(currMonthPrefix)).forEach(a => {
-                if(a.status === 'Hadir') tH++; else if(a.status === 'Absen') tA++; else tI++;
-            });
+            let tH=0, tI=0, tA=0; const now = new Date(); const currMonthPrefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+            db_kehadiran.filter(a => a.nik === nik && a.date.startsWith(currMonthPrefix)).forEach(a => { if(a.status === 'Hadir') tH++; else if(a.status === 'Absen') tA++; else tI++; });
             el('ess-rek-h').innerText = tH; el('ess-rek-i').innerText = tI; el('ess-rek-a').innerText = tA;
 
             let tbodyAbs = ''; const myAbsen = db_kehadiran.filter(a => a.nik === nik).sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0, 10);
@@ -917,41 +935,23 @@
             el('tbody-ess-slip').innerHTML = tbodySlip || '<tr><td colspan="3" align="center">Kosong</td></tr>';
         }
 
-        async function startCamera() {
-            try {
-                streamKamera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                el('camera-feed').srcObject = streamKamera;
-                navigator.geolocation.getCurrentPosition( pos => { latGPS = pos.coords.latitude; lonGPS = pos.coords.longitude; el('gps-status').innerText = `📍 Lokasi Terdeteksi`; }, err => { el('gps-status').innerText = `⚠️ Izinkan Akses Lokasi (GPS)!`; });
-            } catch (err) { el('gps-status').innerText = "Kamera tidak dapat diakses."; }
-        }
+        async function startCamera() { try { streamKamera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }); el('camera-feed').srcObject = streamKamera; navigator.geolocation.getCurrentPosition( pos => { latGPS = pos.coords.latitude; lonGPS = pos.coords.longitude; el('gps-status').innerText = `📍 Lokasi Terdeteksi`; }, err => { el('gps-status').innerText = `⚠️ Izinkan Akses Lokasi (GPS)!`; }); } catch (err) { el('gps-status').innerText = "Kamera tidak dapat diakses."; } }
         function stopCamera() { if(streamKamera) streamKamera.getTracks().forEach(track => track.stop()); }
 
         window.ambilAbsenSelfie = async () => {
             if(!latGPS) return showToast("Mohon izinkan akses Lokasi/GPS di browser Anda!", "error");
-            
-            // --- NEW FIX: PENERAPAN GEOFENCING RADIUS ---
-            const jarak = hitungJarakMeters(latGPS, lonGPS, KANTOR_LAT, KANTOR_LON);
-            const shift = el('ess-shift-select').value;
-            
-            // Catatan: Jika shift bukan "Luar Kota", dan jarak melebihi 50 meter, sistem hanya memberikan Warning (agar sistem tetap bisa digunakan uji coba).
-            // Jika ingin strict diblokir, HAPUS tanda komentar (//) pada baris 'return showToast...' di bawah ini.
-            if(jarak > RADIUS_MAKSIMAL_METER && shift !== "Luar Kota") {
-                showToast(`Peringatan Geofence: Anda berada ${jarak}m dari koordinat pusat!`, "warning");
-                // return showToast(`Gagal: Jarak Anda ${jarak}m dari kantor (Maks ${RADIUS_MAKSIMAL_METER}m)!`, "error");
-            }
+            const jarak = hitungJarakMeters(latGPS, lonGPS, KANTOR_LAT, KANTOR_LON); const shift = el('ess-shift-select').value;
+            if(jarak > RADIUS_MAKSIMAL_METER && shift !== "Luar Kota") { showToast(`Peringatan Geofence: Anda berada ${jarak}m dari koordinat pusat!`, "warning"); }
 
             const btn = el('btn-capture'); btn.disabled = true; btn.innerText = "Memproses...";
             const video = el('camera-feed'); const canvas = el('camera-canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight; canvas.getContext('2d').drawImage(video, 0, 0);
             
             canvas.toBlob(async (blob) => {
-                const today = getLocalToday();
-                const jam = new Date().toLocaleTimeString('id-ID');
-                const path = `absen_selfie/${currentUserData.nik}_${Date.now()}.jpg`;
+                const today = getLocalToday(); const jam = new Date().toLocaleTimeString('id-ID'); const path = `absen_selfie/${currentUserData.nik}_${Date.now()}.jpg`;
                 try {
                     const ref = storage.ref().child(path); await ref.put(blob); const urlFoto = await ref.getDownloadURL();
                     await db.collection("kehadiran").doc(currentUserData.nik + "_" + today).set({ date: today, nik: currentUserData.nik, status: "Hadir", shift: shift, waktuMasuk: jam, gpsLat: latGPS, gpsLon: lonGPS, fotoSelfie: urlFoto });
-                    el('camera-feed').style.display = 'none'; el('camera-result').src = urlFoto; el('camera-result').style.display = 'block';
-                    el('btn-retake').classList.remove('hidden'); btn.classList.add('hidden'); el('gps-status').innerText = `✅ Absen Berhasil (Shift ${shift})`; showToast("Absen sukses terekam ke sistem HR!");
+                    el('camera-feed').style.display = 'none'; el('camera-result').src = urlFoto; el('camera-result').style.display = 'block'; el('btn-retake').classList.remove('hidden'); btn.classList.add('hidden'); el('gps-status').innerText = `✅ Absen Berhasil (Shift ${shift})`; showToast("Absen sukses terekam ke sistem HR!");
                 } catch(e) { showToast("Gagal kirim absen!", "error"); btn.disabled=false; btn.innerText="📸 AMBIL FOTO"; }
             }, 'image/jpeg', 0.6);
         };
@@ -963,29 +963,20 @@
             showToast("Pengajuan terkirim. Menunggu persetujuan HR."); el('form-ess-kasbon').reset();
         });
 
-        // ==========================================
-        // EXPORT SLIP PDF & WHATSAPP
-        // ==========================================
         window.lihatDetailSlipAdminAtauKaryawan = (slipId) => {
             const s = db_slip.find(x => x.id === slipId); if(!s) return; currentSlipTemp = s;
             el('slip-modal-nama').innerText = s.nama; el('slip-modal-periode').innerText = s.periode; el('slip-modal-divisi').innerText = db_karyawan.find(k=>k.nik===s.nik)?.divisi || "-";
-            el('slip-modal-gapok').innerText = `Rp ${(parseFloat(s.gajiPokok)||0).toLocaleString('id-ID')}`; el('slip-modal-hadir').innerText = `Rp ${(parseFloat(s.tunjKehadiran)||0).toLocaleString('id-ID')}`; 
-            el('slip-modal-bonus').innerText = `Rp ${(parseFloat(s.insentif)||0).toLocaleString('id-ID')}`; el('slip-modal-lkmk').innerText = `Rp ${(parseFloat(s.tugasLuar)||0).toLocaleString('id-ID')}`; 
-            el('slip-modal-potongan').innerText = `- Rp ${(parseFloat(s.potongan)||0).toLocaleString('id-ID')}`; el('slip-modal-bersih').innerText = s.bersih; el('modal-slip-detail').classList.add('show');
+            el('slip-modal-gapok').innerText = `Rp ${(parseFloat(s.gajiPokok)||0).toLocaleString('id-ID')}`; el('slip-modal-hadir').innerText = `Rp ${(parseFloat(s.tunjKehadiran)||0).toLocaleString('id-ID')}`; el('slip-modal-bonus').innerText = `Rp ${(parseFloat(s.insentif)||0).toLocaleString('id-ID')}`; el('slip-modal-lkmk').innerText = `Rp ${(parseFloat(s.tugasLuar)||0).toLocaleString('id-ID')}`; el('slip-modal-potongan').innerText = `- Rp ${(parseFloat(s.potongan)||0).toLocaleString('id-ID')}`; el('slip-modal-bersih').innerText = s.bersih; el('modal-slip-detail').classList.add('show');
         };
         window.downloadSlipPDF = () => { const element = document.getElementById('slip-export-content'); html2pdf().set({ margin: 0.5, filename: `Slip_${currentSlipTemp.nama}_${currentSlipTemp.periode}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a5', orientation: 'landscape' } }).from(element).save(); };
-        window.kirimWhatsApp = () => {
-            const emp = db_karyawan.find(k=>k.nik===currentSlipTemp.nik); if(!emp || !emp.telp) return showToast("No HP Karyawan tidak terdata!", "error"); let noWa = emp.telp.replace(/^0/, '62');
-            let text = `Halo *${currentSlipTemp.nama}*,\nBerikut Rincian Gaji Anda periode *${currentSlipTemp.periode}*:\n\n🔹 Gaji Pokok: Rp ${(currentSlipTemp.gajiPokok||0).toLocaleString('id-ID')}\n🔹 Kehadiran: Rp ${(currentSlipTemp.tunjKehadiran||0).toLocaleString('id-ID')}\n🔹 Lembur/Insentif: Rp ${(currentSlipTemp.insentif||0).toLocaleString('id-ID')}\n🔺 Potongan Kasbon: Rp ${(currentSlipTemp.potongan||0).toLocaleString('id-ID')}\n\n💰 *TERIMA BERSIH: ${currentSlipTemp.bersih}*\n\nHRD Tehnik Stainless`;
-            window.open(`https://wa.me/${noWa}?text=${encodeURIComponent(text)}`, '_blank');
-        };
+        window.kirimWhatsApp = () => { const emp = db_karyawan.find(k=>k.nik===currentSlipTemp.nik); if(!emp || !emp.telp) return showToast("No HP Karyawan tidak terdata!", "error"); let noWa = emp.telp.replace(/^0/, '62'); let text = `Halo *${currentSlipTemp.nama}*,\nBerikut Rincian Gaji Anda periode *${currentSlipTemp.periode}*:\n\n🔹 Gaji Pokok: Rp ${(currentSlipTemp.gajiPokok||0).toLocaleString('id-ID')}\n🔹 Kehadiran: Rp ${(currentSlipTemp.tunjKehadiran||0).toLocaleString('id-ID')}\n🔹 Lembur/Insentif: Rp ${(currentSlipTemp.insentif||0).toLocaleString('id-ID')}\n🔺 Potongan Kasbon: Rp ${(currentSlipTemp.potongan||0).toLocaleString('id-ID')}\n\n💰 *TERIMA BERSIH: ${currentSlipTemp.bersih}*\n\nHRD Tehnik Stainless`; window.open(`https://wa.me/${noWa}?text=${encodeURIComponent(text)}`, '_blank'); };
 
         // ==========================================
         // MODUL 2: ADMIN HR (KARYAWAN, ABSEN, KASBON, GAJI)
         // ==========================================
         
-        // --- MANAJEMEN KARYAWAN ---
-        window.tambahKaryawanBaru = () => { el('form-karyawan').reset(); el('emp-nik').readOnly = false; el('btn-simpan-karyawan').innerText = "Simpan Data Baru"; el('view-emp-list').classList.add('hidden'); el('view-emp-form').classList.remove('hidden'); };
+        // --- MANAJEMEN KARYAWAN & ARSIP ---
+        window.tambahKaryawanBaru = () => { el('form-karyawan').reset(); el('emp-nik').readOnly = false; el('btn-simpan-karyawan').innerText = "Simpan Data Baru"; el('view-emp-list').classList.add('hidden'); el('view-emp-arsip').classList.add('hidden'); el('view-emp-form').classList.remove('hidden'); };
         window.tutupFormKaryawan = () => { el('view-emp-form').classList.add('hidden'); el('view-emp-list').classList.remove('hidden'); };
         window.editKaryawan = (nik) => {
             const k = db_karyawan.find(x => x.nik === nik); if(!k) return;
@@ -1004,31 +995,22 @@
             } catch (err) { showToast("Gagal simpan!", "error"); } finally { btn.innerText = "Simpan Data"; btn.disabled = false; }
         });
 
+        // --- NEW FIX 4: KELOLA ARSIP (HAPUS PERMANEN) ---
+        window.bukaKelolaArsip = () => { el('view-emp-list').classList.add('hidden'); el('view-emp-arsip').classList.remove('hidden'); };
+        window.tutupKelolaArsip = () => { el('view-emp-arsip').classList.add('hidden'); el('view-emp-list').classList.remove('hidden'); };
+        window.hapusPermanenKaryawan = async (nik) => {
+            const ok = await showConfirm("Hapus Permanen?", "Tindakan ini tidak bisa dibatalkan! NIK dan Profil karyawan akan musnah selamanya dari Database.", "Hapus Permanen", true);
+            if(ok) { await db.collection("karyawan").doc(nik).delete(); showToast("Karyawan dihapus permanen!"); }
+        };
+
         // --- MANAJEMEN KASBON ---
-        // --- NEW FIX: PENCEGAH DOUBLE CLICK & VALIDASI LIMIT KETAT ---
         window.approveKasbon = async (btnDOM, id, nik, nominal) => { 
-            btnDOM.disabled = true; btnDOM.innerText = "⏳ Memproses...";
-            const emp = db_karyawan.find(k=>k.nik===nik); 
-            if(!emp) { btnDOM.disabled = false; btnDOM.innerText = "✅ Setujui"; return; }
-            
-            let sisaBaru = (parseFloat(emp.sisaKasbon)||0) + nominal; 
-            if(sisaBaru > (parseFloat(emp.limitKasbon)||0)) {
-                btnDOM.disabled = false; btnDOM.innerText = "✅ Setujui";
-                return showToast(`Gagal: Melebihi limit (Limit Max: Rp ${(parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID')})!`, "error");
-            }
-            try {
-                await db.collection("karyawan").doc(nik).update({ sisaKasbon: sisaBaru }); 
-                await db.collection("kasbon_log").doc(id).update({ status: "Disetujui", jenis: "Pinjaman Baru" }); 
-                showToast("Disetujui!"); 
-            } catch (e) { showToast("Gagal memproses!", "error"); btnDOM.disabled = false; btnDOM.innerText = "✅ Setujui"; }
+            btnDOM.disabled = true; btnDOM.innerText = "⏳ Memproses..."; const emp = db_karyawan.find(k=>k.nik===nik); if(!emp) { btnDOM.disabled = false; btnDOM.innerText = "✅ Setujui"; return; }
+            let sisaBaru = (parseFloat(emp.sisaKasbon)||0) + nominal; if(sisaBaru > (parseFloat(emp.limitKasbon)||0)) { btnDOM.disabled = false; btnDOM.innerText = "✅ Setujui"; return showToast(`Gagal: Melebihi limit!`, "error"); }
+            try { await db.collection("karyawan").doc(nik).update({ sisaKasbon: sisaBaru }); await db.collection("kasbon_log").doc(id).update({ status: "Disetujui", jenis: "Pinjaman Baru" }); showToast("Disetujui!"); } catch (e) { showToast("Gagal!", "error"); btnDOM.disabled = false; btnDOM.innerText = "✅ Setujui"; }
         };
-        
-        window.rejectKasbon = async (btnDOM, id) => { 
-            btnDOM.disabled = true; btnDOM.innerText = "⏳...";
-            await db.collection("kasbon_log").doc(id).update({ status: "Ditolak" }); showToast("Ditolak."); 
-        };
-        
-        window.hapusKasbonLog = async (id, nik, nom, jns) => { const ok = await showConfirm("Hapus & Refund?", "Sistem akan menyesuaikan saldo hutang otomatis.", "Hapus", true); if(ok) { const emp = db_karyawan.find(k=>k.nik===nik); if(emp) { let sisaBaru = (parseFloat(emp.sisaKasbon)||0) + (jns==="Pinjaman Baru"?-nom:nom); if(sisaBaru<0)sisaBaru=0; db.collection("karyawan").doc(nik).update({ sisaKasbon: sisaBaru }); } db.collection("kasbon_log").doc(id).delete().then(()=>showToast('Dihapus!')); } };
+        window.rejectKasbon = async (btnDOM, id) => { btnDOM.disabled = true; btnDOM.innerText = "⏳..."; await db.collection("kasbon_log").doc(id).update({ status: "Ditolak" }); showToast("Ditolak."); };
+        window.hapusKasbonLog = async (id, nik, nom, jns) => { const ok = await showConfirm("Hapus & Refund?", "Sistem akan menyesuaikan saldo hutang.", "Hapus", true); if(ok) { const emp = db_karyawan.find(k=>k.nik===nik); if(emp) { let sisaBaru = (parseFloat(emp.sisaKasbon)||0) + (jns==="Pinjaman Baru"?-nom:nom); if(sisaBaru<0)sisaBaru=0; db.collection("karyawan").doc(nik).update({ sisaKasbon: sisaBaru }); } db.collection("kasbon_log").doc(id).delete().then(()=>showToast('Dihapus!')); } };
         el('kasbon-nik').addEventListener('change', function() { const emp = db_karyawan.find(k => k.nik === this.value); if(emp) { el('info-limit-kasbon').innerText = '(Limit: Rp ' + (parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID') + ')'; el('info-sisa-kasbon').innerText = 'Rp ' + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID'); } });
         el('form-kasbon-admin').addEventListener('submit', function(e) { e.preventDefault(); const nik = el('kasbon-nik').value; const nom = parseFloat(el('kasbon-nominal').value) || 0; const emp = db_karyawan.find(k => k.nik === nik); if(!emp) return; if(((parseFloat(emp.sisaKasbon)||0) + nom) > (parseFloat(emp.limitKasbon)||0)) return showToast(`Melebihi Limit!`, "error"); db.collection("karyawan").doc(nik).update({ sisaKasbon: (parseFloat(emp.sisaKasbon)||0) + nom }).then(() => { db.collection("kasbon_log").add({ nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: "Pinjaman Baru", nominal: nom, keterangan: el('kasbon-ket').value }); showToast('Kasbon berhasil!'); el('form-kasbon-admin').reset(); el('kasbon-nik').dispatchEvent(new Event('change')); }); });
 
@@ -1040,8 +1022,7 @@
                 if(att) { st = att.status; sh = att.shift || 'Pagi'; lk=att.lk; mk=att.mk; lm = att.lembur || 0; ct = att.catatan || ''; }
                 let ind = att && att.fotoSelfie ? `<br><a href="${att.fotoSelfie}" target="_blank" style="color:var(--success); font-size:10px; text-decoration:none;">📱 Cek Foto Absen</a>` : '';
                 tbodyM += `<tr data-nik="${k.nik}"><td><b>${k.nama}</b>${ind}</td><td><select class="m-status"><option value="Hadir" ${st==='Hadir'?'selected':''}>Hadir</option><option value="Izin" ${st==='Izin'||st==='Cuti'?'selected':''}>Izin</option><option value="Absen" ${st==='Absen'?'selected':''}>Absen</option></select></td><td><select class="m-shift"><option value="Pagi" ${sh==='Pagi'?'selected':''}>Pagi</option><option value="Siang" ${sh==='Siang'?'selected':''}>Siang</option><option value="Malam" ${sh==='Malam'?'selected':''}>Malam</option></select></td><td><div class="checkbox-group"><label class="checkbox-label wrap-m-lk" style="padding:4px;"><input type="checkbox" class="m-lk" ${lk?'checked':''}> LK</label><label class="checkbox-label wrap-m-mk hidden" style="padding:4px;"><input type="checkbox" class="m-mk" ${mk?'checked':''}> MK</label></div></td><td><input type="number" class="m-lembur" value="${lm}"></td><td><input type="text" class="m-catatan" value="${ct}"></td></tr>`;
-            });
-            el('tbody-massal').innerHTML = tbodyM; setTimeout(cekMinggu, 50);
+            }); el('tbody-massal').innerHTML = tbodyM; setTimeout(cekMinggu, 50);
         };
 
         const potongCuti = (nik, inc) => { db.collection("karyawan").doc(nik).update({ sisaCuti: firebase.firestore.FieldValue.increment(inc) }); };
@@ -1077,7 +1058,6 @@
         const jalankanAutoCalc = () => {
             const nik = el('gaji-nik').value; const fp = el('gaji-periode-range')._flatpickr;
             if(!nik || !fp || fp.selectedDates.length === 0) { el('gaji-rekap-container').classList.add('hidden'); el('peringatan-slip').classList.add('hidden'); return hitungTotalGajiBawah(); }
-            
             const d1Start = new Date(fp.selectedDates[0]); d1Start.setHours(0,0,0,0); const d2End = new Date(fp.selectedDates.length>1 ? fp.selectedDates[1] : d1Start); d2End.setHours(23,59,59,999);
             const emp = db_karyawan.find(k => k.nik === nik); if(!emp) return;
 
@@ -1139,9 +1119,18 @@
             let opt = '<option value="">Pilih Karyawan Aktif...</option>'; db_karyawan.filter(k=>k.status!=='Nonaktif').forEach(k => opt += `<option value="${k.nik}">${k.nama}</option>`);
             if(!el('satuan-nik').value) el('satuan-nik').innerHTML = opt; if(!el('gaji-nik').value) el('gaji-nik').innerHTML = opt; if(!el('kasbon-nik').value) el('kasbon-nik').innerHTML = opt;
 
-            let tbodyK = ''; db_karyawan.forEach(k => { tbodyK += `<tr style="${k.status==='Nonaktif'?'opacity:0.6; background:#f8fafc;':''}"><td><div class="nama-karyawan">${k.nama}</div><div class="divisi-karyawan">NIK: ${k.nik} | ${k.email||'Blm Akun'}</div></td><td><b>${k.jabatan||'-'}</b><br><small>${k.divisi||'-'}</small></td><td><span class="badge ${k.status==='Nonaktif'?'badge-danger':''}">${k.status}</span><br><span style="font-size:10px; color:var(--primary)">Cuti: ${k.sisaCuti??12} Hr</span></td><td><button class="btn-outline" style="padding:4px 8px; font-size:11px;" onclick="window.editKaryawan('${k.nik}')">Edit</button> <button class="btn-outline" style="padding:4px 8px; font-size:11px; margin-left:4px;" onclick="window.lihatDetailKaryawan('${k.nik}')">Detail Info</button> ${k.status==='Nonaktif'?`<button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--success); border-color:var(--success);" onclick="window.aktifkanKaryawan('${k.nik}')">Aktifkan</button>`:`<button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--warning); border-color:var(--warning);" onclick="window.arsipKaryawan('${k.nik}')">Arsip</button>`}</td></tr>`; }); el('tbody-karyawan-list').innerHTML = tbodyK;
+            let tbodyK = ''; let tbodyArsip = '';
+            db_karyawan.forEach(k => { 
+                if(k.status !== 'Nonaktif') {
+                    tbodyK += `<tr><td><div class="nama-karyawan">${k.nama}</div><div class="divisi-karyawan">NIK: ${k.nik} | ${k.email||'Blm Akun'}</div></td><td><b>${k.jabatan||'-'}</b><br><small>${k.divisi||'-'}</small></td><td><span class="badge ${k.status==='Nonaktif'?'badge-danger':''}">${k.status}</span><br><span style="font-size:10px; color:var(--primary)">Cuti: ${k.sisaCuti??12} Hr</span></td><td><button class="btn-outline" style="padding:4px 8px; font-size:11px;" onclick="window.editKaryawan('${k.nik}')">Edit</button> <button class="btn-outline" style="padding:4px 8px; font-size:11px; margin-left:4px;" onclick="window.lihatDetailKaryawan('${k.nik}')">Detail</button> <button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--warning); border-color:var(--warning);" onclick="window.arsipKaryawan('${k.nik}')">Arsip</button></td></tr>`; 
+                } else {
+                    // Populate Kelola Arsip Table
+                    tbodyArsip += `<tr><td><b>${k.nama}</b><br><small>${k.nik}</small></td><td>${k.jabatan||'-'}<br><small>${k.divisi||'-'}</small></td><td style="text-align:center;"><button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--success); border-color:var(--success);" onclick="window.aktifkanKaryawan('${k.nik}')">Aktifkan Kembali</button> <button class="btn" style="background-color: var(--danger); font-size: 11px; padding: 6px 12px; width: auto; margin-left: 5px;" onclick="window.hapusPermanenKaryawan('${k.nik}')">Hapus Permanen</button></td></tr>`;
+                }
+            }); 
+            el('tbody-karyawan-list').innerHTML = tbodyK;
+            el('tbody-arsip-list').innerHTML = tbodyArsip || '<tr><td colspan="3" align="center">Tidak ada data arsip karyawan.</td></tr>';
             
-            // --- FIX: TOMBOL APPROVE/REJECT KASBON SEKARANG MEMILIKI PENCEGAH DOUBLE CLICK ---
             let tbodyApp = ''; pendingReq.forEach(k => { tbodyApp += `<tr><td><b>${k.nama}</b><br><small>${k.nik}</small></td><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td>Rp ${k.nominal.toLocaleString('id-ID')}<br><small><i>${k.keterangan}</i></small></td><td><button class="btn-outline" style="border-color:var(--success); color:var(--success); padding:4px 8px; font-size:11px;" onclick="window.approveKasbon(this, '${k.id}','${k.nik}',${k.nominal})">✅ Setujui</button> <button class="btn-outline" style="border-color:var(--danger); color:var(--danger); padding:4px 8px; font-size:11px; margin-left:5px;" onclick="window.rejectKasbon(this, '${k.id}')">❌ Tolak</button></td></tr>`; }); el('tbody-approval-kasbon').innerHTML = tbodyApp || '<tr><td colspan="4" align="center">Tidak ada pengajuan kasbon.</td></tr>';
             
             let tbodyKasLog = ''; db_kasbon.forEach(log => { let auto = log.jenis!=="Pinjaman Baru"&&log.jenis!=="Pengajuan Karyawan"; tbodyKasLog += `<tr><td><b>${log.nama}</b><br><small>${log.nik}</small></td><td>${new Date(log.tanggal).toLocaleDateString('id-ID')}</td><td><span class="badge ${auto?'badge-success':'badge-danger'}">${log.jenis}</span></td><td>Rp ${parseFloat(log.nominal).toLocaleString('id-ID')}</td><td><small>${log.keterangan}</small></td><td style="text-align:center;">${auto?'-':`<button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusKasbonLog('${log.id}', '${log.nik}', ${log.nominal}, '${log.jenis}')">Hapus</button>`}</td></tr>`; }); el('tbody-kasbon-list').innerHTML = tbodyKasLog;
@@ -1156,11 +1145,38 @@
             }
         }
 
+        // --- NEW FIX 3: RENDER SELURUH SLIP DI MENU PENGGAJIAN ---
+        const renderAllSlips = () => {
+            let tbody = '';
+            const allSlips = db_slip.slice().sort((a,b) => new Date(b.tanggalBuat) - new Date(a.tanggalBuat));
+            allSlips.forEach(s => {
+                tbody += `<tr><td>${new Date(s.tanggalBuat).toLocaleDateString('id-ID')}</td><td><b>${s.periode}</b></td><td><b>${s.nama}</b><br><small>${s.nik}</small></td><td style="color:var(--success); font-weight:bold;">${s.bersih}</td><td style="text-align:center;"><button class="btn-outline" style="padding:4px 8px; font-size:11px;" onclick="lihatDetailSlipAdminAtauKaryawan('${s.id}')">Lihat Print</button> <button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--warning); border-color:var(--warning);" onclick="window.revisiSlipGaji('${s.id}')">Edit</button> <button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusSlipGaji('${s.id}', '${s.nik}')">Hapus</button></td></tr>`;
+            });
+            el('tbody-all-slips').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada slip gaji yang dicetak.</td></tr>';
+        };
+
+        // --- NEW FIX 2: ARSIR ABU KARYAWAN NONAKTIF DI LAPORAN ---
         const renderLaporan = () => {
             const f = el('filter-bulan-laporan').value; if(!f) return; const y = parseInt(f.split('-')[0]), m = parseInt(f.split('-')[1]), dInM = new Date(y, m, 0).getDate(); let html = `<thead><tr><th class="sticky-col">Nama Karyawan</th>`;
             for(let i=1; i<=dInM; i++) { let d=new Date(y,m-1,i); html += `<th class="${d.getDay()===0?'col-minggu':''}"><span style="font-size:9px;">${['Min','Sen','Sel','Rab','Kam','Jum','Sab'][d.getDay()]}</span><br>${i}</th>`; }
             html += `<th>H</th><th>I</th><th>A</th><th>LK</th><th>MK</th></tr></thead><tbody>`;
-            db_karyawan.forEach(emp => { html += `<tr><td class="sticky-col"><b>${emp.nama}</b></td>`; let tH=0, tI=0, tA=0, tLK=0, tMK=0; for(let i=1; i<=dInM; i++) { const att = db_kehadiran.find(a => a.nik === emp.nik && a.date === `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`); let c = `-`; if(att) { let h = att.status.charAt(0); if(h==='H')tH++; else if(h==='A')tA++; else tI++; if(att.lk)tLK++; if(att.mk)tMK++; c = `<span class="${h==='H'?'cell-hadir':(h==='A'?'cell-absen':'cell-izin')}">${h}</span>`; if(att.lk)c+='<br><span class="badge" style="background:var(--primary);color:#fff;font-size:8px;">LK</span>'; if(att.mk)c+='<br><span class="badge" style="background:var(--danger);color:#fff;font-size:8px;">MK</span>'; } html += `<td class="${new Date(y,m-1,i).getDay()===0?'col-minggu':''}">${c}</td>`; } html += `<td>${tH}</td><td>${tI}</td><td>${tA}</td><td>${tLK}</td><td>${tMK}</td></tr>`; }); el('tabel-laporan').innerHTML = html + '</tbody>';
+            db_karyawan.forEach(emp => { 
+                const trStyle = emp.status === 'Nonaktif' ? 'style="background-color: #f8fafc; opacity: 0.6;"' : '';
+                const nameDisplay = emp.status === 'Nonaktif' ? `<b>${emp.nama}</b><br><small style="color:var(--danger); font-size:10px;">[Nonaktif]</small>` : `<b>${emp.nama}</b>`;
+                html += `<tr ${trStyle}><td class="sticky-col">${nameDisplay}</td>`; 
+                let tH=0, tI=0, tA=0, tLK=0, tMK=0; 
+                for(let i=1; i<=dInM; i++) { 
+                    const att = db_kehadiran.find(a => a.nik === emp.nik && a.date === `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`); let c = `-`; 
+                    if(att) { 
+                        let h = att.status.charAt(0); if(h==='H')tH++; else if(h==='A')tA++; else tI++; if(att.lk)tLK++; if(att.mk)tMK++; 
+                        c = `<span class="${h==='H'?'cell-hadir':(h==='A'?'cell-absen':'cell-izin')}">${h}</span>`; 
+                        if(att.lk)c+='<br><span class="badge" style="background:var(--primary);color:#fff;font-size:8px;">LK</span>'; if(att.mk)c+='<br><span class="badge" style="background:var(--danger);color:#fff;font-size:8px;">MK</span>'; 
+                    } 
+                    html += `<td class="${new Date(y,m-1,i).getDay()===0?'col-minggu':''}">${c}</td>`; 
+                } 
+                html += `<td>${tH}</td><td>${tI}</td><td>${tA}</td><td>${tLK}</td><td>${tMK}</td></tr>`; 
+            }); 
+            el('tabel-laporan').innerHTML = html + '</tbody>';
         };
 
         const renderDetailRekapAbsen = () => {
@@ -1168,6 +1184,22 @@
             let tH=0, tI=0, tA=0; const now = new Date(); const currMonthPrefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
             db_kehadiran.filter(a => a.nik === currentDetailNik && a.date.startsWith(currMonthPrefix)).forEach(a => { if(a.status === 'Hadir') tH++; else if(a.status === 'Absen') tA++; else tI++; });
             el('det-rek-h').innerText = tH; el('det-rek-i').innerText = tI; el('det-rek-a').innerText = tA;
+        };
+
+        // --- NEW FIX 1: TABEL RIWAYAT ABSEN LENGKAP DI DETAIL ---
+        const renderDetailAbsenHistory = () => {
+            if(!currentDetailNik) return;
+            let tbody = '';
+            const myAbsen = db_kehadiran.filter(a => a.nik === currentDetailNik).sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0, 30);
+            myAbsen.forEach(a => {
+                let infoExtra = a.shift || 'Pagi';
+                if(a.lk) infoExtra += ` <span class="badge" style="background:var(--primary);color:#fff;font-size:9px;">LK</span>`;
+                if(a.mk) infoExtra += ` <span class="badge" style="background:var(--danger);color:#fff;font-size:9px;">MK</span>`;
+                if(a.lembur > 0) infoExtra += ` (+${a.lembur} Jam)`;
+                
+                tbody += `<tr><td>${a.date}</td><td><span class="badge ${a.status==='Hadir'?'badge-success':(a.status==='Absen'?'badge-danger':'badge-pending')}">${a.status}</span></td><td>${infoExtra}</td><td><small>${a.catatan||'-'}</small></td></tr>`; 
+            });
+            el('tbody-det-absen').innerHTML = tbody || '<tr><td colspan="4" align="center">Belum ada riwayat kehadiran.</td></tr>';
         };
 
         window.lihatDetailKaryawan = (nik) => {
@@ -1180,7 +1212,9 @@
             el('det-masuk').innerText = k.tglMulai || '-'; el('det-alamat').innerText = k.alamat || '-'; el('det-gapok').innerText = 'Rp ' + (parseFloat(k.gajiPokok)||0).toLocaleString('id-ID');
             el('det-gahari').innerText = 'Rp ' + (parseFloat(k.gajiHarian)||0).toLocaleString('id-ID'); el('det-bonus').innerText = 'Rp ' + (parseFloat(k.bonusTetap)||0).toLocaleString('id-ID');
             
-            renderDetailRekapAbsen(); renderDetailSlipGaji();
+            renderDetailRekapAbsen(); 
+            renderDetailAbsenHistory(); // <-- Memanggil tabel absen baru
+            renderDetailSlipGaji();
         };
 
         const renderDetailSlipGaji = () => {
