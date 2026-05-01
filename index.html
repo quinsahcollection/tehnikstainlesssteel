@@ -44,6 +44,9 @@
         .sidebar .brand-logo { color: var(--primary); font-size: 20px; font-weight: 800; letter-spacing: -0.5px;}
         .sidebar .brand-subtitle { color: var(--text-muted); font-size: 11px; margin-top: 4px; font-weight:500;}
 
+        /* Icon Styling */
+        .nav-icon { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: 0.2s ease; }
+        
         .nav-menu { display: flex; flex-direction: column; padding: 20px 12px; flex: 1; gap: 6px; overflow-y:auto; }
         .nav-item { padding: 12px 16px; border-radius: var(--radius-sm); color: var(--text-muted); text-decoration: none; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 12px; border: none; background: transparent; width: 100%; text-align: left; font-size: 14px; transition: all 0.2s; outline: none; }
         .nav-item:hover { color: var(--primary); background-color: #f8fafc; }
@@ -163,7 +166,9 @@
             #print-area { display: block; position: absolute; left: 0; top: 0; width: 100%; max-width: 180mm; background: white; color: #000;}
         }
 
-        /* SUPER RESPONSIVE MOBILE CSS */
+        /* ========================================== */
+        /* SUPER RESPONSIVE MOBILE CSS                */
+        /* ========================================== */
         @media (max-width: 768px) {
             body { font-size: 14px; }
             #app-screen { flex-direction: column; } 
@@ -171,6 +176,14 @@
             .main-content { padding: 15px; padding-bottom: 100px; } 
             .content-header { margin-bottom: 20px; flex-direction: column; align-items: flex-start; gap: 10px; display: none;}
             .mobile-header { display: flex !important; align-items: center; justify-content: space-between; padding: 15px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 10px rgba(0,0,0,0.03);}
+            
+            /* Hamburger Button */
+            .btn-hamburger { background: transparent; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 5px; cursor: pointer; border-radius: 6px; transition: 0.2s; }
+            .btn-hamburger:hover { background: #f1f5f9; color: var(--primary); }
+            
+            /* Mobile Dropdown Menu */
+            .mobile-dropdown { position: absolute; top: 65px; right: 15px; background: var(--card-bg); border-radius: var(--radius-md); box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 20px; z-index: 1000; width: 220px; border: 1px solid var(--border-color); transform: translateY(-10px); opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+            .mobile-dropdown.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
             
             /* Bottom Navigation (Sidebar diubah) */
             .sidebar { 
@@ -191,8 +204,10 @@
                 flex-direction: column; padding: 8px 5px; height: 100%; gap: 6px; 
                 border-radius: 8px; justify-content: center; min-width: 75px;
             }
+            /* Styling icon khusus mobile */
+            .nav-item .nav-icon { width: 22px; height: 22px; }
             .nav-item.active { background: transparent; color: var(--primary); }
-            .nav-item.active .nav-icon { fill: var(--primary); transform: scale(1.1); transition: 0.2s;}
+            .nav-item.active .nav-icon { stroke: var(--primary); transform: scale(1.15); transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
             .nav-item .nav-text { font-size: 10px; text-align: center; white-space: normal; line-height: 1.2; font-weight: 600;}
 
             /* Layout Fixes */
@@ -208,7 +223,7 @@
             .btn { width: 100%; }
             .btn-outline { width: 100%; text-align: center; justify-content: center; display: flex; }
             
-            table { min-width: 600px; } /* Paksa scroll horizontan jika kolom banyak */
+            table { min-width: 600px; } 
             .table-responsive { padding-bottom: 5px; }
             
             /* Login Mobile Fix */
@@ -316,10 +331,25 @@
     <!-- APLIKASI UTAMA (APP SCREEN) -->
     <div id="app-screen" class="hidden">
         
-        <!-- HEADER MOBILE KHUSUS -->
+        <!-- HEADER MOBILE KHUSUS (DIPERBARUI) -->
         <div class="mobile-header" style="display:none;">
             <div><div style="color:var(--primary); font-weight:800; font-size: 18px;">Tehnik HR</div></div>
-            <button class="btn-outline" style="padding: 6px 12px; font-size:12px; border-color:var(--danger); color:var(--danger);" onclick="doLogout()">Logout</button>
+            <button class="btn-hamburger" id="btn-hamburger" onclick="window.toggleMobileMenu()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+        </div>
+
+        <!-- DROPDOWN MENU MOBILE (DIPERBARUI) -->
+        <div class="mobile-dropdown" id="mobile-menu-dropdown">
+            <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px; text-align: center;">
+                <div style="width: 50px; height: 50px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px auto; font-size: 20px; font-weight: 800;">👤</div>
+                <div class="user-name" id="mob-user-name">-</div>
+                <div class="user-role" id="mob-user-role">-</div>
+            </div>
+            <button class="btn" style="width: 100%; background: var(--danger); font-size: 14px;" onclick="doLogout()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> 
+                Keluar / Logout
+            </button>
         </div>
 
         <div class="sidebar">
@@ -327,30 +357,67 @@
                 <div class="brand-logo">Tehnik Stainless</div><div class="brand-subtitle">Enterprise HR Portal</div>
             </div>
             
-            <!-- MENU ADMIN -->
+            <!-- MENU ADMIN (DIPERBARUI DENGAN IKON) -->
             <div class="nav-menu" id="nav-admin" style="display:none;">
-                <button class="nav-item active" onclick="openMenu('menu-dashboard')"><span class="nav-text">Dashboard</span></button>
-                <button class="nav-item" onclick="openMenu('menu-karyawan')"><span class="nav-text">Pegawai</span></button>
-                <button class="nav-item" onclick="openMenu('menu-kehadiran')"><span class="nav-text">Kehadiran & Cuti</span></button>
-                <button class="nav-item" onclick="openMenu('menu-kasbon')"><span class="nav-text">Kasbon</span></button>
-                <button class="nav-item" onclick="openMenu('menu-penggajian')"><span class="nav-text">Penggajian</span></button>
-                <button class="nav-item" onclick="openMenu('menu-riwayat-slip')"><span class="nav-text">Arsip Slip</span></button>
-                <button class="nav-item" onclick="openMenu('menu-laporan')"><span class="nav-text">Laporan</span></button>
+                <button class="nav-item active" onclick="openMenu('menu-dashboard')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    <span class="nav-text">Dashboard</span>
+                </button>
+                <button class="nav-item" onclick="openMenu('menu-karyawan')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <span class="nav-text">Pegawai</span>
+                </button>
+                <button class="nav-item" onclick="openMenu('menu-kehadiran')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <span class="nav-text">Absensi</span>
+                </button>
+                <button class="nav-item" onclick="openMenu('menu-kasbon')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    <span class="nav-text">Kasbon</span>
+                </button>
+                <button class="nav-item" onclick="openMenu('menu-penggajian')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <span class="nav-text">Penggajian</span>
+                </button>
+                <button class="nav-item" onclick="openMenu('menu-riwayat-slip')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                    <span class="nav-text">Arsip Slip</span>
+                </button>
+                <button class="nav-item" onclick="openMenu('menu-laporan')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    <span class="nav-text">Laporan</span>
+                </button>
             </div>
 
-            <!-- MENU KARYAWAN (ESS) -->
+            <!-- MENU KARYAWAN (ESS) (DIPERBARUI DENGAN IKON) -->
             <div class="nav-menu" id="nav-karyawan" style="display:none;">
-                <button class="nav-item active" onclick="openMenu('menu-ess-dash')"><span class="nav-text">Profil Saya</span></button>
-                <button class="nav-item" onclick="openMenu('menu-ess-absen')"><span class="nav-text">Live Absen</span></button>
-                <button class="nav-item" onclick="openMenu('menu-ess-izin')"><span class="nav-text">Cuti & Izin</span></button>
-                <button class="nav-item" onclick="openMenu('menu-ess-kasbon')"><span class="nav-text">Kasbon</span></button>
-                <button class="nav-item" onclick="openMenu('menu-ess-slip')"><span class="nav-text">Slip Gaji</span></button>
+                <button class="nav-item active" onclick="openMenu('menu-ess-dash')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <span class="nav-text">Profil Saya</span>
+                </button>
+                <button class="nav-item" onclick="openMenu('menu-ess-absen')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+                    <span class="nav-text">Live Absen</span>
+                </button>
+                <button class="nav-item" onclick="openMenu('menu-ess-izin')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <span class="nav-text">Cuti & Izin</span>
+                </button>
+                <button class="nav-item" onclick="openMenu('menu-ess-kasbon')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    <span class="nav-text">Kasbon</span>
+                </button>
+                <button class="nav-item" onclick="openMenu('menu-ess-slip')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <span class="nav-text">Slip Gaji</span>
+                </button>
             </div>
 
             <div class="sidebar-footer"><button class="btn-outline" style="width: 100%; border-color:var(--danger); color:var(--danger);" onclick="doLogout()">Keluar Aplikasi</button></div>
         </div>
 
         <div class="main-content">
+            <!-- Header Desktop -->
             <div class="content-header">
                 <div><h2 class="content-title" id="page-title">Dashboard</h2></div>
                 <div class="user-area"><div class="user-info"><div class="user-name" id="top-user-name">-</div><div class="user-role" id="top-user-role">-</div></div></div>
@@ -420,7 +487,6 @@
                 </div>
             </div>
 
-            <!-- MODUL BARU: PENGAJUAN IZIN & CUTI KARYAWAN -->
             <div id="menu-ess-izin" class="menu-content hidden">
                 <div class="card">
                     <h3 class="section-title">Form Pengajuan Izin / Cuti / Sakit</h3>
@@ -778,7 +844,6 @@
                 </div>
             </div>
 
-            <!-- MODUL RIWAYAT SLIP GAJI -->
             <div id="menu-riwayat-slip" class="menu-content hidden">
                 <div class="card">
                     <div class="section-header" style="margin-bottom:15px;">
@@ -808,7 +873,6 @@
                 </div>
             </div>
 
-            <!-- MODUL PENGGAJIAN (DIPERBARUI DENGAN MODE MASSAL) -->
             <div id="menu-penggajian" class="menu-content hidden">
                 <div class="card">
                     <div id="edit-slip-banner" class="hidden" style="background:#e0f2fe; color:#0369a1; padding:15px; border-radius:10px; font-weight:600; margin-bottom:25px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #bae6fd;"><span>✏️ Sedang dalam Mode Edit/Revisi Slip Gaji.</span><button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px; background:#fff;" onclick="window.batalEditSlip()">Batal Edit</button></div>
@@ -931,8 +995,22 @@
         }
 
         // ==========================================
-        // UI HELPERS
+        // UI HELPERS & MOBILE MENU
         // ==========================================
+        
+        window.toggleMobileMenu = () => {
+            el('mobile-menu-dropdown').classList.toggle('show');
+        };
+
+        // Tutup dropdown jika klik di luar
+        document.addEventListener('click', (e) => {
+            const drop = el('mobile-menu-dropdown');
+            const btn = el('btn-hamburger');
+            if (drop && drop.classList.contains('show') && !drop.contains(e.target) && !btn.contains(e.target)) {
+                drop.classList.remove('show');
+            }
+        });
+
         function showToast(msg, type='success') {
             const t = document.createElement('div'); t.className = `toast ${type}`;
             t.innerHTML = `${type==='success'?'✅':(type==='warning'?'⚠️':'❌')} ${msg}`;
@@ -967,7 +1045,10 @@
             if(m !== 'menu-detail-karyawan') currentDetailNik = null;
             document.querySelectorAll('.menu-content').forEach(c => c.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-            document.querySelector(`.nav-item[onclick="openMenu('${m}')"]`)?.classList.add('active');
+            
+            // Highlight both desktop and mobile buttons correctly
+            document.querySelectorAll(`.nav-item[onclick="openMenu('${m}')"]`).forEach(btn => btn.classList.add('active'));
+            
             el(m).classList.remove('hidden');
             
             if(m === 'menu-karyawan') window.tutupKelolaArsip();
@@ -1077,8 +1158,15 @@
             el('login-screen').classList.add('hidden'); el('app-screen').classList.remove('hidden');
             el('login-pass').value = ''; el('reg-pass').value = '';
             
+            const roleText = role === 'admin' ? 'Sistem HRD Penuh' : (data.jabatan || 'Akses Karyawan');
+            
+            // Set Header Desktop
             el('top-user-name').innerText = data.nama;
-            el('top-user-role').innerText = role === 'admin' ? 'Sistem HRD Penuh' : (data.jabatan || 'Akses Karyawan');
+            el('top-user-role').innerText = roleText;
+            
+            // Set Header Mobile Menu
+            el('mob-user-name').innerText = data.nama;
+            el('mob-user-role').innerText = roleText;
 
             if(role === 'admin') {
                 el('nav-admin').style.display = 'flex'; el('nav-karyawan').style.display = 'none'; openMenu('menu-dashboard');
@@ -1091,6 +1179,7 @@
             try { await auth.signOut(); } catch(e){}
             currentUserData = null; el('app-screen').classList.add('hidden'); el('login-screen').classList.remove('hidden'); 
             el('login-pass').value = ''; el('login-user').value = ''; el('btn-login').innerText = "Masuk Aplikasi"; el('btn-login').disabled = false; stopCamera(); 
+            el('mobile-menu-dropdown').classList.remove('show');
         };
 
         // ==========================================
