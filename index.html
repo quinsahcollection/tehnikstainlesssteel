@@ -588,7 +588,11 @@
 
                     <div id="view-absen-table" class="hidden">
                         <form id="form-kehadiran-massal">
-                            <div class="form-group" style="max-width: 300px; margin-bottom: 20px;"><label>Atur Tanggal Masal:</label><input type="date" id="massal-tgl" required></div>
+                            <div class="form-group" style="max-width: 300px; margin-bottom: 20px;">
+                                <label>Atur Tanggal Masal:</label>
+                                <input type="date" id="massal-tgl" required>
+                                <span style="font-size:10px; color:var(--primary); margin-top:4px; display:block;">*Sistem otomatis membaca database dan menampilkan data yang sudah diinput sebelumnya untuk tanggal ini.</span>
+                            </div>
                             <div class="table-responsive">
                                 <table>
                                     <thead><tr><th>Karyawan Aktif</th><th>Status</th><th>Tugas</th><th>Lembur</th><th>Catatan Alasan</th></tr></thead>
@@ -901,7 +905,7 @@
         };
 
         // ==========================================
-        // REAL-TIME LISTENER FIREBASE
+        // REAL-TIME LISTENER FIREBASE & SYNC
         // ==========================================
         db.collection("karyawan").onSnapshot((snapshot) => {
             db_karyawan = []; snapshot.forEach((doc) => { db_karyawan.push(doc.data()); });
@@ -914,6 +918,9 @@
             if(!el('menu-laporan').classList.contains('hidden')) renderLaporan(); 
             if(currentDetailNik && !el('menu-detail-karyawan').classList.contains('hidden')) window.renderDetailKehadiran();
             if(!el('menu-dashboard').classList.contains('hidden')) refreshUI(); 
+            
+            // Auto Sync saat ada perubahan data kehadiran
+            if(!el('menu-kehadiran').classList.contains('hidden')) window.syncFormMassal(); 
         });
 
         db.collection("kasbon_log").orderBy("tanggal", "desc").onSnapshot((snapshot) => {
@@ -1135,7 +1142,6 @@
             let oldPotongan = isEdit ? (parseFloat(currentEditSlipData.potongan) || 0) : 0;
             let maxPotongan = (parseFloat(emp.sisaKasbon) || 0) + oldPotongan;
             
-            // CEK BUG 2: Mencegah kasbon minus
             if (potongan > maxPotongan) {
                 return showToast(`Potongan kasbon (Rp ${potongan.toLocaleString('id-ID')}) melebihi limit hutang karyawan (Rp ${maxPotongan.toLocaleString('id-ID')})!`, "error");
             }
@@ -1161,7 +1167,6 @@
             const actionText = isEdit ? "Perbarui & Cetak" : "Terbitkan & Cetak";
             let msg = isEdit ? `Menyimpan dan menimpa slip lama untuk ${emp.nama}.` : `Mencetak slip untuk ${emp.nama}.`;
             
-            // Logika Kasbon (Hitung Selisih jika Edit)
             let deltaPotongan = potongan - oldPotongan;
 
             if (isEdit) {
@@ -1174,7 +1179,6 @@
             const isConfirmed = await showConfirm(isEdit ? "Simpan Perubahan Slip?" : "Terbitkan Slip?", msg, actionText);
             if(!isConfirmed) { btnSubmit.disabled = false; btnSubmit.innerText = actionText + " Slip Gaji"; return; }
 
-            // Persiapkan Data Objek untuk Print & DB
             let slipData = {
                 periode: periode, bersih: textGaji, potongan: potongan,
                 gajiPokok: gPokok, tunjKehadiran: gHadir, insentif: gBonusLain, tugasLuar: gLkmk
@@ -1269,8 +1273,6 @@
             
             el('gaji-nik').dispatchEvent(new Event('change'));
             
-            // Jeda sejenak agar flatpickr selesai menghitung auto-calc, 
-            // lalu kita timpa isi kolomnya dengan angka dari slip lama.
             setTimeout(() => {
                 el('gaji-pokok').value = s.gajiPokok || 0;
                 el('gaji-harian-total').value = s.tunjKehadiran || 0;
@@ -1346,7 +1348,6 @@
             el('view-emp-list').classList.add('hidden'); el('view-emp-form').classList.remove('hidden'); window.scrollTo({top: 0, behavior: 'smooth'});
         };
 
-        // BUG 4 FIX: Ubah Hapus Permanen menjadi "Arsip / Nonaktifkan"
         window.arsipKaryawan = async (nik) => { 
             const ok = await showConfirm("Nonaktifkan Karyawan?", "Karyawan akan diubah statusnya menjadi 'Nonaktif'. Semua histori absen & slip gaji masa lalunya tetap aman untuk keperluan laporan, namun tidak akan muncul lagi di form pengisian absensi & kasbon.", "Ya, Nonaktifkan", true);
             if(ok) db.collection("karyawan").doc(nik).update({status: "Nonaktif"}).then(()=> showToast('Karyawan berhasil dinonaktifkan!'));
@@ -1385,7 +1386,7 @@
             finally { btnSimpan.innerText = originalText; btnSimpan.disabled = false; }
         });
 
-        // FUNGSI POTONG/REFUND CUTI (BUG 1 FIX)
+        // FUNGSI POTONG/REFUND CUTI
         const potongCuti = (nik, incrementValue) => { db.collection("karyawan").doc(nik).update({ sisaCuti: firebase.firestore.FieldValue.increment(incrementValue) }); };
 
         el('form-kehadiran-satuan').addEventListener('submit', async function(e) {
@@ -1393,7 +1394,6 @@
             const btnAbsen = el('btn-simpan-absen'); btnAbsen.innerText = "Mengirim..."; btnAbsen.disabled = true;
 
             try {
-                // Ambil data absen lama (jika ada) untuk cek BUG 1
                 const att = db_kehadiran.find(a => a.nik === n && a.date === d);
                 const oldStatus = att ? att.status : null;
 
@@ -1402,11 +1402,10 @@
                 
                 await db.collection("kehadiran").doc(n + "_" + d).set({ date: d, nik: n, status: s, lk: el('satuan-lk').checked, mk: el('satuan-mk').checked, lembur: el('satuan-lembur').value, catatan: el('satuan-catatan').value, buktiUrl: urlBukti });
                 
-                // BUG 1 FIX Logika Potong/Refund
                 if ((s === 'Izin' || s === 'Cuti') && oldStatus !== 'Izin' && oldStatus !== 'Cuti') {
-                    potongCuti(n, -1); // Potong 1
+                    potongCuti(n, -1); 
                 } else if (s !== 'Izin' && s !== 'Cuti' && (oldStatus === 'Izin' || oldStatus === 'Cuti')) {
-                    potongCuti(n, 1);  // Refund 1 (Kembalikan cuti)
+                    potongCuti(n, 1);  
                 }
                 
                 showToast('Absensi berhasil direkam!'); el('satuan-catatan').value = ''; el('satuan-bukti').value = '';
@@ -1419,13 +1418,11 @@
             document.querySelectorAll('#tbody-massal tr[data-nik]').forEach(r => {
                 const n = r.getAttribute('data-nik'); const s = r.querySelector('.m-status').value;
                 
-                // Ambil data absen lama untuk BUG 1 FIX massal
                 const att = db_kehadiran.find(a => a.nik === n && a.date === d);
                 const oldStatus = att ? att.status : null;
 
                 batch.set(db.collection("kehadiran").doc(n + "_" + d), { date: d, nik: n, status: s, lk: r.querySelector('.m-lk').checked, mk: r.querySelector('.m-mk').checked, lembur: r.querySelector('.m-lembur').value, catatan: r.querySelector('.m-catatan').value, buktiUrl: null });
                 
-                // BUG 1 FIX Logika Potong/Refund Massal
                 if ((s === 'Izin' || s === 'Cuti') && oldStatus !== 'Izin' && oldStatus !== 'Cuti') {
                     batch.update(db.collection("karyawan").doc(n), { sisaCuti: firebase.firestore.FieldValue.increment(-1) });
                 } else if (s !== 'Izin' && s !== 'Cuti' && (oldStatus === 'Izin' || oldStatus === 'Cuti')) {
@@ -1434,6 +1431,40 @@
             });
             batch.commit().then(() => showToast('Absensi Masal Terkirim!'));
         });
+
+        // FUNGSI AUTO-SYNC FORM MASSAL (CEGAH TERTIMPA)
+        window.syncFormMassal = () => {
+            const d = el('massal-tgl').value;
+            if(!d) return;
+            document.querySelectorAll('#tbody-massal tr[data-nik]').forEach(r => {
+                const n = r.getAttribute('data-nik');
+                const att = db_kehadiran.find(a => a.nik === n && a.date === d);
+                const selStatus = r.querySelector('.m-status');
+                const cbLk = r.querySelector('.m-lk');
+                const cbMk = r.querySelector('.m-mk');
+                const inpLembur = r.querySelector('.m-lembur');
+                const inpCatatan = r.querySelector('.m-catatan');
+
+                if(att) {
+                    selStatus.value = (att.status === 'Cuti') ? 'Izin' : att.status;
+                    cbLk.checked = att.lk || false;
+                    cbMk.checked = att.mk || false;
+                    inpLembur.value = att.lembur || 0;
+                    inpCatatan.value = att.catatan || '';
+                } else {
+                    selStatus.value = 'Hadir';
+                    cbLk.checked = false;
+                    cbMk.checked = false;
+                    inpLembur.value = 0;
+                    inpCatatan.value = '';
+                }
+                
+                const isNotHadir = selStatus.value !== 'Hadir';
+                cbLk.disabled = isNotHadir; cbMk.disabled = isNotHadir; inpLembur.disabled = isNotHadir;
+                r.querySelector('.wrap-m-lk').classList.toggle('disabled-label', isNotHadir); 
+                r.querySelector('.wrap-m-mk').classList.toggle('disabled-label', isNotHadir);
+            });
+        };
 
         el('satuan-status').addEventListener('change', function() {
             const isNotHadir = this.value !== 'Hadir'; const isIzinCuti = this.value === 'Izin' || this.value === 'Cuti';
@@ -1461,7 +1492,10 @@
             document.querySelectorAll('.wrap-m-lk').forEach(e => { e.classList.toggle('hidden', s2); if(s2) e.querySelector('input').checked=false; });
             document.querySelectorAll('.wrap-m-mk').forEach(e => { e.classList.toggle('hidden', !s2); if(!s2) e.querySelector('input').checked=false; });
         };
-        el('satuan-tgl').addEventListener('change', cekMinggu); el('massal-tgl').addEventListener('change', cekMinggu);
+        el('satuan-tgl').addEventListener('change', cekMinggu); 
+        
+        // TRIGGER SYNC SAAT TANGGAL DIGANTI
+        el('massal-tgl').addEventListener('change', () => { cekMinggu(); window.syncFormMassal(); });
 
         el('login-form').addEventListener('submit', e => { e.preventDefault(); if(el('username').value==='admin' && el('password').value==='admin') { el('login-screen').classList.add('hidden'); el('app-screen').classList.remove('hidden'); window.openMenu('menu-dashboard'); refreshUI(); } else showToast('Gagal Login', 'error'); });
         window.doLogout = () => { el('app-screen').classList.add('hidden'); el('login-screen').classList.remove('hidden'); el('password').value=''; };
@@ -1475,7 +1509,6 @@
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
             if(m !== 'menu-detail-karyawan') { document.querySelector(`.nav-item[onclick="window.openMenu('${m}')"]`)?.classList.add('active'); }
             
-            // AUTO-CLEAR PENGGAJIAN ATAU BATALKAN EDIT JIKA PINDAH MENU
             if(m === 'menu-penggajian') {
                 if(!currentEditSlipId) {
                     el('form-penggajian').reset(); el('gaji-nik').value = "";
@@ -1596,7 +1629,6 @@
         };
 
         const refreshUI = () => {
-            // BUG 4 FIX: Hanya filter karyawan "Aktif" (bukan Nonaktif) untuk Dropdown Inputan
             let activeEmps = db_karyawan.filter(k => k.status !== 'Nonaktif');
             
             let tKaryawan = activeEmps.length; let tKasbon = 0; let tGaji = 0;
@@ -1611,7 +1643,6 @@
 
             let tbodyK = '', tbodyM = '';
             
-            // Tabel Karyawan & Tabel Massal
             db_karyawan.forEach(k => {
                 let isNonaktif = k.status === 'Nonaktif';
                 let rowStyle = isNonaktif ? 'background:#f8fafc; opacity:0.7;' : '';
@@ -1628,7 +1659,6 @@
 
                 tbodyK += `<tr style="${rowStyle}"><td><div class="nama-karyawan clickable" onclick="window.lihatDetailKaryawan('${k.nik}')">${k.nama}</div><div class="divisi-karyawan">NIK: ${k.nik}</div></td><td><div class="nama-karyawan">${k.jabatan}</div><div class="divisi-karyawan">${k.divisi}</div></td><td>${statusBadge}<br><span class="badge-cuti" style="color:${cutiColor}; background:#fff; border:1px solid #e2e8f0;">Cuti: ${sisaCutiTxt} Hr</span></td><td><button type="button" class="btn-outline" style="padding:4px 8px; font-size:11px;" onclick="window.editKaryawan('${k.nik}')">Edit</button>${btnArsip}</td></tr>`;
                 
-                // Form Absen Massal HANYA tampilkan yang Aktif
                 if(!isNonaktif) {
                     tbodyM += `<tr data-nik="${k.nik}"><td><div class="nama-karyawan">${k.nama}</div><div class="divisi-karyawan">${k.divisi}</div></td><td><select class="m-status"><option value="Hadir">Hadir</option><option value="Izin">Izin/Cuti</option><option value="Absen">Absen</option></select></td><td><div class="checkbox-group"><label class="checkbox-label wrap-m-lk" style="padding:6px; font-size:11px;"><input type="checkbox" class="m-lk"> LK</label><label class="checkbox-label wrap-m-mk hidden" style="padding:6px; font-size:11px;"><input type="checkbox" class="m-mk"> MK</label></div></td><td><input type="number" class="m-lembur" value="0" min="0" style="width: 70px;"></td><td><input type="text" class="m-catatan" placeholder="..." style="padding: 8px;"></td></tr>`;
                 }
@@ -1641,7 +1671,6 @@
                 let bgBadge = isAutomated ? "#dcfce7" : "#fef2f2";
                 let tglIndo = new Date(log.tanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
                 
-                // BUG 3 FIX: Sembunyikan tombol hapus untuk transaksi sistematis
                 let btnAksi = isAutomated ? `<span style="font-size:10px; color:var(--text-muted); font-style:italic;">Otomatis Sistem</span>` : `<button type="button" class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--danger); border-color:#fca5a5;" onclick="window.hapusKasbonLog('${log.id}', '${log.nik}', ${log.nominal}, '${log.jenis}')">Hapus</button>`;
 
                 tbodyKasbonLog += `<tr><td><b>${log.nama}</b><br><small>${log.nik}</small></td><td>${tglIndo}</td><td><span style="font-size:11px; font-weight:700; color:${color}; background:${bgBadge}; padding:4px 8px; border-radius:4px;">${log.jenis}</span></td><td>Rp ${parseFloat(log.nominal).toLocaleString('id-ID')}</td><td><small>${log.keterangan}</small></td><td style="text-align:center;">${btnAksi}</td></tr>`;
@@ -1652,12 +1681,10 @@
             el('tbody-massal').innerHTML = tbodyM || '<tr><td colspan="5" align="center">Tidak ada karyawan aktif.</td></tr>'; 
             el('tbody-kasbon-list').innerHTML = tbodyKasbonLog || '<tr><td colspan="6" align="center">Belum ada riwayat transaksi kasbon.</td></tr>';
             
-            // --- UPDATE WIDGET DASHBOARD KETIKA REFRESH UI ---
             if(!el('menu-dashboard').classList.contains('hidden')) {
                 let tH_today = 0, tI_today = 0, tA_today = 0;
                 const todayStr = new Date().toISOString().split('T')[0];
                 db_kehadiran.filter(a => a.date === todayStr).forEach(a => {
-                    // Hanya hitung statistik karyawan yang aktif
                     const emp = db_karyawan.find(k => k.nik === a.nik);
                     if(emp && emp.status !== 'Nonaktif') {
                         if(a.status === 'Hadir') tH_today++; else if(a.status === 'Izin' || a.status === 'Cuti') tI_today++; else if(a.status === 'Absen') tA_today++;
@@ -1679,7 +1706,11 @@
                 el('dash-recent-activity').innerHTML = recentHtml;
             }
 
-            cekMinggu(); if(el('satuan-nik').value) el('satuan-status').dispatchEvent(new Event('change'));
+            cekMinggu(); 
+            if(el('satuan-nik').value) el('satuan-status').dispatchEvent(new Event('change'));
+            
+            // JALANKAN SYNC SETELAH TABEL MASSAL DI-RENDER
+            window.syncFormMassal(); 
         };
 
         const renderLaporan = () => {
