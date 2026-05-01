@@ -293,8 +293,9 @@
                 <button class="nav-item" onclick="openMenu('menu-karyawan')"><span class="nav-text">Data Karyawan</span></button>
                 <button class="nav-item" onclick="openMenu('menu-kehadiran')"><span class="nav-text">Input Kehadiran</span></button>
                 <button class="nav-item" onclick="openMenu('menu-kasbon')"><span class="nav-text">Manajemen Kasbon</span></button>
-                <button class="nav-item" onclick="openMenu('menu-laporan')"><span class="nav-text">Laporan Bulanan</span></button>
                 <button class="nav-item" onclick="openMenu('menu-penggajian')"><span class="nav-text">Proses Penggajian</span></button>
+                <button class="nav-item" onclick="openMenu('menu-riwayat-slip')"><span class="nav-text">Riwayat Slip Gaji</span></button>
+                <button class="nav-item" onclick="openMenu('menu-laporan')"><span class="nav-text">Laporan Bulanan</span></button>
             </div>
 
             <!-- MENU KARYAWAN (ESS) -->
@@ -445,7 +446,7 @@
                     <div class="section-header">
                         <h3 class="section-title">Daftar Karyawan Tersimpan</h3>
                         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <!-- TOMBOL KELOLA ARSIP (BARU) -->
+                            <!-- TOMBOL KELOLA ARSIP -->
                             <button class="btn-outline" style="font-size:13px; color:var(--danger); border-color:var(--danger);" onclick="window.bukaKelolaArsip()">🗑️ Kelola Arsip</button>
                             <button class="btn-outline" style="font-size:13px; color:#059669; border-color:#10b981;" onclick="window.exportKaryawanCSV()">📥 Export Data</button>
                             <button class="btn" style="width:auto; font-size:13px;" onclick="window.tambahKaryawanBaru()">+ Tambah Manual</button>
@@ -461,12 +462,12 @@
                     </div>
                 </div>
 
-                <!-- VIEW KELOLA ARSIP (HAPUS PERMANEN) (BARU) -->
+                <!-- VIEW KELOLA ARSIP (HAPUS PERMANEN) -->
                 <div id="view-emp-arsip" class="hidden">
                     <button class="btn-outline" style="margin-bottom: 20px; border-color:var(--primary); color:var(--primary);" onclick="window.tutupKelolaArsip()">← Kembali ke Daftar</button>
                     <div class="card">
                         <h3 class="section-title">Kelola Data Arsip (Hapus Permanen)</h3>
-                        <span class="section-subtitle">Data karyawan nonaktif yang dihapus permanen tidak akan muncul di database lagi (Aksi tidak dapat dibatalkan).</span>
+                        <span class="section-subtitle" style="color:var(--danger); font-weight:600;">Data karyawan nonaktif yang dihapus permanen tidak akan muncul di database lagi (Aksi tidak dapat dibatalkan, slip gaji juga akan ikut musnah).</span>
                         <div class="table-responsive">
                             <table>
                                 <thead><tr><th>Nama & NIK</th><th>Divisi / Jabatan</th><th style="text-align:center;">Aksi Bahaya</th></tr></thead>
@@ -527,7 +528,7 @@
                 </div>
             </div>
 
-            <!-- DETAIL KARYAWAN (PENYEMPURNAAN KELENGKAPAN DATA & REKAP ABSEN) -->
+            <!-- DETAIL KARYAWAN -->
             <div id="menu-detail-karyawan" class="menu-content hidden">
                 <button class="btn-outline" style="margin-bottom: 20px; border-color:var(--primary); color:var(--primary);" onclick="window.openMenu('menu-karyawan')">← Kembali ke Daftar Karyawan</button>
                 
@@ -568,7 +569,6 @@
                     </div>
                 </div>
 
-                <!-- TABEL KEHADIRAN DETAIL (BARU DITAMBAHKAN) -->
                 <div class="card" style="margin-bottom: 20px;">
                     <h3 class="section-title">Riwayat Kehadiran (30 Hari Terakhir)</h3>
                     <div class="table-responsive">
@@ -590,7 +590,7 @@
                 </div>
             </div>
 
-            <!-- MENU LAINNYA (ABSENSI, KASBON, LAPORAN, PENGGAJIAN) -->
+            <!-- MENU LAINNYA (ABSENSI, KASBON, LAPORAN) -->
             <div id="menu-kehadiran" class="menu-content hidden">
                 <div class="card">
                     <div class="section-header" style="flex-wrap: wrap; gap: 10px; margin-bottom: 5px;">
@@ -639,50 +639,92 @@
                 </div>
             </div>
 
+            <!-- MODUL BARU: RIWAYAT SLIP GAJI TERPISAH -->
+            <div id="menu-riwayat-slip" class="menu-content hidden">
+                <div class="card">
+                    <div class="section-header">
+                        <h3 class="section-title">Master Data Slip Gaji</h3>
+                    </div>
+                    <span class="section-subtitle">Slip gaji otomatis hilang dari sini jika data karyawan dihapus secara permanen.</span>
+                    <div class="form-row" style="margin-bottom: 20px;">
+                        <div class="form-group"><label>Filter Bulan</label><input type="month" id="filter-bulan-slip" placeholder="Filter Bulan"></div>
+                        <div class="form-group"><label>Cari Karyawan</label><input type="text" id="search-slip" class="search-box" placeholder="Ketik Nama Karyawan..." onkeyup="window.renderAllSlips()"></div>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Tgl Terbit</th><th>Periode Gaji</th><th>Nama Karyawan</th><th>Diterima Bersih</th><th style="text-align:center;">Aksi</th></tr></thead>
+                            <tbody id="tbody-all-slips"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <div id="menu-laporan" class="menu-content hidden">
                 <div class="card">
                     <div class="section-header" style="margin-bottom: 0;"><h3 class="section-title">Rekapitulasi Kehadiran Total</h3><button class="btn-outline" style="font-size:13px; color:#059669; border-color:#10b981;" onclick="window.exportLaporanCSV()">📥 Export Laporan (Excel)</button></div>
-                    <span class="section-subtitle" style="margin-bottom: 20px;">Pilih periode bulan untuk melihat histori absen lengkap.</span>
+                    <span class="section-subtitle" style="margin-bottom: 20px;">Pilih periode bulan untuk melihat histori absen lengkap. Baris abu-abu gelap menandakan karyawan Nonaktif.</span>
                     <div class="form-group" style="max-width: 300px; margin-bottom: 20px;"><label>Bulan & Tahun</label><input type="month" id="filter-bulan-laporan"></div>
                     <div class="table-responsive"><table class="table-laporan" id="tabel-laporan"></table></div>
                 </div>
             </div>
 
+            <!-- MODUL PENGGAJIAN (DIPERBARUI DENGAN MODE MASSAL) -->
             <div id="menu-penggajian" class="menu-content hidden">
                 <div class="card">
-                    <form id="form-penggajian">
-                        <div id="edit-slip-banner" class="hidden" style="background:#dbeafe; color:#1e40af; padding:12px; border-radius:6px; font-weight:600; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;"><span>✏️ Mode Edit Slip Gaji.</span><button type="button" class="btn-outline" style="padding:4px 10px; font-size:11px;" onclick="window.batalEditSlip()">Batal Edit</button></div>
-                        <div class="section-header" style="margin-bottom: 0;"><h3 class="section-title">Auto-Calc Penggajian & Potongan Kasbon</h3></div>
-                        <span class="section-subtitle" style="margin-bottom: 20px;">Hutang otomatis terisi di kolom potongan.</span>
-                        <div class="form-row"><div class="form-group"><label>1. Pilih Karyawan</label><select required id="gaji-nik"></select></div><div class="form-group"><label>2. Rentang Tanggal (Periode)</label><input type="text" id="gaji-periode-range" required placeholder="Tgl Awal s/d Tgl Akhir"></div></div>
-                        <div id="peringatan-slip" class="hidden" style="background:#fee2e2; color:#b91c1c; padding:12px; border-radius:6px; font-weight:600; margin-bottom:20px;">⚠️ Terdapat irisan tanggal dengan Slip yang sudah dicetak!</div>
-                        <div id="gaji-rekap-container" class="hidden">
-                            <div class="rekap-badge-group">
-                                <div class="rekap-badge"><span id="rek-h" style="color:var(--success)">0</span> Hadir</div><div class="rekap-badge"><span id="rek-i" style="color:var(--warning)">0</span> Izin/Cuti</div><div class="rekap-badge"><span id="rek-a" style="color:var(--danger)">0</span> Absen</div><div class="rekap-badge"><span id="rek-lk" style="color:var(--primary)">0</span> LK</div><div class="rekap-badge"><span id="rek-mk" style="color:var(--danger)">0</span> MK</div>
-                            </div>
-                            <div class="table-responsive" style="max-height: 250px; overflow-y: auto;"><table><thead style="position: sticky; top: 0; z-index: 10;"><tr><th>Tanggal</th><th>Hari</th><th>Status</th><th>Shift</th><th>Tugas/Lembur</th></tr></thead><tbody id="tbody-gaji-detail"></tbody></table></div>
+                    <div id="edit-slip-banner" class="hidden" style="background:#dbeafe; color:#1e40af; padding:12px; border-radius:6px; font-weight:600; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;"><span>✏️ Mode Edit Slip Gaji.</span><button type="button" class="btn-outline" style="padding:4px 10px; font-size:11px;" onclick="window.batalEditSlip()">Batal Edit</button></div>
+                    
+                    <div class="section-header" style="flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                        <h3 class="section-title">Pembuatan Slip Gaji</h3>
+                        <div class="view-toggle">
+                            <button class="toggle-btn active" id="btn-view-gaji-massal" onclick="window.switchGajiView('massal')">Mode Massal (Cepat)</button>
+                            <button class="toggle-btn" id="btn-view-gaji-satuan" onclick="window.switchGajiView('satuan')">Mode Satuan / Revisi</button>
                         </div>
-                        <div class="section-header" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 20px;"><h3 class="section-title" style="font-size: 14px;">Detail Komponen Gaji</h3></div>
-                        <div class="form-row"><div class="form-group"><label>Gaji Pokok Dasar</label><input type="number" id="gaji-pokok" value="0"></div><div class="form-group"><label>Gaji Kehadiran <span id="info-hadir" style="color:var(--primary); font-size:10px;"></span></label><input type="number" id="gaji-harian-total" value="0"></div></div>
-                        <div class="form-row"><div class="form-group"><label>Gaji Tugas (LK/MK) <span id="info-lkmk" style="color:var(--primary); font-size:10px;"></span></label><input type="number" id="gaji-tugas-total" value="0"></div><div class="form-group"><label>Total Bonus Insentif <span id="info-bonus" style="color:var(--primary); font-size:10px;"></span></label><input type="number" id="gaji-bonus-total" value="0"></div></div>
-                        <div class="form-row"><div class="form-group"><label>Tambahan Lain (Lembur Ekstra)</label><input type="number" id="gaji-lainnya" value="0"></div></div>
-                        <div class="form-row" style="background-color: #fff1f2; padding: 15px; border-radius: var(--radius-sm); border: 1px solid #fecaca;">
-                            <div class="form-group"><label style="color:var(--danger)">Potongan Pelunasan Kasbon</label><input type="number" id="gaji-potongan" value="0" style="border-color: #fca5a5;" min="0"></div>
-                            <div class="form-group"><label style="color:var(--primary)">Gaji Bersih Diterima</label><input type="text" id="gaji-total" value="0" readonly style="font-weight:800; color:var(--text-main); border:none; background:transparent; font-size:22px;"></div>
-                        </div>
-                        <div style="margin-top: 20px; text-align: right;"><button type="button" id="btn-terbitkan-slip" class="btn" onclick="window.terbitkanSlipGaji()">Terbitkan & Cetak Slip Gaji</button></div>
-                    </form>
-                </div>
-
-                <!-- TABEL MASTER SELURUH SLIP (BARU DITAMBAHKAN) -->
-                <div class="card" style="margin-top: 25px;">
-                    <h3 class="section-title">Semua Riwayat Slip Gaji Diterbitkan</h3>
-                    <div class="table-responsive">
-                        <table>
-                            <thead><tr><th>Tgl Terbit</th><th>Periode</th><th>Karyawan</th><th>Diterima Bersih</th><th style="text-align:center;">Aksi</th></tr></thead>
-                            <tbody id="tbody-all-slips"></tbody>
-                        </table>
                     </div>
+
+                    <!-- MODE 1: PENGGAJIAN MASSAL (BARU) -->
+                    <div id="view-gaji-massal">
+                        <span class="section-subtitle" style="margin-bottom: 20px;">Pilih rentang tanggal, klik Kalkulasi, centang karyawan, lalu terbitkan sekaligus.</span>
+                        <div class="form-row">
+                            <div class="form-group"><label>Rentang Tanggal (Periode)</label><input type="text" id="gaji-massal-periode" required placeholder="Tgl Awal s/d Tgl Akhir"></div>
+                        </div>
+                        <button class="btn-outline" style="margin-bottom:20px; border-color:var(--primary); color:var(--primary); font-weight:600;" onclick="window.kalkulasiGajiMassal()">⚙️ Mulai Kalkulasi Massal</button>
+                        
+                        <div class="table-responsive hidden" id="wrap-tabel-massal-gaji" style="max-height:450px; overflow-y:auto; margin-bottom:15px; border:2px solid var(--primary-light);">
+                            <table>
+                                <thead style="position:sticky; top:0; z-index:2; background:#f8fafc; box-shadow:0 2px 4px rgba(0,0,0,0.05);"><tr>
+                                    <th style="width: 40px;"><input type="checkbox" id="check-all-gaji" onclick="window.toggleCheckAllGaji(this)" checked></th>
+                                    <th>Karyawan Aktif</th><th>Total Kehadiran</th><th>Total Penghasilan</th><th>Potongan Kasbon</th><th>Diterima Bersih</th>
+                                </tr></thead>
+                                <tbody id="tbody-gaji-massal"></tbody>
+                            </table>
+                        </div>
+                        <div style="text-align: right;"><button type="button" id="btn-terbitkan-massal" class="btn hidden" onclick="window.terbitkanSlipMassal()">🚀 Terbitkan Slip Terpilih</button></div>
+                    </div>
+
+                    <!-- MODE 2: PENGGAJIAN SATUAN (LAMA) -->
+                    <div id="view-gaji-satuan" class="hidden">
+                        <form id="form-penggajian">
+                            <span class="section-subtitle" style="margin-bottom: 20px;">Gunakan form ini untuk membuat slip khusus atau merevisi rincian gaji (lembur manual).</span>
+                            <div class="form-row"><div class="form-group"><label>1. Pilih Karyawan</label><select required id="gaji-nik"></select></div><div class="form-group"><label>2. Rentang Tanggal (Periode)</label><input type="text" id="gaji-periode-range" required placeholder="Tgl Awal s/d Tgl Akhir"></div></div>
+                            <div id="peringatan-slip" class="hidden" style="background:#fee2e2; color:#b91c1c; padding:12px; border-radius:6px; font-weight:600; margin-bottom:20px;">⚠️ Terdapat irisan tanggal dengan Slip yang sudah dicetak!</div>
+                            <div id="gaji-rekap-container" class="hidden">
+                                <div class="rekap-badge-group">
+                                    <div class="rekap-badge"><span id="rek-h" style="color:var(--success)">0</span> Hadir</div><div class="rekap-badge"><span id="rek-i" style="color:var(--warning)">0</span> Izin/Cuti</div><div class="rekap-badge"><span id="rek-a" style="color:var(--danger)">0</span> Absen</div><div class="rekap-badge"><span id="rek-lk" style="color:var(--primary)">0</span> LK</div><div class="rekap-badge"><span id="rek-mk" style="color:var(--danger)">0</span> MK</div>
+                                </div>
+                                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;"><table><thead style="position: sticky; top: 0; z-index: 10;"><tr><th>Tanggal</th><th>Hari</th><th>Status</th><th>Shift</th><th>Tugas/Lembur</th></tr></thead><tbody id="tbody-gaji-detail"></tbody></table></div>
+                            </div>
+                            <div class="section-header" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 20px;"><h3 class="section-title" style="font-size: 14px;">Detail Komponen Gaji</h3></div>
+                            <div class="form-row"><div class="form-group"><label>Gaji Pokok Dasar</label><input type="number" id="gaji-pokok" value="0"></div><div class="form-group"><label>Gaji Kehadiran <span id="info-hadir" style="color:var(--primary); font-size:10px;"></span></label><input type="number" id="gaji-harian-total" value="0"></div></div>
+                            <div class="form-row"><div class="form-group"><label>Gaji Tugas (LK/MK) <span id="info-lkmk" style="color:var(--primary); font-size:10px;"></span></label><input type="number" id="gaji-tugas-total" value="0"></div><div class="form-group"><label>Total Bonus Insentif <span id="info-bonus" style="color:var(--primary); font-size:10px;"></span></label><input type="number" id="gaji-bonus-total" value="0"></div></div>
+                            <div class="form-row"><div class="form-group"><label>Tambahan Lain (Lembur Ekstra)</label><input type="number" id="gaji-lainnya" value="0"></div></div>
+                            <div class="form-row" style="background-color: #fff1f2; padding: 15px; border-radius: var(--radius-sm); border: 1px solid #fecaca;">
+                                <div class="form-group"><label style="color:var(--danger)">Potongan Pelunasan Kasbon</label><input type="number" id="gaji-potongan" value="0" style="border-color: #fca5a5;" min="0"></div>
+                                <div class="form-group"><label style="color:var(--primary)">Gaji Bersih Diterima</label><input type="text" id="gaji-total" value="0" readonly style="font-weight:800; color:var(--text-main); border:none; background:transparent; font-size:22px;"></div>
+                            </div>
+                            <div style="margin-top: 20px; text-align: right;"><button type="button" id="btn-terbitkan-slip" class="btn" onclick="window.terbitkanSlipGaji()">Terbitkan & Cetak Slip</button></div>
+                        </form>
+                    </div>
+
                 </div>
             </div>
 
@@ -721,6 +763,7 @@
         let currentSlipTemp = null; 
         let streamKamera = null; let latGPS = null; let lonGPS = null;
         let currentDetailNik = null; let currentEditSlipId = null; let currentEditSlipData = null;
+        let pendingMassalSlips = []; // Untuk massal payroll
 
         const getLocalToday = () => {
             const d = new Date();
@@ -781,20 +824,36 @@
             document.querySelector(`.nav-item[onclick="openMenu('${m}')"]`)?.classList.add('active');
             el(m).classList.remove('hidden');
             
-            // Auto close view arsip if opening karyawan menu
             if(m === 'menu-karyawan') window.tutupKelolaArsip();
 
-            if(m === 'menu-penggajian' && !currentEditSlipId) { el('form-penggajian').reset(); el('gaji-nik').value = ""; if(el('gaji-periode-range')._flatpickr) el('gaji-periode-range')._flatpickr.clear(false); el('gaji-total').value = "0"; el('gaji-rekap-container').classList.add('hidden'); el('peringatan-slip').classList.add('hidden'); }
-            else if(m !== 'menu-penggajian' && currentEditSlipId) window.batalEditSlip();
+            if(m === 'menu-penggajian') {
+                if(!currentEditSlipId) { 
+                    el('form-penggajian').reset(); el('gaji-nik').value = ""; if(el('gaji-periode-range')._flatpickr) el('gaji-periode-range')._flatpickr.clear(false); el('gaji-total').value = "0"; el('gaji-rekap-container').classList.add('hidden'); el('peringatan-slip').classList.add('hidden'); 
+                    window.switchGajiView('massal');
+                } else {
+                    window.switchGajiView('satuan');
+                }
+            } else if(currentEditSlipId) {
+                window.batalEditSlip();
+            }
 
             if(m === 'menu-ess-absen') startCamera(); else stopCamera();
             if(m === 'menu-dashboard' || m === 'menu-ess-dash' || m === 'menu-karyawan' || m === 'menu-kasbon') { updateAdminDash(); renderESSDashboard(); }
+            if(m === 'menu-riwayat-slip') window.renderAllSlips();
             if(m === 'menu-laporan') renderLaporan();
         };
 
         window.switchView = (mode) => {
             const isForm = mode === 'form'; el('view-absen-form').classList.toggle('hidden', !isForm); el('view-absen-table').classList.toggle('hidden', isForm);
             el('btn-view-form').classList.toggle('active', isForm); el('btn-view-table').classList.toggle('active', !isForm);
+        };
+        
+        window.switchGajiView = (mode) => {
+            const isMassal = mode === 'massal';
+            el('view-gaji-massal').classList.toggle('hidden', !isMassal);
+            el('view-gaji-satuan').classList.toggle('hidden', isMassal);
+            el('btn-view-gaji-massal').classList.toggle('active', isMassal);
+            el('btn-view-gaji-satuan').classList.toggle('active', !isMassal);
         };
 
         // ==========================================
@@ -896,12 +955,15 @@
         db.collection("karyawan").onSnapshot(snap => { db_karyawan = []; snap.forEach(doc => db_karyawan.push(doc.data())); el('fb-status').classList.add('connected'); el('fb-status').innerText = "🟢 Database Online"; updateAdminDash(); renderESSDashboard(); if(currentDetailNik) lihatDetailKaryawan(currentDetailNik);});
         db.collection("kehadiran").onSnapshot(snap => { db_kehadiran = []; snap.forEach(doc => db_kehadiran.push(doc.data())); renderESSDashboard(); syncFormMassal(); updateAdminDash(); if(currentDetailNik) { renderDetailRekapAbsen(); renderDetailAbsenHistory(); } if(!el('menu-laporan').classList.contains('hidden')) renderLaporan(); });
         db.collection("kasbon_log").orderBy("tanggal", "desc").onSnapshot(snap => { db_kasbon = []; snap.forEach(doc => db_kasbon.push({id: doc.id, ...doc.data()})); updateAdminDash(); renderESSDashboard(); });
-        db.collection("slip_gaji").orderBy("tanggalBuat", "desc").onSnapshot(snap => { db_slip = []; snap.forEach(doc => db_slip.push({id: doc.id, ...doc.data()})); renderESSDashboard(); updateAdminDash(); renderAllSlips(); if(currentDetailNik) renderDetailSlipGaji();});
+        db.collection("slip_gaji").orderBy("tanggalBuat", "desc").onSnapshot(snap => { db_slip = []; snap.forEach(doc => db_slip.push({id: doc.id, ...doc.data()})); renderESSDashboard(); updateAdminDash(); window.renderAllSlips(); if(currentDetailNik) renderDetailSlipGaji();});
         
         flatpickr("input[type='date']", { locale: "id", dateFormat: "Y-m-d", disableMobile: "true" });
         flatpickr("#massal-tgl", { locale: "id", dateFormat: "Y-m-d", disableMobile: "true", onChange: () => syncFormMassal() });
-        flatpickr("input[type='month']", { locale: "id", dateFormat: "Y-m", disableMobile: "true", plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })], onChange: (dates, str, inst) => { if(inst.element.id === 'filter-bulan-laporan') renderLaporan(); } });
+        flatpickr("#filter-bulan-laporan", { locale: "id", dateFormat: "Y-m", disableMobile: "true", plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })], onChange: () => renderLaporan() });
+        flatpickr("#filter-bulan-slip", { locale: "id", dateFormat: "Y-m", disableMobile: "true", plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })], onChange: () => window.renderAllSlips() });
+        
         flatpickr("#gaji-periode-range", { locale: "id", mode: "range", altFormat: "d M Y", dateFormat: "Y-m-d", disableMobile: "true", onChange: () => jalankanAutoCalc() });
+        flatpickr("#gaji-massal-periode", { locale: "id", mode: "range", altFormat: "d M Y", dateFormat: "Y-m-d", disableMobile: "true" });
         
         const todayStr = getLocalToday();
         el('satuan-tgl')._flatpickr.setDate(todayStr); el('massal-tgl')._flatpickr.setDate(todayStr); el('filter-bulan-laporan')._flatpickr.setDate(todayStr.substring(0, 7)); 
@@ -995,12 +1057,23 @@
             } catch (err) { showToast("Gagal simpan!", "error"); } finally { btn.innerText = "Simpan Data"; btn.disabled = false; }
         });
 
-        // --- NEW FIX 4: KELOLA ARSIP (HAPUS PERMANEN) ---
+        // --- NEW FIX: KELOLA ARSIP & CASCADE DELETE (Bersihkan Slip Gaji Karyawan yang Dihapus) ---
         window.bukaKelolaArsip = () => { el('view-emp-list').classList.add('hidden'); el('view-emp-arsip').classList.remove('hidden'); };
         window.tutupKelolaArsip = () => { el('view-emp-arsip').classList.add('hidden'); el('view-emp-list').classList.remove('hidden'); };
         window.hapusPermanenKaryawan = async (nik) => {
-            const ok = await showConfirm("Hapus Permanen?", "Tindakan ini tidak bisa dibatalkan! NIK dan Profil karyawan akan musnah selamanya dari Database.", "Hapus Permanen", true);
-            if(ok) { await db.collection("karyawan").doc(nik).delete(); showToast("Karyawan dihapus permanen!"); }
+            const ok = await showConfirm("Hapus Permanen?", "Tindakan ini tidak bisa dibatalkan! NIK, Rekap Absen, dan seluruh Histori Slip Gaji karyawan akan dihapus dari Database.", "Hapus Permanen", true);
+            if(ok) { 
+                await db.collection("karyawan").doc(nik).delete(); 
+                
+                // Menghapus histori slip gajinya
+                const slips = await db.collection("slip_gaji").where("nik", "==", nik).get();
+                const batch = db.batch();
+                slips.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+
+                showToast("Data karyawan & seluruh slip gajinya telah dihapus permanen!"); 
+                window.renderAllSlips();
+            }
         };
 
         // --- MANAJEMEN KASBON ---
@@ -1051,9 +1124,119 @@
         el('satuan-status').addEventListener('change', function() { const v = this.value !== 'Hadir'; el('satuan-lk').disabled=v; el('satuan-mk').disabled=v; el('satuan-lembur').disabled=v; el('wrap-satuan-lk').classList.toggle('disabled-label', v); el('wrap-satuan-mk').classList.toggle('disabled-label', v); if(v){el('satuan-lk').checked=false;el('satuan-mk').checked=false;el('satuan-lembur').value=0;} });
         el('tbody-massal').addEventListener('change', function(e) { if(e.target.classList.contains('m-status')) { const v = e.target.value !== 'Hadir'; const r = e.target.closest('tr'); r.querySelector('.m-lk').disabled=v; r.querySelector('.m-mk').disabled=v; r.querySelector('.m-lembur').disabled=v; r.querySelector('.wrap-m-lk').classList.toggle('disabled-label',v); r.querySelector('.wrap-m-mk').classList.toggle('disabled-label',v); if(v){r.querySelector('.m-lk').checked=false;r.querySelector('.m-mk').checked=false;r.querySelector('.m-lembur').value=0;} } });
 
-        // --- MANAJEMEN PENGGAJIAN (AUTO-CALC) ---
+        // --- MANAJEMEN PENGGAJIAN MASSAL & SATUAN ---
         const hitungTotalGajiBawah = () => { const v = id => parseFloat(el(id).value)||0; const tot = v('gaji-pokok')+v('gaji-harian-total')+v('gaji-tugas-total')+v('gaji-bonus-total')+v('gaji-lainnya')-v('gaji-potongan'); el('gaji-total').value = (tot<0?'- ':'')+'Rp '+Math.abs(tot).toLocaleString('id-ID'); el('gaji-total').style.color = tot<0?'var(--danger)':'var(--text-main)'; };
         ['gaji-pokok','gaji-harian-total','gaji-tugas-total','gaji-bonus-total','gaji-lainnya','gaji-potongan'].forEach(id => el(id).addEventListener('input', hitungTotalGajiBawah));
+
+        // NEW: Fitur Kalkulasi Penggajian Massal
+        window.kalkulasiGajiMassal = () => {
+            const per = el('gaji-massal-periode').value; const fp = el('gaji-massal-periode')._flatpickr;
+            if(!per || fp.selectedDates.length === 0) return showToast("Pilih rentang tanggal terlebih dahulu!", "error");
+            
+            const d1Start = new Date(fp.selectedDates[0]); d1Start.setHours(0,0,0,0); 
+            const d2End = new Date(fp.selectedDates.length>1 ? fp.selectedDates[1] : d1Start); d2End.setHours(23,59,59,999);
+            
+            pendingMassalSlips = [];
+            let tbody = '';
+            
+            db_karyawan.filter(k => k.status !== 'Nonaktif').forEach(emp => {
+                let dHadir=0, dIzin=0, dAbsen=0, dLK=0, dMK=0, currD = new Date(d1Start);
+                while(currD <= d2End) {
+                    let dStr = `${currD.getFullYear()}-${String(currD.getMonth()+1).padStart(2,'0')}-${String(currD.getDate()).padStart(2,'0')}`; 
+                    const att = db_kehadiran.find(a => a.nik === emp.nik && a.date === dStr);
+                    if(att) { 
+                        if(att.status==='Hadir') dHadir++; else if(att.status==='Izin'||att.status==='Cuti') dIzin++; else dAbsen++; 
+                        if(att.lk) dLK++; if(att.mk) dMK++; 
+                    }
+                    currD.setDate(currD.getDate() + 1);
+                }
+                
+                const mGH = parseFloat(emp.gajiHarian)||0; const mBT = parseFloat(emp.bonusTetap)||0;
+                const gPokok = parseFloat(emp.gajiPokok)||0;
+                const gHadir = dHadir * mGH;
+                const gTugas = (dLK + dMK) * mGH;
+                const gBonus = dHadir * mBT;
+                const tPenghasilan = gPokok + gHadir + gTugas + gBonus;
+                
+                let potongan = parseFloat(emp.sisaKasbon)||0;
+                
+                const bersih = tPenghasilan - potongan;
+                const bersihStr = (bersih<0?'- ':'')+'Rp '+Math.abs(bersih).toLocaleString('id-ID');
+                
+                let isOverlap = db_slip.some(s => { 
+                    if(s.nik !== emp.nik) return false;
+                    let sD1=new Date(s.tglMulai), sD2=new Date(s.tglAkhir); sD1.setHours(0,0,0,0); sD2.setHours(23,59,59,999); 
+                    return (d1Start <= sD2 && d2End >= sD1); 
+                });
+                
+                if(!isOverlap) {
+                    pendingMassalSlips.push({
+                        nik: emp.nik, nama: emp.nama, periode: per, tglMulai: fp.selectedDates[0].toISOString(), tglAkhir: (fp.selectedDates.length>1?fp.selectedDates[1]:fp.selectedDates[0]).toISOString(),
+                        potongan: potongan, bersih: bersihStr, gajiPokok: gPokok, tunjKehadiran: gHadir, insentif: gBonus, tugasLuar: gTugas, tanggalBuat: new Date().toISOString()
+                    });
+                    
+                    tbody += `<tr>
+                        <td><input type="checkbox" class="chk-massal-gaji" value="${emp.nik}" checked></td>
+                        <td><b>${emp.nama}</b><br><small>${emp.nik}</small></td>
+                        <td><span style="color:var(--success)">${dHadir} H</span> / <span style="color:var(--warning)">${dIzin} I</span> / <span style="color:var(--danger)">${dAbsen} A</span></td>
+                        <td>Rp ${tPenghasilan.toLocaleString('id-ID')}</td>
+                        <td style="color:var(--danger)">Rp ${potongan.toLocaleString('id-ID')}</td>
+                        <td style="font-weight:bold; color:${bersih<0?'var(--danger)':'var(--success)'}">${bersihStr}</td>
+                    </tr>`;
+                } else {
+                    tbody += `<tr style="background:#f1f5f9; opacity:0.7;">
+                        <td><input type="checkbox" disabled></td>
+                        <td><b>${emp.nama}</b><br><small>${emp.nik}</small></td>
+                        <td colspan="4" style="color:var(--danger); font-size:11px; font-weight:600;">⚠️ Slip Gaji telah diterbitkan untuk tanggal ini.</td>
+                    </tr>`;
+                }
+            });
+            
+            el('tbody-gaji-massal').innerHTML = tbody || '<tr><td colspan="6" align="center">Tidak ada data karyawan yang bisa diproses.</td></tr>';
+            el('wrap-tabel-massal-gaji').classList.remove('hidden');
+            el('btn-terbitkan-massal').classList.remove('hidden');
+            el('check-all-gaji').checked = true;
+        };
+
+        window.toggleCheckAllGaji = (chk) => {
+            document.querySelectorAll('.chk-massal-gaji').forEach(c => c.checked = chk.checked);
+        };
+
+        window.terbitkanSlipMassal = async () => {
+            const selectedNiks = Array.from(document.querySelectorAll('.chk-massal-gaji:checked')).map(c => c.value);
+            if(selectedNiks.length === 0) return showToast("Pilih minimal 1 karyawan yang akan dicetak slipnya!", "warning");
+            
+            const ok = await showConfirm("Terbitkan Massal?", `Sistem akan membuat slip gaji untuk ${selectedNiks.length} karyawan secara otomatis. Hutang kasbon mereka juga akan terpotong secara sistem.`, "Ya, Terbitkan Massal");
+            if(!ok) return;
+
+            const batch = db.batch();
+            const slipsToProcess = pendingMassalSlips.filter(s => selectedNiks.includes(s.nik));
+            
+            for(let sData of slipsToProcess) {
+                const slipRef = db.collection("slip_gaji").doc();
+                batch.set(slipRef, sData);
+                
+                if(sData.potongan > 0) {
+                    const empRef = db.collection("karyawan").doc(sData.nik);
+                    const emp = db_karyawan.find(k => k.nik === sData.nik);
+                    let sBaru = (emp.sisaKasbon||0) - sData.potongan; if(sBaru<0) sBaru=0;
+                    batch.update(empRef, { sisaKasbon: sBaru });
+                    
+                    const logRef = db.collection("kasbon_log").doc();
+                    batch.set(logRef, { nik: sData.nik, nama: sData.nama, tanggal: new Date().toISOString(), jenis: "Potongan Gaji", nominal: sData.potongan, keterangan: `Pelunasan Gaji Massal ${sData.periode}` });
+                }
+            }
+            
+            try {
+                await batch.commit();
+                showToast(`Berhasil! ${selectedNiks.length} slip gaji sukses diterbitkan.`);
+                el('wrap-tabel-massal-gaji').classList.add('hidden');
+                el('btn-terbitkan-massal').classList.add('hidden');
+                el('gaji-massal-periode')._flatpickr.clear();
+            } catch(e) {
+                showToast("Gagal memproses pembuatan massal!", "error");
+            }
+        };
 
         const jalankanAutoCalc = () => {
             const nik = el('gaji-nik').value; const fp = el('gaji-periode-range')._flatpickr;
@@ -1063,7 +1246,7 @@
 
             let isOverlap = false;
             db_slip.filter(s => s.nik === nik && s.id !== currentEditSlipId).forEach(s => { let sD1=new Date(s.tglMulai), sD2=new Date(s.tglAkhir); sD1.setHours(0,0,0,0); sD2.setHours(23,59,59,999); if(d1Start <= sD2 && d2End >= sD1) isOverlap = true; });
-            el('peringatan-slip').classList.toggle('hidden', !isOverlap); el('btn-terbitkan-slip').disabled = isOverlap; el('btn-terbitkan-slip').style.background = isOverlap?'var(--danger)':'var(--primary)'; el('btn-terbitkan-slip').innerText = isOverlap?"Terkunci (Irisan Tanggal)":(currentEditSlipId?"Perbarui Slip":"Terbitkan Slip");
+            el('peringatan-slip').classList.toggle('hidden', !isOverlap); el('btn-terbitkan-slip').disabled = isOverlap; el('btn-terbitkan-slip').style.background = isOverlap?'var(--danger)':'var(--primary)'; el('btn-terbitkan-slip').innerText = isOverlap?"Terkunci (Irisan Tanggal)":(currentEditSlipId?"Perbarui Slip":"Terbitkan Slip Satuan");
 
             let dHadir=0, dIzin=0, dAbsen=0, dLK=0, dMK=0, detailHTML='', currD = new Date(d1Start);
             while(currD <= d2End) {
@@ -1124,8 +1307,7 @@
                 if(k.status !== 'Nonaktif') {
                     tbodyK += `<tr><td><div class="nama-karyawan">${k.nama}</div><div class="divisi-karyawan">NIK: ${k.nik} | ${k.email||'Blm Akun'}</div></td><td><b>${k.jabatan||'-'}</b><br><small>${k.divisi||'-'}</small></td><td><span class="badge ${k.status==='Nonaktif'?'badge-danger':''}">${k.status}</span><br><span style="font-size:10px; color:var(--primary)">Cuti: ${k.sisaCuti??12} Hr</span></td><td><button class="btn-outline" style="padding:4px 8px; font-size:11px;" onclick="window.editKaryawan('${k.nik}')">Edit</button> <button class="btn-outline" style="padding:4px 8px; font-size:11px; margin-left:4px;" onclick="window.lihatDetailKaryawan('${k.nik}')">Detail</button> <button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--warning); border-color:var(--warning);" onclick="window.arsipKaryawan('${k.nik}')">Arsip</button></td></tr>`; 
                 } else {
-                    // Populate Kelola Arsip Table
-                    tbodyArsip += `<tr><td><b>${k.nama}</b><br><small>${k.nik}</small></td><td>${k.jabatan||'-'}<br><small>${k.divisi||'-'}</small></td><td style="text-align:center;"><button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--success); border-color:var(--success);" onclick="window.aktifkanKaryawan('${k.nik}')">Aktifkan Kembali</button> <button class="btn" style="background-color: var(--danger); font-size: 11px; padding: 6px 12px; width: auto; margin-left: 5px;" onclick="window.hapusPermanenKaryawan('${k.nik}')">Hapus Permanen</button></td></tr>`;
+                    tbodyArsip += `<tr><td><b>${k.nama}</b><br><small>${k.nik}</small></td><td>${k.jabatan||'-'}<br><small>${k.divisi||'-'}</small></td><td style="text-align:center;"><button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--success); border-color:var(--success);" onclick="window.aktifkanKaryawan('${k.nik}')">Pulihkan</button> <button class="btn" style="background-color: var(--danger); font-size: 11px; padding: 6px 12px; width: auto; margin-left: 5px;" onclick="window.hapusPermanenKaryawan('${k.nik}')">Hapus Permanen</button></td></tr>`;
                 }
             }); 
             el('tbody-karyawan-list').innerHTML = tbodyK;
@@ -1136,34 +1318,48 @@
             let tbodyKasLog = ''; db_kasbon.forEach(log => { let auto = log.jenis!=="Pinjaman Baru"&&log.jenis!=="Pengajuan Karyawan"; tbodyKasLog += `<tr><td><b>${log.nama}</b><br><small>${log.nik}</small></td><td>${new Date(log.tanggal).toLocaleDateString('id-ID')}</td><td><span class="badge ${auto?'badge-success':'badge-danger'}">${log.jenis}</span></td><td>Rp ${parseFloat(log.nominal).toLocaleString('id-ID')}</td><td><small>${log.keterangan}</small></td><td style="text-align:center;">${auto?'-':`<button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusKasbonLog('${log.id}', '${log.nik}', ${log.nominal}, '${log.jenis}')">Hapus</button>`}</td></tr>`; }); el('tbody-kasbon-list').innerHTML = tbodyKasLog;
 
             if(!el('menu-dashboard').classList.contains('hidden')) {
-                let tH=0, tI=0, tA=0; 
-                const ts = getLocalToday();
+                let tH=0, tI=0, tA=0; const ts = getLocalToday();
                 db_kehadiran.filter(a=>a.date===ts).forEach(a=>{ if(a.status==='Hadir')tH++; else if(a.status==='Absen')tA++; else tI++; });
                 el('dash-today-h').innerText=tH; el('dash-today-i').innerText=tI; el('dash-today-a').innerText=tA; el('dash-date-today').innerText = new Date().toLocaleDateString('id-ID',{month:'long',day:'numeric',year:'numeric'});
-                
                 let acts = []; db_kasbon.forEach(k=>{acts.push({t:new Date(k.tanggal).getTime(), d:new Date(k.tanggal).toLocaleDateString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}), txt:`<b>${k.nama}</b> kasbon <span style="color:var(--danger)">Rp ${k.nominal.toLocaleString()}</span>`})}); db_slip.forEach(s=>{acts.push({t:new Date(s.tanggalBuat).getTime(), d:new Date(s.tanggalBuat).toLocaleDateString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}), txt:`Slip Gaji <b>${s.nama}</b> <span style="color:var(--success)">(${s.periode})</span> diterbitkan.`})}); acts.sort((a,b)=>b.t-a.t); let hAc=''; acts.slice(0,5).forEach(ac=>{ hAc+=`<li style="padding-bottom:10px; border-bottom:1px dashed var(--border-color);"><span style="color:var(--text-muted); font-size:11px; display:block; margin-bottom:4px;">⏱️ ${ac.d}</span>${ac.txt}</li>`; }); el('dash-recent-activity').innerHTML=hAc||'<li>Belum ada aktivitas.</li>';
             }
         }
 
-        // --- NEW FIX 3: RENDER SELURUH SLIP DI MENU PENGGAJIAN ---
-        const renderAllSlips = () => {
+        // --- FILTER & RENDER RIWAYAT MASTER SLIP ---
+        window.renderAllSlips = () => {
             let tbody = '';
-            const allSlips = db_slip.slice().sort((a,b) => new Date(b.tanggalBuat) - new Date(a.tanggalBuat));
+            const filterBulan = el('filter-bulan-slip')?.value || '';
+            const searchKeyword = (el('search-slip')?.value || '').toLowerCase();
+            
+            const allSlips = db_slip.filter(s => {
+                // Bug Fix: Hide slip if employee is permanently deleted
+                const empExists = db_karyawan.some(k => k.nik === s.nik);
+                if(!empExists) return false;
+                
+                // Pencarian dan Filter Bulan
+                const matchBulan = filterBulan ? (s.tglMulai.startsWith(filterBulan) || s.tglAkhir.startsWith(filterBulan) || s.tanggalBuat.startsWith(filterBulan)) : true;
+                const matchNama = s.nama.toLowerCase().includes(searchKeyword) || s.nik.includes(searchKeyword);
+                
+                return matchBulan && matchNama;
+            }).sort((a,b) => new Date(b.tanggalBuat) - new Date(a.tanggalBuat));
+            
             allSlips.forEach(s => {
                 tbody += `<tr><td>${new Date(s.tanggalBuat).toLocaleDateString('id-ID')}</td><td><b>${s.periode}</b></td><td><b>${s.nama}</b><br><small>${s.nik}</small></td><td style="color:var(--success); font-weight:bold;">${s.bersih}</td><td style="text-align:center;"><button class="btn-outline" style="padding:4px 8px; font-size:11px;" onclick="lihatDetailSlipAdminAtauKaryawan('${s.id}')">Lihat Print</button> <button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--warning); border-color:var(--warning);" onclick="window.revisiSlipGaji('${s.id}')">Edit</button> <button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusSlipGaji('${s.id}', '${s.nik}')">Hapus</button></td></tr>`;
             });
-            el('tbody-all-slips').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada slip gaji yang dicetak.</td></tr>';
+            el('tbody-all-slips').innerHTML = tbody || '<tr><td colspan="5" align="center">Tidak ada slip gaji ditemukan.</td></tr>';
         };
 
-        // --- NEW FIX 2: ARSIR ABU KARYAWAN NONAKTIF DI LAPORAN ---
+        // --- NEW FIX: WARNA ARSIR ABU GELAP DI LAPORAN ABSENSI ---
         const renderLaporan = () => {
             const f = el('filter-bulan-laporan').value; if(!f) return; const y = parseInt(f.split('-')[0]), m = parseInt(f.split('-')[1]), dInM = new Date(y, m, 0).getDate(); let html = `<thead><tr><th class="sticky-col">Nama Karyawan</th>`;
             for(let i=1; i<=dInM; i++) { let d=new Date(y,m-1,i); html += `<th class="${d.getDay()===0?'col-minggu':''}"><span style="font-size:9px;">${['Min','Sen','Sel','Rab','Kam','Jum','Sab'][d.getDay()]}</span><br>${i}</th>`; }
             html += `<th>H</th><th>I</th><th>A</th><th>LK</th><th>MK</th></tr></thead><tbody>`;
             db_karyawan.forEach(emp => { 
-                const trStyle = emp.status === 'Nonaktif' ? 'style="background-color: #f8fafc; opacity: 0.6;"' : '';
-                const nameDisplay = emp.status === 'Nonaktif' ? `<b>${emp.nama}</b><br><small style="color:var(--danger); font-size:10px;">[Nonaktif]</small>` : `<b>${emp.nama}</b>`;
-                html += `<tr ${trStyle}><td class="sticky-col">${nameDisplay}</td>`; 
+                // Warna background arsir digelapkan ke slate-300 (#cbd5e1)
+                const trStyle = emp.status === 'Nonaktif' ? 'style="background-color: #cbd5e1; color: #475569;"' : '';
+                const nameDisplay = emp.status === 'Nonaktif' ? `<b>${emp.nama}</b><br><small style="color:var(--danger); font-size:10px; font-weight:bold;">[NONAKTIF]</small>` : `<b>${emp.nama}</b>`;
+                
+                html += `<tr ${trStyle}><td class="sticky-col" ${trStyle}>${nameDisplay}</td>`; 
                 let tH=0, tI=0, tA=0, tLK=0, tMK=0; 
                 for(let i=1; i<=dInM; i++) { 
                     const att = db_kehadiran.find(a => a.nik === emp.nik && a.date === `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`); let c = `-`; 
@@ -1186,7 +1382,6 @@
             el('det-rek-h').innerText = tH; el('det-rek-i').innerText = tI; el('det-rek-a').innerText = tA;
         };
 
-        // --- NEW FIX 1: TABEL RIWAYAT ABSEN LENGKAP DI DETAIL ---
         const renderDetailAbsenHistory = () => {
             if(!currentDetailNik) return;
             let tbody = '';
@@ -1196,7 +1391,6 @@
                 if(a.lk) infoExtra += ` <span class="badge" style="background:var(--primary);color:#fff;font-size:9px;">LK</span>`;
                 if(a.mk) infoExtra += ` <span class="badge" style="background:var(--danger);color:#fff;font-size:9px;">MK</span>`;
                 if(a.lembur > 0) infoExtra += ` (+${a.lembur} Jam)`;
-                
                 tbody += `<tr><td>${a.date}</td><td><span class="badge ${a.status==='Hadir'?'badge-success':(a.status==='Absen'?'badge-danger':'badge-pending')}">${a.status}</span></td><td>${infoExtra}</td><td><small>${a.catatan||'-'}</small></td></tr>`; 
             });
             el('tbody-det-absen').innerHTML = tbody || '<tr><td colspan="4" align="center">Belum ada riwayat kehadiran.</td></tr>';
@@ -1212,9 +1406,7 @@
             el('det-masuk').innerText = k.tglMulai || '-'; el('det-alamat').innerText = k.alamat || '-'; el('det-gapok').innerText = 'Rp ' + (parseFloat(k.gajiPokok)||0).toLocaleString('id-ID');
             el('det-gahari').innerText = 'Rp ' + (parseFloat(k.gajiHarian)||0).toLocaleString('id-ID'); el('det-bonus').innerText = 'Rp ' + (parseFloat(k.bonusTetap)||0).toLocaleString('id-ID');
             
-            renderDetailRekapAbsen(); 
-            renderDetailAbsenHistory(); // <-- Memanggil tabel absen baru
-            renderDetailSlipGaji();
+            renderDetailRekapAbsen(); renderDetailAbsenHistory(); renderDetailSlipGaji();
         };
 
         const renderDetailSlipGaji = () => {
