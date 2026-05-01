@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0061f2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Tehnik Stainless - HR Enterprise</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -87,7 +90,8 @@
         .camera-container { width: 100%; max-width: 400px; margin: 0 auto; position: relative; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         #camera-feed { width: 100%; height: 300px; object-fit: cover; transform: scaleX(-1); }
         .camera-overlay { position: absolute; bottom: 0; left: 0; width: 100%; padding: 15px; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); text-align: center; }
-        #btn-capture { background: var(--success); color: #fff; border: 2px solid #fff; border-radius: 50px; padding: 10px 20px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        #btn-capture { background: var(--success); color: #fff; border: 2px solid #fff; border-radius: 50px; padding: 10px 20px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: all 0.2s;}
+        #btn-capture:disabled { background: #6b7280; cursor: not-allowed; border-color: transparent;}
         #gps-status { font-size: 11px; color: #fff; margin-top: 8px; display: block; }
         .result-img { width: 100%; max-width: 400px; height: 300px; object-fit: cover; border-radius: 12px; display: none; margin: 0 auto; border: 2px solid var(--primary); }
 
@@ -125,7 +129,8 @@
         .btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
         .btn:hover:not(:disabled) { background-color: var(--primary-hover); }
         .btn-outline { background-color: #fff; border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 16px; width: auto; font-weight: 500; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;}
-        .btn-outline:hover { background-color: #f9fafb; border-color: var(--text-muted); }
+        .btn-outline:hover:not(:disabled) { background-color: #f9fafb; border-color: var(--text-muted); }
+        .btn-outline:disabled { opacity: 0.5; cursor: not-allowed;}
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; display:inline-block;}
         .badge-pending { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
         .badge-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
@@ -145,6 +150,7 @@
         .toast.show { transform: translateX(0); }
         .toast.error { background: var(--danger); border-left: 4px solid #9f1239;}
         .toast.success { background: var(--success); border-left: 4px solid #065f46;}
+        .toast.warning { background: var(--warning); border-left: 4px solid #b45309; color: #fff;}
 
         /* Mode Print */
         #print-area { display: none; }
@@ -235,9 +241,12 @@
                         <label id="lbl-login-user">Email Karyawan</label>
                         <input type="text" id="login-user" placeholder="email@perusahaan.com" required>
                     </div>
-                    <div class="form-group" style="margin-bottom: 20px;">
+                    <div class="form-group" style="margin-bottom: 10px;">
                         <label>Password</label>
                         <input type="password" id="login-pass" placeholder="***" required>
+                    </div>
+                    <div style="text-align: right; margin-bottom: 15px;">
+                        <span class="link-register" style="margin-top:0; font-weight:500;" onclick="window.resetPassword()">Lupa Password?</span>
                     </div>
                     <button type="submit" class="btn" id="btn-login" style="width:100%;">Masuk Portal</button>
                 </form>
@@ -352,6 +361,7 @@
                             <option value="Pagi">Shift Pagi (08:00 - 16:00)</option>
                             <option value="Siang">Shift Siang (16:00 - 00:00)</option>
                             <option value="Malam">Shift Malam (00:00 - 08:00)</option>
+                            <option value="Luar Kota">Tugas Luar Kota</option>
                         </select>
                     </div>
 
@@ -672,21 +682,37 @@
         let streamKamera = null; let latGPS = null; let lonGPS = null;
         let currentDetailNik = null; let currentEditSlipId = null; let currentEditSlipData = null;
 
-        // --- NEW FIX: FUNGSI WAKTU LOKAL (ZONA INDONESIA) ---
+        // FUNGSI WAKTU LOKAL (ZONA INDONESIA)
         const getLocalToday = () => {
             const d = new Date();
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         };
+
+        // --- NEW FIX: FITUR GEOFENCING (JARAK RADIUS ABSEN) ---
+        // Anda bisa mengganti koordinat ini sesuai titik Google Maps Kantor Anda
+        const KANTOR_LAT = -6.1754; 
+        const KANTOR_LON = 106.8272;
+        const RADIUS_MAKSIMAL_METER = 50; // Jarak toleransi maksimal
+
+        function hitungJarakMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const p1 = lat1 * Math.PI/180;
+            const p2 = lat2 * Math.PI/180;
+            const dp = (lat2-lat1) * Math.PI/180;
+            const dl = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
+            return Math.floor(R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))));
+        }
 
         // ==========================================
         // UI HELPERS (Toast & Modal)
         // ==========================================
         function showToast(msg, type='success') {
             const t = document.createElement('div'); t.className = `toast ${type}`;
-            t.innerHTML = `${type==='success'?'✅':'⚠️'} ${msg}`;
+            t.innerHTML = `${type==='success'?'✅':(type==='warning'?'⚠️':'❌')} ${msg}`;
             el('toast-container').appendChild(t);
             setTimeout(() => t.classList.add('show'), 10);
-            setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
+            setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 4000);
         }
 
         function showConfirm(title, text, confirmText, isDanger=false) {
@@ -747,11 +773,27 @@
             el('wrap-login').classList.toggle('hidden', view==='register'); el('wrap-register').classList.toggle('hidden', view==='login');
         };
 
-        // --- NEW FIX: AUTO LOGIN LISTENER ---
+        // --- NEW FIX: FITUR LUPA PASSWORD ---
+        window.resetPassword = async () => {
+            const emailReset = prompt("Masukkan alamat Email akun Anda yang terdaftar:");
+            if(!emailReset) return;
+            try {
+                await auth.sendPasswordResetEmail(emailReset);
+                showToast("Berhasil! Link pembuatan password baru telah dikirim ke Email Anda.");
+            } catch (err) {
+                showToast("Gagal mengirim link. Pastikan email benar.", "error");
+            }
+        };
+
+        // AUTO LOGIN LISTENER (DENGAN PENGECEKAN STATUS NONAKTIF)
         auth.onAuthStateChanged(async (user) => {
             if (user && !currentUserData && loginMode === 'karyawan') {
                 const q = await db.collection("karyawan").where("email", "==", user.email).get();
-                if(!q.empty) enterApp('karyawan', q.docs[0].data());
+                if(!q.empty) {
+                    const empData = q.docs[0].data();
+                    if(empData.status === "Nonaktif") { showToast("Gagal: Akun ini telah dinonaktifkan oleh HRD!", "error"); await auth.signOut(); } 
+                    else { enterApp('karyawan', empData); }
+                }
             }
         });
 
@@ -769,8 +811,11 @@
                 } else {
                     await auth.signInWithEmailAndPassword(usr, pass);
                     const q = await db.collection("karyawan").where("email", "==", usr).get();
-                    if(!q.empty) { enterApp('karyawan', q.docs[0].data()); } 
-                    else { showToast('Email tidak terkait ke data NIK manapun!', 'error'); await auth.signOut(); }
+                    if(!q.empty) { 
+                        const empData = q.docs[0].data();
+                        if(empData.status === "Nonaktif") { showToast("Gagal: Akun ini telah dinonaktifkan oleh HRD!", "error"); await auth.signOut(); } 
+                        else { enterApp('karyawan', empData); }
+                    } else { showToast('Email tidak terkait ke data NIK manapun!', 'error'); await auth.signOut(); }
                 }
             } catch (err) { showToast('Login Gagal: Periksa Email/Password', 'error'); } 
             finally { btn.innerText = "Masuk Portal"; btn.disabled = false; }
@@ -883,12 +928,23 @@
 
         window.ambilAbsenSelfie = async () => {
             if(!latGPS) return showToast("Mohon izinkan akses Lokasi/GPS di browser Anda!", "error");
+            
+            // --- NEW FIX: PENERAPAN GEOFENCING RADIUS ---
+            const jarak = hitungJarakMeters(latGPS, lonGPS, KANTOR_LAT, KANTOR_LON);
+            const shift = el('ess-shift-select').value;
+            
+            // Catatan: Jika shift bukan "Luar Kota", dan jarak melebihi 50 meter, sistem hanya memberikan Warning (agar sistem tetap bisa digunakan uji coba).
+            // Jika ingin strict diblokir, HAPUS tanda komentar (//) pada baris 'return showToast...' di bawah ini.
+            if(jarak > RADIUS_MAKSIMAL_METER && shift !== "Luar Kota") {
+                showToast(`Peringatan Geofence: Anda berada ${jarak}m dari koordinat pusat!`, "warning");
+                // return showToast(`Gagal: Jarak Anda ${jarak}m dari kantor (Maks ${RADIUS_MAKSIMAL_METER}m)!`, "error");
+            }
+
             const btn = el('btn-capture'); btn.disabled = true; btn.innerText = "Memproses...";
             const video = el('camera-feed'); const canvas = el('camera-canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight; canvas.getContext('2d').drawImage(video, 0, 0);
             
             canvas.toBlob(async (blob) => {
-                const shift = el('ess-shift-select').value; 
-                const today = getLocalToday(); // --- FIX ZONA WAKTU LOKAL ---
+                const today = getLocalToday();
                 const jam = new Date().toLocaleTimeString('id-ID');
                 const path = `absen_selfie/${currentUserData.nik}_${Date.now()}.jpg`;
                 try {
@@ -949,19 +1005,29 @@
         });
 
         // --- MANAJEMEN KASBON ---
-        // --- NEW FIX: VALIDASI LIMIT SAAT APPROVAL ---
-        window.approveKasbon = async (id, nik, nominal) => { 
-            const emp = db_karyawan.find(k=>k.nik===nik); if(!emp) return; 
+        // --- NEW FIX: PENCEGAH DOUBLE CLICK & VALIDASI LIMIT KETAT ---
+        window.approveKasbon = async (btnDOM, id, nik, nominal) => { 
+            btnDOM.disabled = true; btnDOM.innerText = "⏳ Memproses...";
+            const emp = db_karyawan.find(k=>k.nik===nik); 
+            if(!emp) { btnDOM.disabled = false; btnDOM.innerText = "✅ Setujui"; return; }
+            
             let sisaBaru = (parseFloat(emp.sisaKasbon)||0) + nominal; 
             if(sisaBaru > (parseFloat(emp.limitKasbon)||0)) {
+                btnDOM.disabled = false; btnDOM.innerText = "✅ Setujui";
                 return showToast(`Gagal: Melebihi limit (Limit Max: Rp ${(parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID')})!`, "error");
             }
-            await db.collection("karyawan").doc(nik).update({ sisaKasbon: sisaBaru }); 
-            await db.collection("kasbon_log").doc(id).update({ status: "Disetujui", jenis: "Pinjaman Baru" }); 
-            showToast("Disetujui!"); 
+            try {
+                await db.collection("karyawan").doc(nik).update({ sisaKasbon: sisaBaru }); 
+                await db.collection("kasbon_log").doc(id).update({ status: "Disetujui", jenis: "Pinjaman Baru" }); 
+                showToast("Disetujui!"); 
+            } catch (e) { showToast("Gagal memproses!", "error"); btnDOM.disabled = false; btnDOM.innerText = "✅ Setujui"; }
         };
         
-        window.rejectKasbon = async (id) => { await db.collection("kasbon_log").doc(id).update({ status: "Ditolak" }); showToast("Ditolak."); };
+        window.rejectKasbon = async (btnDOM, id) => { 
+            btnDOM.disabled = true; btnDOM.innerText = "⏳...";
+            await db.collection("kasbon_log").doc(id).update({ status: "Ditolak" }); showToast("Ditolak."); 
+        };
+        
         window.hapusKasbonLog = async (id, nik, nom, jns) => { const ok = await showConfirm("Hapus & Refund?", "Sistem akan menyesuaikan saldo hutang otomatis.", "Hapus", true); if(ok) { const emp = db_karyawan.find(k=>k.nik===nik); if(emp) { let sisaBaru = (parseFloat(emp.sisaKasbon)||0) + (jns==="Pinjaman Baru"?-nom:nom); if(sisaBaru<0)sisaBaru=0; db.collection("karyawan").doc(nik).update({ sisaKasbon: sisaBaru }); } db.collection("kasbon_log").doc(id).delete().then(()=>showToast('Dihapus!')); } };
         el('kasbon-nik').addEventListener('change', function() { const emp = db_karyawan.find(k => k.nik === this.value); if(emp) { el('info-limit-kasbon').innerText = '(Limit: Rp ' + (parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID') + ')'; el('info-sisa-kasbon').innerText = 'Rp ' + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID'); } });
         el('form-kasbon-admin').addEventListener('submit', function(e) { e.preventDefault(); const nik = el('kasbon-nik').value; const nom = parseFloat(el('kasbon-nominal').value) || 0; const emp = db_karyawan.find(k => k.nik === nik); if(!emp) return; if(((parseFloat(emp.sisaKasbon)||0) + nom) > (parseFloat(emp.limitKasbon)||0)) return showToast(`Melebihi Limit!`, "error"); db.collection("karyawan").doc(nik).update({ sisaKasbon: (parseFloat(emp.sisaKasbon)||0) + nom }).then(() => { db.collection("kasbon_log").add({ nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: "Pinjaman Baru", nominal: nom, keterangan: el('kasbon-ket').value }); showToast('Kasbon berhasil!'); el('form-kasbon-admin').reset(); el('kasbon-nik').dispatchEvent(new Event('change')); }); });
@@ -1075,13 +1141,14 @@
 
             let tbodyK = ''; db_karyawan.forEach(k => { tbodyK += `<tr style="${k.status==='Nonaktif'?'opacity:0.6; background:#f8fafc;':''}"><td><div class="nama-karyawan">${k.nama}</div><div class="divisi-karyawan">NIK: ${k.nik} | ${k.email||'Blm Akun'}</div></td><td><b>${k.jabatan||'-'}</b><br><small>${k.divisi||'-'}</small></td><td><span class="badge ${k.status==='Nonaktif'?'badge-danger':''}">${k.status}</span><br><span style="font-size:10px; color:var(--primary)">Cuti: ${k.sisaCuti??12} Hr</span></td><td><button class="btn-outline" style="padding:4px 8px; font-size:11px;" onclick="window.editKaryawan('${k.nik}')">Edit</button> <button class="btn-outline" style="padding:4px 8px; font-size:11px; margin-left:4px;" onclick="window.lihatDetailKaryawan('${k.nik}')">Detail Info</button> ${k.status==='Nonaktif'?`<button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--success); border-color:var(--success);" onclick="window.aktifkanKaryawan('${k.nik}')">Aktifkan</button>`:`<button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--warning); border-color:var(--warning);" onclick="window.arsipKaryawan('${k.nik}')">Arsip</button>`}</td></tr>`; }); el('tbody-karyawan-list').innerHTML = tbodyK;
             
-            let tbodyApp = ''; pendingReq.forEach(k => { tbodyApp += `<tr><td><b>${k.nama}</b><br><small>${k.nik}</small></td><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td>Rp ${k.nominal.toLocaleString('id-ID')}<br><small><i>${k.keterangan}</i></small></td><td><button class="btn-outline" style="border-color:var(--success); color:var(--success); padding:4px 8px; font-size:11px;" onclick="approveKasbon('${k.id}','${k.nik}',${k.nominal})">✅ Setujui</button> <button class="btn-outline" style="border-color:var(--danger); color:var(--danger); padding:4px 8px; font-size:11px; margin-left:5px;" onclick="rejectKasbon('${k.id}')">❌ Tolak</button></td></tr>`; }); el('tbody-approval-kasbon').innerHTML = tbodyApp || '<tr><td colspan="4" align="center">Tidak ada pengajuan kasbon.</td></tr>';
+            // --- FIX: TOMBOL APPROVE/REJECT KASBON SEKARANG MEMILIKI PENCEGAH DOUBLE CLICK ---
+            let tbodyApp = ''; pendingReq.forEach(k => { tbodyApp += `<tr><td><b>${k.nama}</b><br><small>${k.nik}</small></td><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td>Rp ${k.nominal.toLocaleString('id-ID')}<br><small><i>${k.keterangan}</i></small></td><td><button class="btn-outline" style="border-color:var(--success); color:var(--success); padding:4px 8px; font-size:11px;" onclick="window.approveKasbon(this, '${k.id}','${k.nik}',${k.nominal})">✅ Setujui</button> <button class="btn-outline" style="border-color:var(--danger); color:var(--danger); padding:4px 8px; font-size:11px; margin-left:5px;" onclick="window.rejectKasbon(this, '${k.id}')">❌ Tolak</button></td></tr>`; }); el('tbody-approval-kasbon').innerHTML = tbodyApp || '<tr><td colspan="4" align="center">Tidak ada pengajuan kasbon.</td></tr>';
             
             let tbodyKasLog = ''; db_kasbon.forEach(log => { let auto = log.jenis!=="Pinjaman Baru"&&log.jenis!=="Pengajuan Karyawan"; tbodyKasLog += `<tr><td><b>${log.nama}</b><br><small>${log.nik}</small></td><td>${new Date(log.tanggal).toLocaleDateString('id-ID')}</td><td><span class="badge ${auto?'badge-success':'badge-danger'}">${log.jenis}</span></td><td>Rp ${parseFloat(log.nominal).toLocaleString('id-ID')}</td><td><small>${log.keterangan}</small></td><td style="text-align:center;">${auto?'-':`<button class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusKasbonLog('${log.id}', '${log.nik}', ${log.nominal}, '${log.jenis}')">Hapus</button>`}</td></tr>`; }); el('tbody-kasbon-list').innerHTML = tbodyKasLog;
 
             if(!el('menu-dashboard').classList.contains('hidden')) {
                 let tH=0, tI=0, tA=0; 
-                const ts = getLocalToday(); // --- FIX ZONA WAKTU LOKAL ---
+                const ts = getLocalToday();
                 db_kehadiran.filter(a=>a.date===ts).forEach(a=>{ if(a.status==='Hadir')tH++; else if(a.status==='Absen')tA++; else tI++; });
                 el('dash-today-h').innerText=tH; el('dash-today-i').innerText=tI; el('dash-today-a').innerText=tA; el('dash-date-today').innerText = new Date().toLocaleDateString('id-ID',{month:'long',day:'numeric',year:'numeric'});
                 
