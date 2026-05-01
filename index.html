@@ -147,6 +147,7 @@
         .btn-outline { background-color: #fff; border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 16px; width: auto; font-weight: 500; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent;}
         .btn-outline:hover { background-color: #f9fafb; border-color: var(--text-muted); }
         .badge-cuti { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; background: var(--primary-light); color: var(--primary); margin-top: 4px;}
+        .badge-status-emp { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; border: 1px solid var(--border-color); background: #f8fafc; color: var(--text-muted);}
         .btn-action-slip { background: #fff; border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 8px; font-size: 14px; cursor: pointer; transition: 0.2s; display: inline-flex; justify-content: center; align-items: center;}
         .btn-action-slip:hover { background: #f8fafc; }
 
@@ -382,8 +383,8 @@
                             <button class="btn" style="width:auto; font-size:13px; padding: 10px 16px;" onclick="window.tambahKaryawanBaru()">+ Tambah Karyawan</button>
                         </div>
                     </div>
-                    <span class="section-subtitle">Tip: Klik nama karyawan (warna biru) untuk melihat halaman profil detail, sisa hutang, parameter gaji, dan riwayat slip gajinya.</span>
-                    <input type="text" id="search-emp" class="search-box" style="margin-bottom:20px;" placeholder="Cari Nama / NIK..." onkeyup="searchTable('search-emp', 'tbody-karyawan-list')">
+                    <span class="section-subtitle">Tip: Klik nama karyawan untuk melihat halaman detail. Karyawan yang 'Diarsipkan' (Nonaktif) tidak akan muncul di form input harian.</span>
+                    <input type="text" id="search-emp" class="search-box" style="margin-bottom:20px;" placeholder="Cari Nama / NIK / Status..." onkeyup="searchTable('search-emp', 'tbody-karyawan-list')">
                     <div class="table-responsive">
                         <table>
                             <thead><tr><th>Nama & NIK</th><th>Divisi / Jabatan</th><th>Status & Sisa Cuti</th><th>Aksi Data</th></tr></thead>
@@ -427,7 +428,7 @@
                                 <div class="form-group"><label>Jabatan</label><input type="text" id="emp-jabatan" required></div>
                             </div>
                             <div class="form-row">
-                                <div class="form-group"><label>Status Karyawan</label><select id="emp-status" required><option value="" disabled selected>Pilih</option><option>Tetap</option><option>Kontrak</option><option>Harian</option></select></div>
+                                <div class="form-group"><label>Status Karyawan</label><select id="emp-status" required><option value="" disabled selected>Pilih</option><option value="Tetap">Tetap</option><option value="Kontrak">Kontrak</option><option value="Harian">Harian</option><option value="Nonaktif">Nonaktif (Arsip)</option></select></div>
                                 <div class="form-group"><label>Tanggal Masuk</label><input type="date" id="emp-tgl-mulai" required></div>
                             </div>
                             <div class="form-row" style="background:#fefce8; padding:15px; border-radius:8px; border:1px solid #fef08a; margin-bottom: 30px;">
@@ -557,7 +558,7 @@
                         <form id="form-kehadiran-satuan">
                             <div class="form-row">
                                 <div class="form-group"><label>Pilih Tanggal</label><input type="date" id="satuan-tgl" required></div>
-                                <div class="form-group"><label>Karyawan</label><select id="satuan-nik" required></select></div>
+                                <div class="form-group"><label>Karyawan Aktif</label><select id="satuan-nik" required></select></div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group"><label>Status Kehadiran</label><select id="satuan-status" required><option value="Hadir">Hadir</option><option value="Izin">Izin/Cuti</option><option value="Absen">Absen</option></select></div>
@@ -590,7 +591,7 @@
                             <div class="form-group" style="max-width: 300px; margin-bottom: 20px;"><label>Atur Tanggal Masal:</label><input type="date" id="massal-tgl" required></div>
                             <div class="table-responsive">
                                 <table>
-                                    <thead><tr><th>Karyawan</th><th>Status</th><th>Tugas</th><th>Lembur</th><th>Catatan Alasan</th></tr></thead>
+                                    <thead><tr><th>Karyawan Aktif</th><th>Status</th><th>Tugas</th><th>Lembur</th><th>Catatan Alasan</th></tr></thead>
                                     <tbody id="tbody-massal"><tr><td colspan="5" align="center">Kosong</td></tr></tbody>
                                 </table>
                             </div>
@@ -607,7 +608,7 @@
                     
                     <form id="form-kasbon">
                         <div class="form-row">
-                            <div class="form-group"><label>Pilih Karyawan</label><select id="kasbon-nik" required></select></div>
+                            <div class="form-group"><label>Pilih Karyawan Aktif</label><select id="kasbon-nik" required></select></div>
                             <div class="form-group" style="background-color: var(--bg-color); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: center;">
                                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">STATUS KASBON SAAT INI <span id="info-limit-kasbon" style="color:var(--primary);">(Limit: Rp 0)</span></div>
                                 <div id="info-sisa-kasbon" style="font-size: 20px; font-weight: 800; color: var(--danger); margin-top: 4px;">Rp 0</div>
@@ -626,10 +627,10 @@
                         <h3 class="section-title">Riwayat & Daftar Tagihan Kasbon</h3>
                         <input type="text" id="search-kasbon" class="search-box" placeholder="Cari Nama Karyawan..." onkeyup="searchTable('search-kasbon', 'tbody-kasbon-list')">
                     </div>
-                    <span class="section-subtitle" style="margin-bottom: 15px; display:block;">Klik "Hapus & Refund" jika terjadi kesalahan input. Saldo hutang karyawan akan dikembalikan otomatis.</span>
+                    <span class="section-subtitle" style="margin-bottom: 15px; display:block;">Catatan: Anda hanya bisa menghapus transaksi berjenis "Pinjaman Baru". Transaksi yang bersifat sistematis (Potongan Slip / Refund) dikunci secara otomatis.</span>
                     <div class="table-responsive">
                         <table>
-                            <thead><tr><th>Nama Karyawan</th><th>Tanggal Transaksi</th><th>Jenis Transaksi</th><th>Nominal</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+                            <thead><tr><th>Nama Karyawan</th><th>Tanggal Transaksi</th><th>Jenis Transaksi</th><th>Nominal</th><th>Keterangan</th><th style="text-align:center;">Aksi</th></tr></thead>
                             <tbody id="tbody-kasbon-list"></tbody>
                         </table>
                     </div>
@@ -642,7 +643,7 @@
                         <h3 class="section-title">Rekapitulasi Kehadiran Total</h3>
                         <button class="btn-outline" style="font-size:13px; padding: 10px 16px; border-color:#10b981; color:#059669;" onclick="window.exportLaporanCSV()">📥 Export Laporan (Excel CSV)</button>
                     </div>
-                    <span class="section-subtitle" style="margin-bottom: 20px;">Pilih periode bulan dan tahun untuk melihat histori absensi lengkap seluruh tim.</span>
+                    <span class="section-subtitle" style="margin-bottom: 20px;">Pilih periode bulan dan tahun untuk melihat histori absensi lengkap seluruh tim (termasuk yang diarsipkan).</span>
                     
                     <div class="form-group" style="max-width: 300px; margin-bottom: 20px;"><label>Bulan & Tahun</label><input type="month" id="filter-bulan-laporan"></div>
                     <div class="table-responsive"><table class="table-laporan" id="tabel-laporan"></table></div>
@@ -668,7 +669,7 @@
                         <span class="section-subtitle" style="margin-bottom: 20px;">Hutang kasbon otomatis terisi di kolom potongan. Form otomatis dibersihkan setelah jendela cetak/print tertutup.</span>
 
                         <div class="form-row">
-                            <div class="form-group"><label>1. Pilih Karyawan Dahulu</label><select required id="gaji-nik"></select></div>
+                            <div class="form-group"><label>1. Pilih Karyawan Aktif Dahulu</label><select required id="gaji-nik"></select></div>
                             <div class="form-group"><label>2. Rentang Tanggal (Periode)</label><input type="text" id="gaji-periode-range" required placeholder="Tgl Awal s/d Tgl Akhir"></div>
                         </div>
 
@@ -868,13 +869,13 @@
             const y = parseInt(f.split('-')[0]), m = parseInt(f.split('-')[1]), dInM = new Date(y, m, 0).getDate();
             let csv = [];
             
-            let header = ["Nama Karyawan"];
+            let header = ["Nama Karyawan", "Status"];
             for(let i=1; i<=dInM; i++) header.push(`Tgl ${i}`);
             header.push("Hadir (Hari)","Izin/Cuti (Hari)","Absen (Hari)","Luar Kota (Tugas)","Kerja Minggu (Tugas)");
             csv.push(header.join(","));
 
             db_karyawan.forEach(emp => {
-                let row = [`"${emp.nama}"`];
+                let row = [`"${emp.nama}"`, `"${emp.status}"`];
                 let tH=0, tI=0, tA=0, tLK=0, tMK=0;
                 
                 for(let i=1; i<=dInM; i++) {
@@ -1129,6 +1130,16 @@
             const d1Start = new Date(fp.selectedDates[0]); d1Start.setHours(0,0,0,0);
             const d2End = new Date(fp.selectedDates.length > 1 ? fp.selectedDates[1] : d1Start); d2End.setHours(23,59,59,999);
 
+            const emp = db_karyawan.find(k => k.nik === nik); if(!emp) return;
+            const isEdit = !!currentEditSlipId;
+            let oldPotongan = isEdit ? (parseFloat(currentEditSlipData.potongan) || 0) : 0;
+            let maxPotongan = (parseFloat(emp.sisaKasbon) || 0) + oldPotongan;
+            
+            // CEK BUG 2: Mencegah kasbon minus
+            if (potongan > maxPotongan) {
+                return showToast(`Potongan kasbon (Rp ${potongan.toLocaleString('id-ID')}) melebihi limit hutang karyawan (Rp ${maxPotongan.toLocaleString('id-ID')})!`, "error");
+            }
+
             let isOverlap = false;
             db_slip_gaji.filter(s => s.nik === nik && s.id !== currentEditSlipId).forEach(s => {
                 let sD1, sD2;
@@ -1145,16 +1156,12 @@
 
             if(isOverlap) { return showToast("Ditolak! Terdapat irisan tanggal dengan slip yang sudah dicetak.", "error"); }
 
-            const emp = db_karyawan.find(k => k.nik === nik); if(!emp) return;
-            
-            const isEdit = !!currentEditSlipId;
             btnSubmit.disabled = true; btnSubmit.innerText = "Memproses...";
             
             const actionText = isEdit ? "Perbarui & Cetak" : "Terbitkan & Cetak";
             let msg = isEdit ? `Menyimpan dan menimpa slip lama untuk ${emp.nama}.` : `Mencetak slip untuk ${emp.nama}.`;
             
             // Logika Kasbon (Hitung Selisih jika Edit)
-            let oldPotongan = isEdit ? (parseFloat(currentEditSlipData.potongan) || 0) : 0;
             let deltaPotongan = potongan - oldPotongan;
 
             if (isEdit) {
@@ -1339,9 +1346,15 @@
             el('view-emp-list').classList.add('hidden'); el('view-emp-form').classList.remove('hidden'); window.scrollTo({top: 0, behavior: 'smooth'});
         };
 
-        window.hapusKaryawan = async (nik) => { 
-            const ok = await showConfirm("Hapus Karyawan?", "Semua identitas karyawan ini akan hilang dari Cloud.", "Ya, Hapus", true);
-            if(ok) db.collection("karyawan").doc(nik).delete().then(()=> showToast('Karyawan dihapus!'));
+        // BUG 4 FIX: Ubah Hapus Permanen menjadi "Arsip / Nonaktifkan"
+        window.arsipKaryawan = async (nik) => { 
+            const ok = await showConfirm("Nonaktifkan Karyawan?", "Karyawan akan diubah statusnya menjadi 'Nonaktif'. Semua histori absen & slip gaji masa lalunya tetap aman untuk keperluan laporan, namun tidak akan muncul lagi di form pengisian absensi & kasbon.", "Ya, Nonaktifkan", true);
+            if(ok) db.collection("karyawan").doc(nik).update({status: "Nonaktif"}).then(()=> showToast('Karyawan berhasil dinonaktifkan!'));
+        };
+
+        window.aktifkanKaryawan = async (nik) => { 
+            const ok = await showConfirm("Aktifkan Karyawan?", "Karyawan ini akan kembali aktif dan namanya akan muncul lagi di form absensi & penggajian.", "Ya, Aktifkan");
+            if(ok) db.collection("karyawan").doc(nik).update({status: "Tetap"}).then(()=> showToast('Karyawan diaktifkan kembali!'));
         };
 
         el('form-karyawan').addEventListener('submit', async function(e) {
@@ -1372,17 +1385,30 @@
             finally { btnSimpan.innerText = originalText; btnSimpan.disabled = false; }
         });
 
-        const potongCuti = (nik) => { db.collection("karyawan").doc(nik).update({ sisaCuti: firebase.firestore.FieldValue.increment(-1) }); };
+        // FUNGSI POTONG/REFUND CUTI (BUG 1 FIX)
+        const potongCuti = (nik, incrementValue) => { db.collection("karyawan").doc(nik).update({ sisaCuti: firebase.firestore.FieldValue.increment(incrementValue) }); };
 
         el('form-kehadiran-satuan').addEventListener('submit', async function(e) {
             e.preventDefault(); const d = el('satuan-tgl').value, n = el('satuan-nik').value, s = el('satuan-status').value;
             const btnAbsen = el('btn-simpan-absen'); btnAbsen.innerText = "Mengirim..."; btnAbsen.disabled = true;
 
             try {
+                // Ambil data absen lama (jika ada) untuk cek BUG 1
+                const att = db_kehadiran.find(a => a.nik === n && a.date === d);
+                const oldStatus = att ? att.status : null;
+
                 let urlBukti = null; const fileBukti = el('satuan-bukti').files[0];
                 if(fileBukti && (s === 'Izin' || s === 'Cuti')) { urlBukti = await handleUploadImage(fileBukti, "bukti_izin"); }
+                
                 await db.collection("kehadiran").doc(n + "_" + d).set({ date: d, nik: n, status: s, lk: el('satuan-lk').checked, mk: el('satuan-mk').checked, lembur: el('satuan-lembur').value, catatan: el('satuan-catatan').value, buktiUrl: urlBukti });
-                if(s === 'Izin' || s === 'Cuti') potongCuti(n); 
+                
+                // BUG 1 FIX Logika Potong/Refund
+                if ((s === 'Izin' || s === 'Cuti') && oldStatus !== 'Izin' && oldStatus !== 'Cuti') {
+                    potongCuti(n, -1); // Potong 1
+                } else if (s !== 'Izin' && s !== 'Cuti' && (oldStatus === 'Izin' || oldStatus === 'Cuti')) {
+                    potongCuti(n, 1);  // Refund 1 (Kembalikan cuti)
+                }
+                
                 showToast('Absensi berhasil direkam!'); el('satuan-catatan').value = ''; el('satuan-bukti').value = '';
             } catch (err) { showToast("Gagal menyimpan absen!", "error"); } 
             finally { btnAbsen.innerText = "Kirim Absen"; btnAbsen.disabled = false; }
@@ -1392,8 +1418,19 @@
             e.preventDefault(); const d = el('massal-tgl').value; const batch = db.batch();
             document.querySelectorAll('#tbody-massal tr[data-nik]').forEach(r => {
                 const n = r.getAttribute('data-nik'); const s = r.querySelector('.m-status').value;
+                
+                // Ambil data absen lama untuk BUG 1 FIX massal
+                const att = db_kehadiran.find(a => a.nik === n && a.date === d);
+                const oldStatus = att ? att.status : null;
+
                 batch.set(db.collection("kehadiran").doc(n + "_" + d), { date: d, nik: n, status: s, lk: r.querySelector('.m-lk').checked, mk: r.querySelector('.m-mk').checked, lembur: r.querySelector('.m-lembur').value, catatan: r.querySelector('.m-catatan').value, buktiUrl: null });
-                if(s === 'Izin' || s === 'Cuti') batch.update(db.collection("karyawan").doc(n), { sisaCuti: firebase.firestore.FieldValue.increment(-1) });
+                
+                // BUG 1 FIX Logika Potong/Refund Massal
+                if ((s === 'Izin' || s === 'Cuti') && oldStatus !== 'Izin' && oldStatus !== 'Cuti') {
+                    batch.update(db.collection("karyawan").doc(n), { sisaCuti: firebase.firestore.FieldValue.increment(-1) });
+                } else if (s !== 'Izin' && s !== 'Cuti' && (oldStatus === 'Izin' || oldStatus === 'Cuti')) {
+                    batch.update(db.collection("karyawan").doc(n), { sisaCuti: firebase.firestore.FieldValue.increment(1) });
+                }
             });
             batch.commit().then(() => showToast('Absensi Masal Terkirim!'));
         });
@@ -1479,7 +1516,8 @@
             if(emp.fotoKTP) { el('det-ktp-wrap').innerHTML = `<img src="${emp.fotoKTP}">`; } else { el('det-ktp-wrap').innerHTML = `<span style="font-size:10px;">No KTP</span>`; }
 
             let sisaCutiTxt = emp.sisaCuti !== undefined ? emp.sisaCuti : 12; let cutiColor = sisaCutiTxt <= 3 ? 'var(--danger)' : 'var(--primary)';
-            el('det-cuti').innerText = `Sisa Cuti: ${sisaCutiTxt} Hari`; el('det-cuti').style.color = cutiColor;
+            let statusWarna = emp.status === 'Nonaktif' ? 'color:var(--danger);' : '';
+            el('det-cuti').innerHTML = `<span style="${statusWarna}">Status: ${emp.status}</span> &nbsp;|&nbsp; <span style="color:${cutiColor};">Sisa Cuti: ${sisaCutiTxt} Hari</span>`;
             
             el('det-hutang').innerText = 'Rp ' + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID'); el('det-limit').innerText = 'Limit Jatah: Rp ' + (parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID');
             el('det-param-gapok').innerText = 'Rp ' + (parseFloat(emp.gajiPokok)||0).toLocaleString('id-ID'); el('det-param-harian').innerText = 'Rp ' + (parseFloat(emp.gajiHarian)||0).toLocaleString('id-ID'); el('det-param-bonus').innerText = 'Rp ' + (parseFloat(emp.bonusTetap)||0).toLocaleString('id-ID');
@@ -1491,8 +1529,9 @@
             if(logs.length === 0) { tbody = '<tr><td colspan="4" align="center" style="color:var(--text-muted); font-size:12px;">Belum ada riwayat hutang kasbon.</td></tr>'; }
             else {
                 logs.forEach(l => {
-                    let isPelunasan = l.jenis === 'Potongan Gaji'; let c = isPelunasan ? 'var(--success)' : 'var(--danger)'; let s = isPelunasan ? 'Pelunasan Slip' : 'Pinjaman Baru'; let op = isPelunasan ? '- Rp' : '+ Rp';
-                    tbody += `<tr><td>${new Date(l.tanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})}</td><td><span style="color:${c}; font-weight:700; background:#f8fafc; padding:4px 8px; border-radius:4px; font-size:11px;">${s}</span></td><td style="font-size:12px;">${l.keterangan}</td><td style="color:${c}; font-weight:600;">${op} ${parseFloat(l.nominal).toLocaleString('id-ID')}</td></tr>`;
+                    let isPelunasan = l.jenis.includes('Potongan') || l.jenis.includes('Refund'); 
+                    let c = isPelunasan ? 'var(--success)' : 'var(--danger)'; let op = isPelunasan ? '- Rp' : '+ Rp';
+                    tbody += `<tr><td>${new Date(l.tanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})}</td><td><span style="color:${c}; font-weight:700; background:#f8fafc; padding:4px 8px; border-radius:4px; font-size:11px;">${l.jenis}</span></td><td style="font-size:12px;">${l.keterangan}</td><td style="color:${c}; font-weight:600;">${op} ${parseFloat(l.nominal).toLocaleString('id-ID')}</td></tr>`;
                 });
             }
             el('tbody-det-kasbon').innerHTML = tbody;
@@ -1557,35 +1596,60 @@
         };
 
         const refreshUI = () => {
-            let tKaryawan = db_karyawan.length; let tKasbon = 0; let tGaji = 0;
+            // BUG 4 FIX: Hanya filter karyawan "Aktif" (bukan Nonaktif) untuk Dropdown Inputan
+            let activeEmps = db_karyawan.filter(k => k.status !== 'Nonaktif');
+            
+            let tKaryawan = activeEmps.length; let tKasbon = 0; let tGaji = 0;
             const cSat = el('satuan-nik').value; const cGaj = el('gaji-nik').value; const cKas = el('kasbon-nik').value;
-            let opt = '<option value="" disabled selected>Pilih Karyawan...</option>';
-            db_karyawan.forEach(k => opt += `<option value="${k.nik}">${k.nama}</option>`);
+            let opt = '<option value="" disabled selected>Pilih Karyawan Aktif...</option>';
+            
+            activeEmps.forEach(k => opt += `<option value="${k.nik}">${k.nama}</option>`);
             
             el('satuan-nik').innerHTML = opt; if(cSat) el('satuan-nik').value = cSat;
             el('gaji-nik').innerHTML = opt; if(cGaj) el('gaji-nik').value = cGaj;
             el('kasbon-nik').innerHTML = opt; if(cKas) el('kasbon-nik').value = cKas;
 
             let tbodyK = '', tbodyM = '';
+            
+            // Tabel Karyawan & Tabel Massal
             db_karyawan.forEach(k => {
-                tKasbon += parseFloat(k.sisaKasbon) || 0; tGaji += parseFloat(k.gajiPokok) || 0;
+                let isNonaktif = k.status === 'Nonaktif';
+                let rowStyle = isNonaktif ? 'background:#f8fafc; opacity:0.7;' : '';
+                
+                tKasbon += parseFloat(k.sisaKasbon) || 0; 
+                if(!isNonaktif) tGaji += parseFloat(k.gajiPokok) || 0;
+                
                 let sisaCutiTxt = k.sisaCuti !== undefined ? k.sisaCuti : 12; let cutiColor = sisaCutiTxt <= 3 ? 'var(--danger)' : 'var(--primary)';
-                tbodyK += `<tr><td><div class="nama-karyawan clickable" onclick="window.lihatDetailKaryawan('${k.nik}')">${k.nama}</div><div class="divisi-karyawan">NIK: ${k.nik}</div></td><td><div class="nama-karyawan">${k.jabatan}</div><div class="divisi-karyawan">${k.divisi}</div></td><td>${k.status}<br><span class="badge-cuti" style="color:${cutiColor}; background:#fff;">Cuti: ${sisaCutiTxt} Hr</span></td><td><button type="button" class="btn-outline" style="padding:4px 8px; font-size:11px;" onclick="window.editKaryawan('${k.nik}')">Edit</button><button type="button" class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--danger); border-color:#fca5a5; margin-left:4px;" onclick="window.hapusKaryawan('${k.nik}')">Hapus</button></td></tr>`;
-                tbodyM += `<tr data-nik="${k.nik}"><td><div class="nama-karyawan">${k.nama}</div><div class="divisi-karyawan">${k.divisi}</div></td><td><select class="m-status"><option value="Hadir">Hadir</option><option value="Izin">Izin/Cuti</option><option value="Absen">Absen</option></select></td><td><div class="checkbox-group"><label class="checkbox-label wrap-m-lk" style="padding:6px; font-size:11px;"><input type="checkbox" class="m-lk"> LK</label><label class="checkbox-label wrap-m-mk hidden" style="padding:6px; font-size:11px;"><input type="checkbox" class="m-mk"> MK</label></div></td><td><input type="number" class="m-lembur" value="0" min="0" style="width: 70px;"></td><td><input type="text" class="m-catatan" placeholder="..." style="padding: 8px;"></td></tr>`;
+                let statusBadge = isNonaktif ? `<span class="badge-status-emp" style="color:var(--danger); border-color:#fca5a5;">Nonaktif (Arsip)</span>` : `<span class="badge-status-emp">${k.status}</span>`;
+                
+                let btnArsip = isNonaktif 
+                    ? `<button type="button" class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--success); border-color:#86efac; margin-left:4px;" onclick="window.aktifkanKaryawan('${k.nik}')">Aktifkan</button>`
+                    : `<button type="button" class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--warning); border-color:#fde047; margin-left:4px;" onclick="window.arsipKaryawan('${k.nik}')">Nonaktifkan</button>`;
+
+                tbodyK += `<tr style="${rowStyle}"><td><div class="nama-karyawan clickable" onclick="window.lihatDetailKaryawan('${k.nik}')">${k.nama}</div><div class="divisi-karyawan">NIK: ${k.nik}</div></td><td><div class="nama-karyawan">${k.jabatan}</div><div class="divisi-karyawan">${k.divisi}</div></td><td>${statusBadge}<br><span class="badge-cuti" style="color:${cutiColor}; background:#fff; border:1px solid #e2e8f0;">Cuti: ${sisaCutiTxt} Hr</span></td><td><button type="button" class="btn-outline" style="padding:4px 8px; font-size:11px;" onclick="window.editKaryawan('${k.nik}')">Edit</button>${btnArsip}</td></tr>`;
+                
+                // Form Absen Massal HANYA tampilkan yang Aktif
+                if(!isNonaktif) {
+                    tbodyM += `<tr data-nik="${k.nik}"><td><div class="nama-karyawan">${k.nama}</div><div class="divisi-karyawan">${k.divisi}</div></td><td><select class="m-status"><option value="Hadir">Hadir</option><option value="Izin">Izin/Cuti</option><option value="Absen">Absen</option></select></td><td><div class="checkbox-group"><label class="checkbox-label wrap-m-lk" style="padding:6px; font-size:11px;"><input type="checkbox" class="m-lk"> LK</label><label class="checkbox-label wrap-m-mk hidden" style="padding:6px; font-size:11px;"><input type="checkbox" class="m-mk"> MK</label></div></td><td><input type="number" class="m-lembur" value="0" min="0" style="width: 70px;"></td><td><input type="text" class="m-catatan" placeholder="..." style="padding: 8px;"></td></tr>`;
+                }
             });
             
             let tbodyKasbonLog = '';
             db_kasbon_log.forEach(log => {
-                let isRefund = log.jenis.includes('Refund');
-                let color = log.jenis === "Potongan Gaji" || isRefund ? "var(--success)" : "var(--danger)";
-                let bgBadge = log.jenis === "Potongan Gaji" || isRefund ? "#dcfce7" : "#fef2f2";
+                let isAutomated = log.jenis === "Potongan Gaji" || log.jenis.includes('Refund');
+                let color = isAutomated ? "var(--success)" : "var(--danger)";
+                let bgBadge = isAutomated ? "#dcfce7" : "#fef2f2";
                 let tglIndo = new Date(log.tanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
-                tbodyKasbonLog += `<tr><td><b>${log.nama}</b><br><small>${log.nik}</small></td><td>${tglIndo}</td><td><span style="font-size:11px; font-weight:700; color:${color}; background:${bgBadge}; padding:4px 8px; border-radius:4px;">${log.jenis}</span></td><td>Rp ${parseFloat(log.nominal).toLocaleString('id-ID')}</td><td><small>${log.keterangan}</small></td><td style="text-align:center;"><button type="button" class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--danger); border-color:#fca5a5;" onclick="window.hapusKasbonLog('${log.id}', '${log.nik}', ${log.nominal}, '${log.jenis}')">Hapus</button></td></tr>`;
+                
+                // BUG 3 FIX: Sembunyikan tombol hapus untuk transaksi sistematis
+                let btnAksi = isAutomated ? `<span style="font-size:10px; color:var(--text-muted); font-style:italic;">Otomatis Sistem</span>` : `<button type="button" class="btn-outline" style="padding:4px 8px; font-size:11px; color:var(--danger); border-color:#fca5a5;" onclick="window.hapusKasbonLog('${log.id}', '${log.nik}', ${log.nominal}, '${log.jenis}')">Hapus</button>`;
+
+                tbodyKasbonLog += `<tr><td><b>${log.nama}</b><br><small>${log.nik}</small></td><td>${tglIndo}</td><td><span style="font-size:11px; font-weight:700; color:${color}; background:${bgBadge}; padding:4px 8px; border-radius:4px;">${log.jenis}</span></td><td>Rp ${parseFloat(log.nominal).toLocaleString('id-ID')}</td><td><small>${log.keterangan}</small></td><td style="text-align:center;">${btnAksi}</td></tr>`;
             });
 
             el('dash-emp-count').innerText = tKaryawan; el('dash-kasbon-total').innerText = 'Rp ' + tKasbon.toLocaleString('id-ID'); el('dash-gaji-total').innerText = 'Rp ' + tGaji.toLocaleString('id-ID');
             el('tbody-karyawan-list').innerHTML = tbodyK || '<tr><td colspan="4" align="center">Kosong.</td></tr>';
-            el('tbody-massal').innerHTML = tbodyM; 
+            el('tbody-massal').innerHTML = tbodyM || '<tr><td colspan="5" align="center">Tidak ada karyawan aktif.</td></tr>'; 
             el('tbody-kasbon-list').innerHTML = tbodyKasbonLog || '<tr><td colspan="6" align="center">Belum ada riwayat transaksi kasbon.</td></tr>';
             
             // --- UPDATE WIDGET DASHBOARD KETIKA REFRESH UI ---
@@ -1593,11 +1657,15 @@
                 let tH_today = 0, tI_today = 0, tA_today = 0;
                 const todayStr = new Date().toISOString().split('T')[0];
                 db_kehadiran.filter(a => a.date === todayStr).forEach(a => {
-                    if(a.status === 'Hadir') tH_today++; else if(a.status === 'Izin' || a.status === 'Cuti') tI_today++; else if(a.status === 'Absen') tA_today++;
+                    // Hanya hitung statistik karyawan yang aktif
+                    const emp = db_karyawan.find(k => k.nik === a.nik);
+                    if(emp && emp.status !== 'Nonaktif') {
+                        if(a.status === 'Hadir') tH_today++; else if(a.status === 'Izin' || a.status === 'Cuti') tI_today++; else if(a.status === 'Absen') tA_today++;
+                    }
                 });
                 el('dash-date-today').innerText = new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
                 el('dash-today-h').innerText = tH_today; el('dash-today-i').innerText = tI_today; el('dash-today-a').innerText = tA_today;
-                let activeEmp = db_karyawan.length; let pct = activeEmp > 0 ? Math.round((tH_today / activeEmp) * 100) : 0;
+                let pct = activeEmps.length > 0 ? Math.round((tH_today / activeEmps.length) * 100) : 0;
                 el('dash-today-pct').innerText = pct + '%';
 
                 let allActivity = [];
@@ -1628,7 +1696,9 @@
             if(!db_karyawan.length) html += `<tr><td colspan="${dInM+6}" align="center">Kosong</td></tr>`;
             else {
                 db_karyawan.forEach(emp => {
-                    html += `<tr><td class="sticky-col"><div class="nama-karyawan">${emp.nama}</div></td>`;
+                    let isNonaktif = emp.status === 'Nonaktif';
+                    let styleArsip = isNonaktif ? 'color:var(--danger); font-size:10px; display:block;' : 'display:none;';
+                    html += `<tr><td class="sticky-col"><div class="nama-karyawan">${emp.nama}</div><span style="${styleArsip}">[Arsip/Nonaktif]</span></td>`;
                     let tH=0, tI=0, tA=0, tLK=0, tMK=0;
                     for(let i=1; i<=dInM; i++) {
                         let classes = []; if (new Date(y,m-1,i).getDay() === 0) classes.push('col-minggu'); if (isCurrentMonth && i === todayDate) classes.push('col-hari-ini');
