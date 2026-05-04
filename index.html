@@ -366,7 +366,7 @@
             <!-- MENU ADMIN -->
             <div class="nav-menu" id="nav-admin" style="display:none;">
                 <button class="nav-item active" onclick="openMenu('menu-dashboard')">
-                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2-2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                     <span class="nav-text">Dashboard</span>
                 </button>
                 <button class="nav-item" onclick="openMenu('menu-pengumuman')">
@@ -439,14 +439,30 @@
                 </button>
             </div>
 
-            <div class="sidebar-footer"><button class="btn-outline" style="width: 100%; border-color:var(--danger); color:var(--danger);" onclick="doLogout()">Keluar Aplikasi</button></div>
+            <!-- SIDEBAR FOOTER (USER INFO & LOGOUT) -->
+            <div class="sidebar-footer">
+                <div style="padding: 12px; background: #f8fafc; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                        <div style="min-width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800;">👤</div>
+                        <div style="overflow: hidden;">
+                            <div class="user-name" id="side-user-name" style="font-size:13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
+                            <div class="user-role" id="side-user-role" style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
+                        </div>
+                    </div>
+                    <button class="btn-outline" style="width: 100%; border-color:var(--danger); color:var(--danger); padding: 8px; font-size: 13px; display:flex; justify-content:center; align-items:center; gap:6px;" onclick="doLogout()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        Keluar Aplikasi
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div class="main-content">
             <!-- Header Desktop -->
             <div class="content-header">
                 <div><h2 class="content-title" id="page-title">Dashboard</h2></div>
-                <div class="user-area"><div class="user-info"><div class="user-name" id="top-user-name">-</div><div class="user-role" id="top-user-role">-</div></div></div>
+                <!-- User area desktop disembunyikan agar tidak double (sudah dipindah ke Sidebar Footer) -->
+                <div class="user-area" style="display:none;"><div class="user-info"><div class="user-name" id="top-user-name">-</div><div class="user-role" id="top-user-role">-</div></div></div>
             </div>
 
             <!-- ========================================================= -->
@@ -668,7 +684,7 @@
                         <div class="dash-card setting-card" onclick="window.bukaSettingMaster('divisi', '🏢 Manajemen Divisi / Departemen')">
                             <div class="icon">🏢</div><div class="title">Divisi & Departemen</div>
                         </div>
-                        <div class="dash-card setting-card" onclick="window.bukaSettingMaster('jabatan', '👔 Manajemen Jabatan')">
+                        <div class="dash-card setting-card" onclick="window.bukaSettingMaster('jabatan', '👔 Manajemen Jabatan Karyawan')">
                             <div class="icon">👔</div><div class="title">Jabatan Karyawan</div>
                         </div>
                         <div class="dash-card setting-card" onclick="window.bukaSettingMaster('status', '📊 Status Kontrak Karyawan')">
@@ -728,12 +744,24 @@
                     <button class="btn-outline" style="margin-bottom:20px; border-color:var(--primary); color:var(--primary);" onclick="window.kembaliKeSetting()">← Kembali ke Hub Pengaturan</button>
                     <div class="card">
                         <div class="section-header" style="margin-bottom:10px;"><h3 class="section-title" id="title-setting-master">Master Data</h3></div>
-                        <span class="section-subtitle">Data yang ditambahkan di sini akan muncul sebagai pilihan di Form Pembuatan Karyawan. Khusus "Status", usahakan selalu ada "Nonaktif" untuk keperluan pengarsipan sistem.</span>
+                        <span class="section-subtitle">Data yang ditambahkan di sini akan muncul sebagai pilihan di Form Pembuatan Karyawan.</span>
                         
                         <form id="form-master-data" style="margin-bottom:25px; padding:20px; background:#f8fafc; border:1px solid var(--border-color); border-radius:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
                             <input type="hidden" id="master-type">
                             <input type="hidden" id="master-id">
-                            <div class="form-group" style="flex:1; min-width:200px;">
+                            
+                            <!-- Dropdown Khusus untuk Struktur Tree Jabatan -->
+                            <div class="form-group hidden" id="wrap-master-level" style="flex:1; min-width:150px;">
+                                <label>Pilih Level Jabatan</label>
+                                <select id="master-level">
+                                    <option value="Eksekutif">Eksekutif</option>
+                                    <option value="Manajer">Manajer</option>
+                                    <option value="Staf Senior/Spesialis">Staf Senior/Spesialis</option>
+                                    <option value="Entry Level (Staf)">Entry Level (Staf)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" style="flex:2; min-width:200px;">
                                 <label>Input Nama Data Baru / Edit</label>
                                 <input type="text" id="master-nama" required placeholder="Ketik di sini...">
                             </div>
@@ -1355,7 +1383,14 @@
         function enterApp(role, data) {
             currentUserData = data; el('login-screen').classList.add('hidden'); el('app-screen').classList.remove('hidden'); el('login-pass').value = ''; el('reg-pass').value = '';
             const roleText = role === 'admin' ? 'Sistem HRD Penuh' : (data.jabatan || 'Akses Karyawan');
-            el('top-user-name').innerText = data.nama; el('top-user-role').innerText = roleText; el('mob-user-name').innerText = data.nama; el('mob-user-role').innerText = roleText;
+            
+            if(el('top-user-name')) el('top-user-name').innerText = data.nama; 
+            if(el('top-user-role')) el('top-user-role').innerText = roleText; 
+            if(el('mob-user-name')) el('mob-user-name').innerText = data.nama; 
+            if(el('mob-user-role')) el('mob-user-role').innerText = roleText;
+            if(el('side-user-name')) el('side-user-name').innerText = data.nama; 
+            if(el('side-user-role')) el('side-user-role').innerText = roleText;
+
             if(role === 'admin') { el('nav-admin').style.display = 'flex'; el('nav-karyawan').style.display = 'none'; openMenu('menu-dashboard'); } 
             else { el('nav-admin').style.display = 'none'; el('nav-karyawan').style.display = 'flex'; openMenu('menu-ess-dash'); renderESSDashboard(); }
         }
@@ -1395,13 +1430,18 @@
         // ==========================================
         window.bukaSetting = (menu) => { el('view-setting-hub').classList.add('hidden'); el('view-setting-outlet').classList.toggle('hidden', menu !== 'outlet'); if(menu === 'outlet') setTimeout(() => { initMap(); }, 200); };
         window.kembaliKeSetting = () => { el('view-setting-hub').classList.remove('hidden'); el('view-setting-outlet').classList.add('hidden'); el('view-setting-master').classList.add('hidden'); };
-        window.bukaSettingMaster = (type, title) => { el('view-setting-hub').classList.add('hidden'); el('view-setting-outlet').classList.add('hidden'); el('view-setting-master').classList.remove('hidden'); el('title-setting-master').innerText = title; el('master-type').value = type; window.batalEditMaster(); window.renderTabelMaster(type); };
+        
+        window.bukaSettingMaster = (type, title) => { el('view-setting-hub').classList.add('hidden'); el('view-setting-outlet').classList.add('hidden'); el('view-setting-master').classList.remove('hidden'); el('title-setting-master').innerText = title; el('master-type').value = type; el('wrap-master-level').classList.toggle('hidden', type !== 'jabatan'); window.batalEditMaster(); window.renderTabelMaster(type); };
 
-        window.renderTabelMaster = (type) => { let data = type === 'divisi' ? db_divisi : (type === 'jabatan' ? db_jabatan : db_status); let html = ''; data.forEach(d => { html += `<tr><td><b style="font-size:14px; color:var(--text-main);">${d.nama}</b></td><td style="text-align:center;"><div style="display:flex; gap:6px; justify-content:center;"><button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="window.editMaster('${type}', '${d.id}', '${d.nama}')">Edit</button><button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusMaster('${type}', '${d.id}')">Hapus</button></div></td></tr>`; }); el('tbody-master-list').innerHTML = html || `<tr><td colspan="2" align="center" style="padding:20px;">Belum ada master data ${type}.</td></tr>`; };
-        window.editMaster = (type, id, nama) => { el('master-type').value = type; el('master-id').value = id; el('master-nama').value = nama; el('btn-simpan-master').innerText = 'Simpan Perubahan'; el('btn-batal-master').classList.remove('hidden'); };
+        window.renderTabelMaster = (type) => { let data = type === 'divisi' ? db_divisi : (type === 'jabatan' ? db_jabatan : db_status); let html = ''; data.forEach(d => { let textNama = d.nama; if(type === 'jabatan' && d.level) textNama = `<span style="font-size:11px; color:var(--primary); font-weight:700;">${d.level}</span><br>${d.nama}`; html += `<tr><td><b style="font-size:14px; color:var(--text-main);">${textNama}</b></td><td style="text-align:center;"><div style="display:flex; gap:6px; justify-content:center;"><button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="window.editMaster('${type}', '${d.id}', '${d.nama}', '${d.level||''}')">Edit</button><button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusMaster('${type}', '${d.id}')">Hapus</button></div></td></tr>`; }); el('tbody-master-list').innerHTML = html || `<tr><td colspan="2" align="center" style="padding:20px;">Belum ada master data ${type}.</td></tr>`; };
+        
+        window.editMaster = (type, id, nama, level) => { el('master-type').value = type; el('master-id').value = id; el('master-nama').value = nama; if(type==='jabatan') el('master-level').value = level || 'Entry Level (Staf)'; el('btn-simpan-master').innerText = 'Simpan Perubahan'; el('btn-batal-master').classList.remove('hidden'); };
+        
         window.batalEditMaster = () => { el('form-master-data').reset(); el('master-id').value = ''; el('btn-simpan-master').innerText = 'Tambah Data'; el('btn-batal-master').classList.add('hidden'); };
+        
         window.hapusMaster = async (type, id) => { const ok = await showConfirm("Hapus Master Data?", "Data ini akan hilang dari pilihan form, namun karyawan yang sudah menggunakan data ini tidak akan berubah kecuali diedit ulang.", "Ya, Hapus Data", true); if(ok) { await db.collection("master_" + type).doc(id).delete(); showToast("Master Data terhapus!"); } };
-        el('form-master-data').addEventListener('submit', async (e) => { e.preventDefault(); const type = el('master-type').value; const id = el('master-id').value; const nama = el('master-nama').value; const btn = el('btn-simpan-master'); btn.disabled = true; btn.innerText = 'Memproses...'; try { if(id) { await db.collection("master_" + type).doc(id).update({ nama: nama }); } else { await db.collection("master_" + type).add({ nama: nama }); } showToast("Master Data berhasil disimpan!"); window.batalEditMaster(); } catch(err) { showToast("Gagal menyimpan data.", "error"); } finally { btn.disabled = false; } });
+        
+        el('form-master-data').addEventListener('submit', async (e) => { e.preventDefault(); const type = el('master-type').value; const id = el('master-id').value; const nama = el('master-nama').value; const btn = el('btn-simpan-master'); btn.disabled = true; btn.innerText = 'Memproses...'; let dataObj = { nama: nama }; if(type === 'jabatan') dataObj.level = el('master-level').value; try { if(id) { await db.collection("master_" + type).doc(id).update(dataObj); } else { await db.collection("master_" + type).add(dataObj); } showToast("Master Data berhasil disimpan!"); window.batalEditMaster(); } catch(err) { showToast("Gagal menyimpan data.", "error"); } finally { btn.disabled = false; } });
 
         // ==========================================
         // PENGATURAN OUTLET
@@ -1551,7 +1591,11 @@
             renderPengumumanESS(); // Memanggil render banner slider
             
             el('ess-nama-lengkap').innerText = emp.nama || '-';
-            el('ess-posisi').innerText = `NIK: ${emp.nik} | Div: ${emp.divisi||'-'} | Jabatan: ${emp.jabatan||'-'}`;
+            
+            let jabData = db_jabatan.find(j => j.nama === emp.jabatan);
+            let lvlInfo = jabData && jabData.level ? ` (${jabData.level})` : '';
+            el('ess-posisi').innerText = `NIK: ${emp.nik} | Div: ${emp.divisi||'-'} | Jabatan: ${emp.jabatan||'-'}${lvlInfo}`;
+            
             el('ess-sisa-cuti').innerText = (emp.sisaCuti || 0) + " Hari"; 
             el('ess-sisa-kasbon').innerText = "Rp " + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID');
             
@@ -1723,7 +1767,25 @@
             if(el('emp-divisi')) el('emp-divisi').innerHTML = optDiv;
             if(el('pengumuman-divisi')) el('pengumuman-divisi').innerHTML = optTagDiv;
 
-            let optJab = '<option value="">-- Pilih Jabatan --</option>'; db_jabatan.forEach(d => optJab += `<option value="${d.nama}">${d.nama}</option>`); if(el('emp-jabatan')) el('emp-jabatan').innerHTML = optJab;
+            // MENU DROPWDOWN JABATAN DENGAN LEVEL GROUPING
+            let optJab = '<option value="">-- Pilih Jabatan --</option>';
+            let levels = ['Eksekutif', 'Manajer', 'Staf Senior/Spesialis', 'Entry Level (Staf)'];
+            levels.forEach(lvl => {
+                let jabs = db_jabatan.filter(j => (j.level || 'Entry Level (Staf)') === lvl);
+                if(jabs.length > 0) {
+                    optJab += `<optgroup label="${lvl}">`;
+                    jabs.forEach(d => optJab += `<option value="${d.nama}">${d.nama}</option>`);
+                    optJab += `</optgroup>`;
+                }
+            });
+            let jabsLain = db_jabatan.filter(j => !levels.includes(j.level || 'Entry Level (Staf)'));
+            if(jabsLain.length > 0) {
+                optJab += `<optgroup label="Lainnya">`;
+                jabsLain.forEach(d => optJab += `<option value="${d.nama}">${d.nama}</option>`);
+                optJab += `</optgroup>`;
+            }
+            if(el('emp-jabatan')) el('emp-jabatan').innerHTML = optJab;
+
             let optStat = '<option value="">-- Pilih Status --</option>'; db_status.forEach(d => optStat += `<option value="${d.nama}">${d.nama}</option>`); 
             if(!db_status.some(s => s.nama.toLowerCase() === 'nonaktif')) { optStat += '<option value="Nonaktif">Nonaktif (Masuk Arsip)</option>'; } 
             if(el('emp-status')) el('emp-status').innerHTML = optStat;
@@ -2000,18 +2062,24 @@
                 const per = el('gaji-periode-range').value; 
                 const fp = el('gaji-periode-range')._flatpickr; 
                 
-                if(!nik || !per || fp.selectedDates.length===0) return showToast("Lengkapi form tanggal!", "error"); 
+                // Tambahan pengaman objek flatpickr agar tidak error
+                if(!nik || !per || !fp || !fp.selectedDates || fp.selectedDates.length === 0) {
+                    return showToast("Lengkapi form tanggal dengan benar!", "error"); 
+                }
                 if(txtBrs.includes('-')) return showToast("Total Gaji Minus tidak valid!", "error"); 
                 
                 const emp = db_karyawan.find(k => k.nik === nik); 
+                if(!emp) return showToast("Data karyawan tidak ditemukan!", "error");
+
                 const maxP = (parseFloat(emp.sisaKasbon)||0) + (currentEditSlipId ? (parseFloat(currentEditSlipData.potongan)||0) : 0); 
                 if(potongan > maxP) return showToast(`Potongan melebihi limit kasbon aktif`, "error"); 
                 
-                const isConfirmed = await showConfirm(currentEditSlipId?"Simpan Revisi?":"Terbitkan Slip Satuan?", `Akan memotong kasbon Rp ${potongan.toLocaleString()}.`, "Terbitkan"); 
+                const textKonfirmasi = potongan > 0 ? `Akan memotong kasbon Rp ${potongan.toLocaleString('id-ID')}.` : `Terbitkan tanpa potongan kasbon.`;
+                const isConfirmed = await showConfirm(currentEditSlipId ? "Simpan Revisi?" : "Terbitkan Slip Satuan?", textKonfirmasi, currentEditSlipId ? "Simpan" : "Terbitkan"); 
                 if(!isConfirmed) return; 
                 
                 const tglA = fp.selectedDates[0]; 
-                const tglB = fp.selectedDates.length>1 ? fp.selectedDates[1] : tglA; 
+                const tglB = fp.selectedDates.length > 1 ? fp.selectedDates[1] : tglA; 
                 const sData = { 
                     nik: nik, 
                     nama: emp.nama, 
@@ -2032,16 +2100,22 @@
                 const batch = db.batch();
                 if(currentEditSlipId) {
                     batch.update(db.collection("slip_gaji").doc(currentEditSlipId), sData);
-                    let selisihPotongan = potongan - (currentEditSlipData.potongan||0);
+                    let selisihPotongan = potongan - (parseFloat(currentEditSlipData.potongan)||0);
+                    
                     if(selisihPotongan !== 0) {
-                        let sBaru = (emp.sisaKasbon||0) - selisihPotongan; if(sBaru < 0) sBaru = 0;
+                        let sBaru = (parseFloat(emp.sisaKasbon)||0) - selisihPotongan; 
+                        if(sBaru < 0) sBaru = 0;
                         batch.update(db.collection("karyawan").doc(nik), { sisaKasbon: sBaru });
-                        batch.set(db.collection("kasbon_log").doc(), { nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: "Koreksi Potongan", nominal: Math.abs(selisihPotongan), keterangan: `Koreksi Edit Slip ${per}`, status: "Selesai" });
+                        
+                        // Perbaikan keterangan log kasbon agar lebih spesifik
+                        let jenisLog = selisihPotongan > 0 ? "Koreksi Penambahan Potongan" : "Koreksi Pengembalian Potongan";
+                        batch.set(db.collection("kasbon_log").doc(), { nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: jenisLog, nominal: Math.abs(selisihPotongan), keterangan: `Koreksi Edit Slip ${per}`, status: "Selesai" });
                     }
                 } else {
                     batch.set(db.collection("slip_gaji").doc(), sData);
                     if(potongan > 0) {
-                        let sBaru = (emp.sisaKasbon||0) - potongan; if(sBaru < 0) sBaru = 0;
+                        let sBaru = (parseFloat(emp.sisaKasbon)||0) - potongan; 
+                        if(sBaru < 0) sBaru = 0;
                         batch.update(db.collection("karyawan").doc(nik), { sisaKasbon: sBaru });
                         batch.set(db.collection("kasbon_log").doc(), { nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: "Potongan Gaji", nominal: potongan, keterangan: `Pelunasan Gaji ${per}`, status: "Selesai" });
                     }
@@ -2050,8 +2124,16 @@
                 try {
                     await batch.commit();
                     showToast(currentEditSlipId ? "Slip direvisi!" : "Slip diterbitkan!");
-                    el('form-penggajian').reset(); el('gaji-nik').value = ""; el('gaji-periode-range')._flatpickr.clear(false); el('gaji-total').value = "0"; el('gaji-rekap-container').classList.add('hidden'); window.batalEditSlip();
-                } catch(e) { showToast("Gagal memproses slip!", "error"); }
+                    el('form-penggajian').reset(); 
+                    el('gaji-nik').value = ""; 
+                    el('gaji-periode-range')._flatpickr.clear(false); 
+                    el('gaji-total').value = "0"; 
+                    el('gaji-rekap-container').classList.add('hidden'); 
+                    window.batalEditSlip();
+                } catch(e) { 
+                    console.error("Gagal memproses slip: ", e);
+                    showToast("Gagal memproses slip!", "error"); 
+                }
             };
 
             window.editSlipGaji = (id) => {
@@ -2083,9 +2165,35 @@
             };
 
             window.hapusSlipGaji = async (id) => {
-                const ok = await showConfirm("Hapus Slip?", "Data slip akan hilang. Nilai potongan kasbon yang pernah ditarik TIDAK akan dikembalikan otomatis.", "Hapus Permanen", true);
+                const s = db_slip.find(x => x.id === id); if(!s) return;
+                
+                // Perbaikan: Hapus slip kini otomatis mengembalikan kasbon
+                const ok = await showConfirm("Hapus Slip?", `Data slip ${s.periode} akan dihapus permanen. Saldo kasbon yang telah terpotong (Rp ${(s.potongan||0).toLocaleString('id-ID')}) otomatis dikembalikan.`, "Hapus Permanen", true);
                 if(ok) {
-                    try { await db.collection("slip_gaji").doc(id).delete(); showToast("Slip dihapus!"); } catch(e) { showToast("Gagal hapus!", "error"); }
+                    try { 
+                        const batchHapus = db.batch();
+                        batchHapus.delete(db.collection("slip_gaji").doc(id));
+                        
+                        if(s.potongan && parseFloat(s.potongan) > 0) {
+                            batchHapus.update(db.collection("karyawan").doc(s.nik), { 
+                                sisaKasbon: firebase.firestore.FieldValue.increment(parseFloat(s.potongan)) 
+                            });
+                            batchHapus.set(db.collection("kasbon_log").doc(), { 
+                                nik: s.nik, 
+                                nama: s.nama, 
+                                tanggal: new Date().toISOString(), 
+                                jenis: "Pembatalan Potongan", 
+                                nominal: parseFloat(s.potongan), 
+                                keterangan: `Penghapusan Slip ${s.periode}`, 
+                                status: "Selesai" 
+                            });
+                        }
+                        
+                        await batchHapus.commit();
+                        showToast("Slip dihapus dan kasbon dikembalikan!"); 
+                    } catch(e) { 
+                        showToast("Gagal menghapus data!", "error"); 
+                    }
                 }
             };
 
@@ -2181,11 +2289,12 @@
                 let csv = "NIK,Nama Lengkap,Email,No. HP/WA,Jenis Kelamin,Tempat Lahir,Tgl Lahir,Alamat,Cabang/Outlet,Divisi,Jabatan,Status,Tgl Mulai,Sisa Cuti,Sisa Kasbon,Gaji Pokok,Gaji Kehadiran,Insentif,Limit Kasbon\n";
                 db_karyawan.forEach(k => {
                     let outNama = db_outlet.find(o => o.id === k.outletId)?.nama || "Pusat";
-                    csv += `="${k.nik}","${k.nama}","${k.email||''}","="${k.telp||''}","${k.jk||''}","${k.tempatLahir||''}","${k.tglLahir||''}","${(k.alamat||'').replace(/\n/g, ' ')}","${outNama}","${k.divisi||''}","${k.jabatan||''}","${k.status}","${k.tglMulai||''}","${k.sisaCuti||0}","${k.sisaKasbon||0}","${k.gajiPokok||0}","${k.gajiHarian||0}","${k.bonusTetap||0}","${k.limitKasbon||0}"\n`;
+                    // Memperbaiki kutip pada k.telp agar tidak error parse formula di Excel
+                    csv += `="${k.nik}","${k.nama}","${k.email||''}","${k.telp||''}","${k.jk||''}","${k.tempatLahir||''}","${k.tglLahir||''}","${(k.alamat||'').replace(/\n/g, ' ')}","${outNama}","${k.divisi||''}","${k.jabatan||''}","${k.status}","${k.tglMulai||''}","${k.sisaCuti||0}","${k.sisaKasbon||0}","${k.gajiPokok||0}","${k.gajiHarian||0}","${k.bonusTetap||0}","${k.limitKasbon||0}"\n`;
                 });
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement("a"); const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url); link.setAttribute("download", `Database_Karyawan_${getLocalToday()}.csv`);
+                link.setAttribute("href", url); link.setAttribute("download", `Database_Karyawan_${new Date().toISOString().substring(0,10)}.csv`);
                 document.body.appendChild(link); link.click(); document.body.removeChild(link);
             };
 
@@ -2251,32 +2360,36 @@
             }
 
             // MODUL REIMBURSEMENT
-            el('reim-file').addEventListener('change', function(e) {
-                const file = e.target.files[0]; if(!file) return;
-                const canvas = el('reim-canvas'); const ctx = canvas.getContext('2d');
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const MAX_WIDTH = 600; let scaleSize = MAX_WIDTH / img.width; if(scaleSize > 1) scaleSize = 1;
-                        canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            if(el('reim-file')) {
+                el('reim-file').addEventListener('change', function(e) {
+                    const file = e.target.files[0]; if(!file) return;
+                    const canvas = el('reim-canvas'); const ctx = canvas.getContext('2d');
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = new Image();
+                        img.onload = function() {
+                            const MAX_WIDTH = 600; let scaleSize = MAX_WIDTH / img.width; if(scaleSize > 1) scaleSize = 1;
+                            canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        };
+                        img.src = event.target.result;
                     };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
+                    reader.readAsDataURL(file);
+                });
+            }
 
-            el('form-ess-reimburse').addEventListener('submit', async e => {
-                e.preventDefault();
-                const canvas = el('reim-canvas'); if(canvas.width === 0) return showToast("Foto bukti belum termuat!", "warning");
-                const btn = el('btn-submit-reimburse'); btn.disabled = true; btn.innerText = "Mengirim...";
-                const base64Foto = canvas.toDataURL('image/jpeg', 0.6);
-                try {
-                    await db.collection("reimbursements").add({ nik: currentUserData.nik, nama: currentUserData.nama, tanggal: new Date().toISOString(), jenis: el('reim-jenis').value, nominal: parseFloat(el('reim-nominal').value)||0, keterangan: el('reim-ket').value, fileBukti: base64Foto, status: "Pending" });
-                    showToast("Pengajuan Klaim terkirim!"); el('form-ess-reimburse').reset(); el('reim-canvas').width = 0; el('reim-canvas').height = 0;
-                } catch(err) { showToast("Gagal mengirim klaim.", "error"); } finally { btn.disabled = false; btn.innerText = "Kirim Pengajuan Klaim"; }
-            });
+            if(el('form-ess-reimburse')) {
+                el('form-ess-reimburse').addEventListener('submit', async e => {
+                    e.preventDefault();
+                    const canvas = el('reim-canvas'); if(canvas.width === 0) return showToast("Foto bukti belum termuat!", "warning");
+                    const btn = el('btn-submit-reimburse'); btn.disabled = true; btn.innerText = "Mengirim...";
+                    const base64Foto = canvas.toDataURL('image/jpeg', 0.6);
+                    try {
+                        await db.collection("reimbursements").add({ nik: currentUserData.nik, nama: currentUserData.nama, tanggal: new Date().toISOString(), jenis: el('reim-jenis').value, nominal: parseFloat(el('reim-nominal').value)||0, keterangan: el('reim-ket').value, fileBukti: base64Foto, status: "Pending" });
+                        showToast("Pengajuan Klaim terkirim!"); el('form-ess-reimburse').reset(); el('reim-canvas').width = 0; el('reim-canvas').height = 0;
+                    } catch(err) { showToast("Gagal mengirim klaim.", "error"); } finally { btn.disabled = false; btn.innerText = "Kirim Pengajuan Klaim"; }
+                });
+            }
 
             function renderESSReimburseLog() {
                 if(!currentUserData) return; let html = '';
@@ -2306,25 +2419,43 @@
             };
             
             // ADMIN MANUAL KASBON
-            el('form-kasbon-admin').addEventListener('submit', async (e) => {
-                e.preventDefault(); const nik = el('kasbon-nik').value; const nom = parseFloat(el('kasbon-nominal').value); const ket = el('kasbon-ket').value; if(!nik) return showToast("Pilih pegawai!", "error");
-                const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
-                const empRef = db.collection("karyawan").doc(nik); const emp = db_karyawan.find(k => k.nik === nik);
-                const sisaSkrg = parseFloat(emp.sisaKasbon)||0; const limit = parseFloat(emp.limitKasbon)||0;
-                if((sisaSkrg + nom) > limit) { btn.disabled = false; btn.innerText = "Potong Limit & Proses"; return showToast("Gagal: Total hutang akan melebihi Limit Kasbon yang diizinkan!", "error"); }
-                const batch = db.batch();
-                batch.update(empRef, { sisaKasbon: firebase.firestore.FieldValue.increment(nom) });
-                batch.set(db.collection("kasbon_log").doc(), { nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: "Pencairan (Admin)", nominal: nom, keterangan: ket, status: "Selesai" });
-                try { await batch.commit(); showToast("Kasbon manual berhasil dicatat!"); el('form-kasbon-admin').reset(); el('info-sisa-kasbon').innerText="Rp 0"; el('info-limit-kasbon').innerText="(Limit: 0)"; } catch(err) { showToast("Gagal proses", "error"); } finally { btn.disabled = false; btn.innerText = "Potong Limit & Proses"; }
-            });
-            el('kasbon-nik').addEventListener('change', function() { const emp = db_karyawan.find(k => k.nik === this.value); if(emp) { el('info-sisa-kasbon').innerText = "Rp " + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID'); el('info-limit-kasbon').innerText = `(Limit: Rp ${(parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID')})`; } else { el('info-sisa-kasbon').innerText = "Rp 0"; el('info-limit-kasbon').innerText = "(Limit: 0)"; } });
+            if(el('form-kasbon-admin')) {
+                el('form-kasbon-admin').addEventListener('submit', async (e) => {
+                    e.preventDefault(); const nik = el('kasbon-nik').value; const nom = parseFloat(el('kasbon-nominal').value); const ket = el('kasbon-ket').value; if(!nik) return showToast("Pilih pegawai!", "error");
+                    const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
+                    const empRef = db.collection("karyawan").doc(nik); const emp = db_karyawan.find(k => k.nik === nik);
+                    const sisaSkrg = parseFloat(emp.sisaKasbon)||0; const limit = parseFloat(emp.limitKasbon)||0;
+                    if((sisaSkrg + nom) > limit) { btn.disabled = false; btn.innerText = "Potong Limit & Proses"; return showToast("Gagal: Total hutang akan melebihi Limit Kasbon yang diizinkan!", "error"); }
+                    const batch = db.batch();
+                    batch.update(empRef, { sisaKasbon: firebase.firestore.FieldValue.increment(nom) });
+                    batch.set(db.collection("kasbon_log").doc(), { nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: "Pencairan (Admin)", nominal: nom, keterangan: ket, status: "Selesai" });
+                    try { await batch.commit(); showToast("Kasbon manual berhasil dicatat!"); el('form-kasbon-admin').reset(); el('info-sisa-kasbon').innerText="Rp 0"; el('info-limit-kasbon').innerText="(Limit: 0)"; } catch(err) { showToast("Gagal proses", "error"); } finally { btn.disabled = false; btn.innerText = "Potong Limit & Proses"; }
+                });
+
+                el('kasbon-nik').addEventListener('change', function() { 
+                    const emp = db_karyawan.find(k => k.nik === this.value); 
+                    if(emp) { 
+                        el('info-sisa-kasbon').innerText = "Rp " + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID'); 
+                        el('info-limit-kasbon').innerText = `(Limit: Rp ${(parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID')})`; 
+                    } else { 
+                        el('info-sisa-kasbon').innerText = "Rp 0"; el('info-limit-kasbon').innerText = "(Limit: 0)"; 
+                    } 
+                });
+            }
 
             // RENDER ARSIP KASBON LIST
             function renderKasbonList() {
-                let html = ''; db_kasbon.forEach(k => { let b = k.status==='Pending'?'badge-pending':(k.jenis==='Potongan Gaji'?'badge-success':'badge-info'); let sts = k.status || (k.jenis==='Potongan Gaji'?'Lunas':'Cair'); let nomTxt = k.jenis==='Potongan Gaji' ? `<span style="color:var(--success)">+ Rp ${k.nominal.toLocaleString('id-ID')}</span>` : `<span style="color:var(--danger)">- Rp ${k.nominal.toLocaleString('id-ID')}</span>`; html += `<tr><td><b>${k.nama}</b></td><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td><span class="badge ${b}">${k.jenis}</span></td><td><b>${nomTxt}</b></td><td><small>${k.keterangan}</small></td><td style="text-align:center;">${sts}</td></tr>`; }); el('tbody-kasbon-list').innerHTML = html || '<tr><td colspan="6" align="center">Kosong</td></tr>';
+                let html = ''; db_kasbon.forEach(k => { 
+                    let b = k.status==='Pending'?'badge-pending':(k.jenis==='Potongan Gaji' || k.jenis.includes('Pengembalian') ? 'badge-success' : 'badge-info'); 
+                    let sts = k.status || (k.jenis==='Potongan Gaji'?'Lunas':'Cair'); 
+                    let nomTxt = (k.jenis==='Potongan Gaji' || k.jenis.includes('Pengembalian') || k.jenis.includes('Pembatalan')) ? `<span style="color:var(--success)">+ Rp ${k.nominal.toLocaleString('id-ID')}</span>` : `<span style="color:var(--danger)">- Rp ${k.nominal.toLocaleString('id-ID')}</span>`; 
+                    html += `<tr><td><b>${k.nama}</b></td><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td><span class="badge ${b}">${k.jenis}</span></td><td><b>${nomTxt}</b></td><td><small>${k.keterangan}</small></td><td style="text-align:center;">${sts}</td></tr>`; 
+                }); 
+                el('tbody-kasbon-list').innerHTML = html || '<tr><td colspan="6" align="center">Kosong</td></tr>';
             }
             db.collection("kasbon_log").onSnapshot(() => renderKasbonList());
 
+        // }); // <-- Buka komentar baris ini jika seluruh fungsi JS Anda dibungkus oleh document.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
 </html>
