@@ -120,6 +120,7 @@
         .table-laporan th, .table-laporan td { padding: 10px; text-align: center; min-width: 45px; border-right: 1px solid #f1f5f9; }
         .table-laporan .sticky-col { position: sticky; left: 0; background-color: #fff; z-index: 2; text-align: left; min-width: 180px; border-right: 1px solid var(--border-color); box-shadow: 2px 0 5px rgba(0,0,0,0.02);}
         .col-minggu { background-color: var(--danger-light) !important; color:var(--danger)!important;}
+        .col-hari-ini { background-color: #fef3c7 !important; border-left: 2px solid #f59e0b !important; border-right: 2px solid #f59e0b !important; }
         
         .cell-hadir { color: var(--success); font-weight: 700; }
         .cell-izin { color: var(--warning); font-weight: 700; }
@@ -269,6 +270,7 @@
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Tunj. Kehadiran:</span> <span id="slip-modal-hadir">Rp 0</span></div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Insentif/Lembur:</span> <span id="slip-modal-bonus">Rp 0</span></div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Tugas Luar (LK/MK):</span> <span id="slip-modal-lkmk">Rp 0</span></div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Reimbursement:</span> <span id="slip-modal-reimburse">Rp 0</span></div>
                     <b style="color:var(--danger); margin-bottom:10px; margin-top:15px; display:block;">POTONGAN</b>
                     <div style="display:flex; justify-content:space-between;"><span>Pelunasan Kasbon:</span> <span id="slip-modal-potongan" style="color:var(--danger); font-weight:600;">- Rp 0</span></div>
                 </div>
@@ -1103,6 +1105,7 @@
                 
                 <div class="form-row">
                     <div class="form-group"><label>Tambahan Lain (Misal: Lembur Ekstra)</label><input type="number" id="gaji-lainnya" value="0"></div>
+                    <div class="form-group"><label>Reimbursement / Klaim <span id="info-reimburse" style="color:var(--primary); font-size:11px;"></span></label><input type="number" id="gaji-reimburse" value="0"></div>
                 </div>
                 
                 <div class="form-row" style="background-color: #fff1f2; padding: 20px; border-radius: 12px; border: 1px solid #fecaca; margin-top: 10px;">
@@ -1676,9 +1679,9 @@
         el('form-ess-izin').addEventListener('submit', async e => { e.preventDefault(); const tipe = el('ess-izin-tipe').value; const durasi = el('ess-izin-durasi').value; const alasan = el('ess-izin-alasan').value; let tglRaw = ''; if(durasi === 'Beberapa Hari') { tglRaw = el('ess-izin-tgl-range').value; if(!tglRaw.includes(' to ')) return showToast('Pilih rentang dengan benar!', 'error'); } else { tglRaw = el('ess-izin-tgl-single').value; } const btn = e.submitter; btn.disabled = true; btn.innerText = "Mengirim..."; try { await db.collection("pengajuan_izin").add({ nik: currentUserData.nik, nama: currentUserData.nama, tipe: tipe, durasi: durasi, tglRaw: tglRaw, alasan: alasan, status: "Pending", waktuSubmit: new Date().toISOString() }); showToast("Pengajuan terkirim!"); el('form-ess-izin').reset(); el('ess-izin-tgl-single')._flatpickr.clear(); if(el('ess-izin-tgl-range')._flatpickr) el('ess-izin-tgl-range')._flatpickr.clear(); window.aturInputTanggalIzin(); } catch(err) { showToast("Gagal kirim.", "error"); } finally { btn.disabled = false; btn.innerText = "Kirim Pengajuan ke HRD"; } });
         el('form-ess-kasbon').addEventListener('submit', async e => { e.preventDefault(); const nom = parseFloat(el('ess-req-nominal').value); const ket = el('ess-req-ket').value; await db.collection("kasbon_log").add({ nik: currentUserData.nik, nama: currentUserData.nama, tanggal: new Date().toISOString(), jenis: "Pengajuan Karyawan", nominal: nom, keterangan: ket, status: "Pending" }); showToast("Pengajuan terkirim."); el('form-ess-kasbon').reset(); });
 
-        window.lihatDetailSlipAdminAtauKaryawan = (slipId) => { const s = db_slip.find(x => x.id === slipId); if(!s) return; currentSlipTemp = s; el('slip-modal-nama').innerText = s.nama; el('slip-modal-periode').innerText = s.periode; el('slip-modal-divisi').innerText = db_karyawan.find(k=>k.nik===s.nik)?.divisi || "-"; el('slip-modal-gapok').innerText = `Rp ${(parseFloat(s.gajiPokok)||0).toLocaleString('id-ID')}`; el('slip-modal-hadir').innerText = `Rp ${(parseFloat(s.tunjKehadiran)||0).toLocaleString('id-ID')}`; el('slip-modal-bonus').innerText = `Rp ${(parseFloat(s.insentif)||0).toLocaleString('id-ID')}`; el('slip-modal-lkmk').innerText = `Rp ${(parseFloat(s.tugasLuar)||0).toLocaleString('id-ID')}`; el('slip-modal-potongan').innerText = `- Rp ${(parseFloat(s.potongan)||0).toLocaleString('id-ID')}`; el('slip-modal-bersih').innerText = s.bersih; el('modal-slip-detail').classList.add('show'); };
+        window.lihatDetailSlipAdminAtauKaryawan = (slipId) => { const s = db_slip.find(x => x.id === slipId); if(!s) return; currentSlipTemp = s; el('slip-modal-nama').innerText = s.nama; el('slip-modal-periode').innerText = s.periode; el('slip-modal-divisi').innerText = db_karyawan.find(k=>k.nik===s.nik)?.divisi || "-"; el('slip-modal-gapok').innerText = `Rp ${(parseFloat(s.gajiPokok)||0).toLocaleString('id-ID')}`; el('slip-modal-hadir').innerText = `Rp ${(parseFloat(s.tunjKehadiran)||0).toLocaleString('id-ID')}`; el('slip-modal-bonus').innerText = `Rp ${(parseFloat(s.insentif)||0).toLocaleString('id-ID')}`; el('slip-modal-lkmk').innerText = `Rp ${(parseFloat(s.tugasLuar)||0).toLocaleString('id-ID')}`; el('slip-modal-reimburse').innerText = `Rp ${(parseFloat(s.reimburse)||0).toLocaleString('id-ID')}`; el('slip-modal-potongan').innerText = `- Rp ${(parseFloat(s.potongan)||0).toLocaleString('id-ID')}`; el('slip-modal-bersih').innerText = s.bersih; el('modal-slip-detail').classList.add('show'); };
         window.downloadSlipPDF = () => { const element = document.getElementById('slip-export-content'); html2pdf().set({ margin: 0.5, filename: `Slip_${currentSlipTemp.nama}_${currentSlipTemp.periode}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a5', orientation: 'landscape' } }).from(element).save(); };
-        window.kirimWhatsApp = () => { const emp = db_karyawan.find(k=>k.nik===currentSlipTemp.nik); if(!emp || !emp.telp) return showToast("No HP Karyawan tidak terdata!", "error"); let noWa = emp.telp.replace(/^0/, '62'); let text = `Halo *${currentSlipTemp.nama}*,\nBerikut Rincian Gaji Anda periode *${currentSlipTemp.periode}*:\n\n🔹 Gaji Pokok: Rp ${(currentSlipTemp.gajiPokok||0).toLocaleString('id-ID')}\n🔹 Kehadiran: Rp ${(currentSlipTemp.tunjKehadiran||0).toLocaleString('id-ID')}\n🔹 Lembur/Insentif: Rp ${(currentSlipTemp.insentif||0).toLocaleString('id-ID')}\n🔺 Potongan Kasbon: Rp ${(currentSlipTemp.potongan||0).toLocaleString('id-ID')}\n\n💰 *TERIMA BERSIH: ${currentSlipTemp.bersih}*\n\nHRD Tehnik Stainless`; window.open(`https://wa.me/${noWa}?text=${encodeURIComponent(text)}`, '_blank'); };
+        window.kirimWhatsApp = () => { const emp = db_karyawan.find(k=>k.nik===currentSlipTemp.nik); if(!emp || !emp.telp) return showToast("No HP Karyawan tidak terdata!", "error"); let noWa = emp.telp.replace(/^0/, '62'); let text = `Halo *${currentSlipTemp.nama}*,\nBerikut Rincian Gaji Anda periode *${currentSlipTemp.periode}*:\n\n🔹 Gaji Pokok: Rp ${(currentSlipTemp.gajiPokok||0).toLocaleString('id-ID')}\n🔹 Kehadiran: Rp ${(currentSlipTemp.tunjKehadiran||0).toLocaleString('id-ID')}\n🔹 Lembur/Insentif: Rp ${(currentSlipTemp.insentif||0).toLocaleString('id-ID')}\n🔹 Reimbursement: Rp ${(currentSlipTemp.reimburse||0).toLocaleString('id-ID')}\n🔺 Potongan Kasbon: Rp ${(currentSlipTemp.potongan||0).toLocaleString('id-ID')}\n\n💰 *TERIMA BERSIH: ${currentSlipTemp.bersih}*\n\nHRD Tehnik Stainless`; window.open(`https://wa.me/${noWa}?text=${encodeURIComponent(text)}`, '_blank'); };
 
         // ==========================================
         // MODUL ADMIN (SISANYA)
@@ -1855,8 +1858,8 @@
             }
         };
 
-        const hitungTotalGajiBawah = () => { const v = id => parseFloat(el(id).value)||0; const tot = v('gaji-pokok')+v('gaji-harian-total')+v('gaji-tugas-total')+v('gaji-bonus-total')+v('gaji-lainnya')-v('gaji-potongan'); el('gaji-total').value = (tot<0?'- ':'')+'Rp '+Math.abs(tot).toLocaleString('id-ID'); el('gaji-total').style.color = tot<0?'var(--danger)':'var(--text-main)'; };
-        ['gaji-pokok','gaji-harian-total','gaji-tugas-total','gaji-bonus-total','gaji-lainnya','gaji-potongan'].forEach(id => el(id).addEventListener('input', hitungTotalGajiBawah));
+        const hitungTotalGajiBawah = () => { const v = id => parseFloat(el(id).value)||0; const tot = v('gaji-pokok')+v('gaji-harian-total')+v('gaji-tugas-total')+v('gaji-bonus-total')+v('gaji-lainnya')+v('gaji-reimburse')-v('gaji-potongan'); el('gaji-total').value = (tot<0?'- ':'')+'Rp '+Math.abs(tot).toLocaleString('id-ID'); el('gaji-total').style.color = tot<0?'var(--danger)':'var(--text-main)'; };
+        ['gaji-pokok','gaji-harian-total','gaji-tugas-total','gaji-bonus-total','gaji-lainnya','gaji-reimburse','gaji-potongan'].forEach(id => el(id).addEventListener('input', hitungTotalGajiBawah));
 
         window.kalkulasiGajiMassal = () => {
             const per = el('gaji-massal-periode').value; const fp = el('gaji-massal-periode')._flatpickr;
@@ -1873,10 +1876,13 @@
                         if(att.lk) dLK++; if(att.mk) dMK++; 
                     } currD.setDate(currD.getDate() + 1);
                 }
-                const mGH = parseFloat(emp.gajiHarian)||0; const mBT = parseFloat(emp.bonusTetap)||0; const gPokok = parseFloat(emp.gajiPokok)||0; const gHadir = dHadir * mGH; const gTugas = (dLK + dMK) * mGH; const gBonus = dHadir * mBT; const tPenghasilan = gPokok + gHadir + gTugas + gBonus; let potongan = parseFloat(emp.sisaKasbon)||0; const bersih = tPenghasilan - potongan; const bersihStr = (bersih<0?'- ':'')+'Rp '+Math.abs(bersih).toLocaleString('id-ID');
+                
+                let tReimburse = 0; db_reimburse.filter(r => r.nik === emp.nik && r.status === 'Disetujui').forEach(r => { let rD = new Date(r.tanggal); rD.setHours(0,0,0,0); if(rD >= d1Start && rD <= d2End) tReimburse += r.nominal; });
+                const mGH = parseFloat(emp.gajiHarian)||0; const mBT = parseFloat(emp.bonusTetap)||0; const gPokok = parseFloat(emp.gajiPokok)||0; const gHadir = dHadir * mGH; const gTugas = (dLK + dMK) * mGH; const gBonus = dHadir * mBT; const tPenghasilan = gPokok + gHadir + gTugas + gBonus + tReimburse; let potongan = parseFloat(emp.sisaKasbon)||0; const bersih = tPenghasilan - potongan; const bersihStr = (bersih<0?'- ':'')+'Rp '+Math.abs(bersih).toLocaleString('id-ID');
                 let isOverlap = db_slip.some(s => { if(s.nik !== emp.nik) return false; let sD1=new Date(s.tglMulai), sD2=new Date(s.tglAkhir); sD1.setHours(0,0,0,0); sD2.setHours(23,59,59,999); return (d1Start <= sD2 && d2End >= sD1); });
+                
                 if(!isOverlap) {
-                    pendingMassalSlips.push({ nik: emp.nik, nama: emp.nama, periode: per, tglMulai: fp.selectedDates[0].toISOString(), tglAkhir: (fp.selectedDates.length>1?fp.selectedDates[1]:fp.selectedDates[0]).toISOString(), potongan: potongan, bersih: bersihStr, gajiPokok: gPokok, tunjKehadiran: gHadir, insentif: gBonus, tugasLuar: gTugas, tanggalBuat: new Date().toISOString() });
+                    pendingMassalSlips.push({ nik: emp.nik, nama: emp.nama, periode: per, tglMulai: fp.selectedDates[0].toISOString(), tglAkhir: (fp.selectedDates.length>1?fp.selectedDates[1]:fp.selectedDates[0]).toISOString(), potongan: potongan, bersih: bersihStr, gajiPokok: gPokok, tunjKehadiran: gHadir, insentif: gBonus, tugasLuar: gTugas, reimburse: tReimburse, tanggalBuat: new Date().toISOString() });
                     let detKehadiran = `<span style="color:var(--success)"><b>${dHadir}</b> H</span>`; if(dSetengah) detKehadiran += ` / <span style="color:var(--info)"><b>${dSetengah}</b> ½H</span>`; if(dSakit || dCuti || dIzin) detKehadiran += ` / <span style="color:var(--warning)"><b>${dSakit+dCuti+dIzin}</b> ISC</span>`; if(dAbsen) detKehadiran += ` / <span style="color:var(--danger)"><b>${dAbsen}</b> A</span>`;
                     tbody += `<tr><td style="text-align:center;"><input type="checkbox" class="chk-massal-gaji" value="${emp.nik}" checked style="width:16px; height:16px;"></td><td><b>${emp.nama}</b><br><small>${emp.nik}</small></td><td style="font-size:12px;">${detKehadiran}</td><td style="color:var(--primary); font-weight:600;">Rp ${tPenghasilan.toLocaleString('id-ID')}</td><td style="color:var(--danger)">Rp ${potongan.toLocaleString('id-ID')}</td><td style="font-weight:800; font-size:15px; color:${bersih<0?'var(--danger)':'var(--success)'}">${bersihStr}</td></tr>`;
                 } else { tbody += `<tr style="background:#f1f5f9; opacity:0.6;"><td style="text-align:center;"><input type="checkbox" disabled></td><td><b>${emp.nama}</b><br><small>${emp.nik}</small></td><td colspan="4" style="color:var(--danger); font-size:12px; font-weight:700;">⚠️ Slip telah dicetak untuk range tgl ini.</td></tr>`; }
@@ -1915,242 +1921,410 @@
             } catch(e) { showToast("Gagal batch massal!", "error"); } 
         };
         
-        const jalankanAutoCalc = () => { const nik = el('gaji-nik').value; const fp = el('gaji-periode-range')._flatpickr; if(!nik || !fp || fp.selectedDates.length === 0) { el('gaji-rekap-container').classList.add('hidden'); el('peringatan-slip').classList.add('hidden'); return hitungTotalGajiBawah(); } const d1Start = new Date(fp.selectedDates[0]); d1Start.setHours(0,0,0,0); const d2End = new Date(fp.selectedDates.length>1 ? fp.selectedDates[1] : d1Start); d2End.setHours(23,59,59,999); const emp = db_karyawan.find(k => k.nik === nik); if(!emp) return; let isOverlap = false; db_slip.filter(s => s.nik === nik && s.id !== currentEditSlipId).forEach(s => { let sD1=new Date(s.tglMulai), sD2=new Date(s.tglAkhir); sD1.setHours(0,0,0,0); sD2.setHours(23,59,59,999); if(d1Start <= sD2 && d2End >= sD1) isOverlap = true; }); el('peringatan-slip').classList.toggle('hidden', !isOverlap); el('btn-terbitkan-slip').disabled = isOverlap; el('btn-terbitkan-slip').style.background = isOverlap?'var(--danger)':'var(--primary)'; el('btn-terbitkan-slip').innerText = isOverlap?"Terkunci (Ada Irisan Tgl)":(currentEditSlipId?"Perbarui Slip Revisi":"Terbitkan Slip Satuan"); let dHadir=0, dSetengah=0, dISC=0, dAbsen=0, dLK=0, dMK=0, detailHTML='', currD = new Date(d1Start); while(currD <= d2End) { let dStr = `${currD.getFullYear()}-${String(currD.getMonth()+1).padStart(2,'0')}-${String(currD.getDate()).padStart(2,'0')}`; const att = db_kehadiran.find(a => a.nik === nik && a.date === dStr); let st='-', sh='-', tg='-'; if(att) { if(att.status==='Hadir') dHadir++; else if(att.status==='Izin 1/2 Hari') { dHadir += 0.5; dSetengah++; } else if(att.status==='Absen') dAbsen++; else dISC++; if(att.lk) {dLK++; tg+='<span class="badge badge-info">LK</span> ';} if(att.mk) {dMK++; tg+='<span class="badge badge-danger">MK</span> ';} let cCls = att.status==='Hadir'?'cell-hadir':(att.status==='Absen'?'cell-absen':(att.status==='Izin 1/2 Hari'?'cell-setengah':'cell-izin')); st = `<span class="${cCls}">${att.status}</span>`; sh = att.shift||'Pagi'; if(att.lembur) tg+=`${att.lembur} Jam`; } detailHTML += `<tr><td>${currD.toLocaleDateString('id-ID')}</td><td>${['Min','Sen','Sel','Rab','Kam','Jum','Sab'][currD.getDay()]}</td><td>${st}</td><td>${sh}</td><td>${tg.replace(/^-/,'')}</td></tr>`; currD.setDate(currD.getDate() + 1); } el('tbody-gaji-detail').innerHTML = detailHTML; el('rek-h').innerText=dHadir; el('rek-setengah').innerText=dSetengah; el('rek-isc').innerText=dISC; el('rek-a').innerText=dAbsen; el('rek-lk').innerText=dLK; el('rek-mk').innerText=dMK; el('gaji-rekap-container').classList.remove('hidden'); const mGH = parseFloat(emp.gajiHarian)||0, mBT = parseFloat(emp.bonusTetap)||0; el('info-hadir').innerText = `(${dHadir} Hari x Rp ${mGH.toLocaleString()})`; el('info-lkmk').innerText = `(${dLK+dMK} Tugas x Rp ${mGH.toLocaleString()})`; el('info-bonus').innerText = `(${dHadir} Hari x Rp ${mBT.toLocaleString()})`; if(!currentEditSlipId) { el('gaji-pokok').value = emp.gajiPokok||0; el('gaji-harian-total').value = dHadir*mGH; el('gaji-tugas-total').value = (dLK+dMK)*mGH; el('gaji-bonus-total').value = dHadir*mBT; el('gaji-lainnya').value=0; el('gaji-potongan').value = emp.sisaKasbon||0; hitungTotalGajiBawah(); } };
-        el('gaji-nik').addEventListener('change', jalankanAutoCalc);
+        const jalankanAutoCalc = () => {
+                const nik = el('gaji-nik').value; 
+                const fp = el('gaji-periode-range')._flatpickr; 
+                if(!nik || !fp || fp.selectedDates.length === 0) { 
+                    el('gaji-rekap-container').classList.add('hidden'); 
+                    el('peringatan-slip').classList.add('hidden'); 
+                    return hitungTotalGajiBawah(); 
+                } 
+                
+                const d1Start = new Date(fp.selectedDates[0]); d1Start.setHours(0,0,0,0); 
+                const d2End = new Date(fp.selectedDates.length>1 ? fp.selectedDates[1] : d1Start); d2End.setHours(23,59,59,999); 
+                const emp = db_karyawan.find(k => k.nik === nik); if(!emp) return; 
+                
+                let isOverlap = false; 
+                db_slip.filter(s => s.nik === nik && s.id !== currentEditSlipId).forEach(s => { 
+                    let sD1=new Date(s.tglMulai), sD2=new Date(s.tglAkhir); sD1.setHours(0,0,0,0); sD2.setHours(23,59,59,999); 
+                    if(d1Start <= sD2 && d2End >= sD1) isOverlap = true; 
+                }); 
+                
+                el('peringatan-slip').classList.toggle('hidden', !isOverlap); 
+                el('btn-terbitkan-slip').disabled = isOverlap; 
+                el('btn-terbitkan-slip').style.background = isOverlap?'var(--danger)':'var(--primary)'; 
+                el('btn-terbitkan-slip').innerText = isOverlap?"Terkunci (Ada Irisan Tgl)":(currentEditSlipId?"Perbarui Slip Revisi":"Terbitkan Slip Satuan"); 
+                
+                let dHadir=0, dSetengah=0, dISC=0, dAbsen=0, dLK=0, dMK=0, detailHTML='', currD = new Date(d1Start); 
+                while(currD <= d2End) { 
+                    let dStr = `${currD.getFullYear()}-${String(currD.getMonth()+1).padStart(2,'0')}-${String(currD.getDate()).padStart(2,'0')}`; 
+                    const att = db_kehadiran.find(a => a.nik === nik && a.date === dStr); 
+                    let st='-', sh='-', tg='-'; 
+                    if(att) { 
+                        if(att.status==='Hadir') dHadir++; 
+                        else if(att.status==='Izin 1/2 Hari') { dHadir += 0.5; dSetengah++; } 
+                        else if(att.status==='Absen') dAbsen++; 
+                        else dISC++; 
+                        
+                        if(att.lk) {dLK++; tg+='<span class="badge badge-info">LK</span> ';} 
+                        if(att.mk) {dMK++; tg+='<span class="badge badge-danger">MK</span> ';} 
+                        
+                        let cCls = att.status==='Hadir'?'cell-hadir':(att.status==='Absen'?'cell-absen':(att.status==='Izin 1/2 Hari'?'cell-setengah':'cell-izin')); 
+                        st = `<span class="${cCls}">${att.status}</span>`; sh = att.shift||'Pagi'; if(att.lembur) tg+=`${att.lembur} Jam`; 
+                    } 
+                    detailHTML += `<tr><td>${currD.toLocaleDateString('id-ID')}</td><td>${['Min','Sen','Sel','Rab','Kam','Jum','Sab'][currD.getDay()]}</td><td>${st}</td><td>${sh}</td><td>${tg.replace(/^-/,'')}</td></tr>`; 
+                    currD.setDate(currD.getDate() + 1); 
+                } 
+                
+                el('tbody-gaji-detail').innerHTML = detailHTML; el('rek-h').innerText=dHadir; el('rek-setengah').innerText=dSetengah; el('rek-isc').innerText=dISC; el('rek-a').innerText=dAbsen; el('rek-lk').innerText=dLK; el('rek-mk').innerText=dMK; el('gaji-rekap-container').classList.remove('hidden'); 
+                
+                const mGH = parseFloat(emp.gajiHarian)||0, mBT = parseFloat(emp.bonusTetap)||0; 
+                let tReimburse = 0; 
+                db_reimburse.filter(r => r.nik === nik && r.status === 'Disetujui').forEach(r => { 
+                    let rD = new Date(r.tanggal); rD.setHours(0,0,0,0); 
+                    if(rD >= d1Start && rD <= d2End) tReimburse += r.nominal; 
+                }); 
+                
+                el('info-hadir').innerText = `(${dHadir} Hari x Rp ${mGH.toLocaleString()})`; 
+                el('info-lkmk').innerText = `(${dLK+dMK} Tugas x Rp ${mGH.toLocaleString()})`; 
+                el('info-bonus').innerText = `(${dHadir} Hari x Rp ${mBT.toLocaleString()})`; 
+                el('info-reimburse').innerText = tReimburse > 0 ? '(Ada Klaim)' : ''; 
+                
+                if(!currentEditSlipId) { 
+                    el('gaji-pokok').value = emp.gajiPokok||0; 
+                    el('gaji-harian-total').value = dHadir*mGH; 
+                    el('gaji-tugas-total').value = (dLK+dMK)*mGH; 
+                    el('gaji-bonus-total').value = dHadir*mBT; 
+                    el('gaji-lainnya').value=0; 
+                    el('gaji-reimburse').value = tReimburse; 
+                    el('gaji-potongan').value = emp.sisaKasbon||0; 
+                    hitungTotalGajiBawah(); 
+                } 
+            };
+            el('gaji-nik').addEventListener('change', jalankanAutoCalc);
 
-        window.terbitkanSlipGaji = async () => { const nik = el('gaji-nik').value; const potongan = parseFloat(el('gaji-potongan').value) || 0; const txtBrs = el('gaji-total').value; const per = el('gaji-periode-range').value; const fp = el('gaji-periode-range')._flatpickr; if(!nik || !per || fp.selectedDates.length===0) return showToast("Lengkapi form tanggal!", "error"); if(txtBrs.includes('-')) return showToast("Total Gaji Minus tidak valid!", "error"); const emp = db_karyawan.find(k => k.nik === nik); const maxP = (parseFloat(emp.sisaKasbon)||0) + (currentEditSlipId ? (parseFloat(currentEditSlipData.potongan)||0) : 0); if(potongan > maxP) return showToast(`Potongan melebihi limit kasbon aktif`, "error"); const isConfirmed = await showConfirm(currentEditSlipId?"Simpan Revisi?":"Terbitkan Slip Satuan?", `Akan memotong kasbon Rp ${potongan.toLocaleString()}.`, "Terbitkan"); if(!isConfirmed) return; const tglA = fp.selectedDates[0]; const tglB = fp.selectedDates.length>1?fp.selectedDates[1]:tglA; const sData = { nik: nik, nama: emp.nama, periode: per, tglMulai: tglA.toISOString(), tglAkhir: tglB.toISOString(), potongan: potongan, bersih: txtBrs, gajiPokok: parseFloat(el('gaji-pokok').value)||0, tunjKehadiran: parseFloat(el('gaji-harian-total').value)||0, insentif: (parseFloat(el('gaji-bonus-total').value)||0)+(parseFloat(el('gaji-lainnya').value)||0), tugasLuar: parseFloat(el('gaji-tugas-total').value)||0, tanggalBuat: currentEditSlipId?currentEditSlipData.tanggalBuat:new Date().toISOString() }; if(currentEditSlipId) await db.collection("slip_gaji").doc(currentEditSlipId).update(sData); else await db.collection("slip_gaji").add(sData); let dPot = potongan - (currentEditSlipId?(parseFloat(currentEditSlipData.potongan)||0):0); if(dPot !== 0) { let sBaru = (emp.sisaKasbon||0) - dPot; if(sBaru<0)sBaru=0; await db.collection("karyawan").doc(nik).update({ sisaKasbon: sBaru }); await db.collection("kasbon_log").add({ nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: dPot>0?"Potongan Gaji":"Refund Revisi", nominal: Math.abs(dPot), keterangan: `Sinkronisasi Slip ${per}` }); } showToast("Sukses Diterbitkan!"); currentSlipTemp = sData; currentSlipTemp.id = currentEditSlipId || 'temp'; window.lihatDetailSlipAdminAtauKaryawan(currentSlipTemp.id); if(currentEditSlipId) window.batalEditSlip(); else { el('form-penggajian').reset(); el('gaji-rekap-container').classList.add('hidden'); fp.clear(); } };
-        window.revisiSlipGaji = (id) => { const s = db_slip.find(x => x.id === id); if(!s) return; currentEditSlipId = id; currentEditSlipData = s; window.openMenu('menu-penggajian'); el('edit-slip-banner').classList.remove('hidden'); el('gaji-nik').value = s.nik; el('gaji-periode-range')._flatpickr.setDate([s.tglMulai, s.tglAkhir]); el('gaji-nik').dispatchEvent(new Event('change')); setTimeout(() => { el('gaji-pokok').value=s.gajiPokok; el('gaji-harian-total').value=s.tunjKehadiran; el('gaji-tugas-total').value=s.tugasLuar; el('gaji-bonus-total').value=s.insentif; el('gaji-lainnya').value=0; el('gaji-potongan').value=s.potongan; hitungTotalGajiBawah(); }, 500); };
-        window.batalEditSlip = () => { currentEditSlipId = null; currentEditSlipData = null; el('edit-slip-banner').classList.add('hidden'); el('form-penggajian').reset(); el('gaji-rekap-container').classList.add('hidden'); };
-        window.hapusSlipGaji = async (id, nik) => { const ok = await showConfirm("Hapus Arsip Slip?", "Tindakan ini permanen.", "Hapus Permanent", true); if(ok) { const s = db_slip.find(x=>x.id===id); if(s && s.potongan>0) { const emp = db_karyawan.find(k=>k.nik===nik); if(emp) { db.collection("karyawan").doc(nik).update({sisaKasbon: (emp.sisaKasbon||0)+s.potongan}); db.collection("kasbon_log").add({ nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: "Refund Hapus Slip", nominal: s.potongan, keterangan: "Penghapusan Slip" }); } } db.collection("slip_gaji").doc(id).delete(); showToast("Terhapus dari database."); } };
-        window.renderAllSlips = () => { let tbody = ''; const filterBulan = el('filter-bulan-slip')?.value || ''; const searchKeyword = (el('search-slip')?.value || '').toLowerCase(); const allSlips = db_slip.filter(s => { const empExists = db_karyawan.some(k => k.nik === s.nik); if(!empExists) return false; const matchBulan = filterBulan ? (s.tglMulai.startsWith(filterBulan) || s.tglAkhir.startsWith(filterBulan) || s.tanggalBuat.startsWith(filterBulan)) : true; const matchNama = s.nama.toLowerCase().includes(searchKeyword) || s.nik.includes(searchKeyword); return matchBulan && matchNama; }).sort((a,b) => new Date(b.tanggalBuat) - new Date(a.tanggalBuat)); allSlips.forEach(s => { tbody += `<tr><td>${new Date(s.tanggalBuat).toLocaleDateString('id-ID')}</td><td><b>${s.periode}</b></td><td><b>${s.nama}</b><br><small>${s.nik}</small></td><td style="color:var(--success); font-weight:800; font-size:15px;">${s.bersih}</td><td><div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center;"><button class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="lihatDetailSlipAdminAtauKaryawan('${s.id}')">Lihat PDF</button> <button class="btn-outline" style="padding:6px 12px; font-size:12px; color:var(--warning); border-color:var(--warning);" onclick="window.revisiSlipGaji('${s.id}')">Edit</button> <button class="btn-outline" style="padding:6px 12px; font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusSlipGaji('${s.id}', '${s.nik}')">Hapus</button></div></td></tr>`; }); el('tbody-all-slips').innerHTML = tbody || '<tr><td colspan="5" align="center" style="padding:30px;">Tidak ada arsip slip gaji ditemukan.</td></tr>'; };
+            window.terbitkanSlipGaji = async () => { 
+                const nik = el('gaji-nik').value; 
+                const potongan = parseFloat(el('gaji-potongan').value) || 0; 
+                const txtBrs = el('gaji-total').value; 
+                const per = el('gaji-periode-range').value; 
+                const fp = el('gaji-periode-range')._flatpickr; 
+                
+                if(!nik || !per || fp.selectedDates.length===0) return showToast("Lengkapi form tanggal!", "error"); 
+                if(txtBrs.includes('-')) return showToast("Total Gaji Minus tidak valid!", "error"); 
+                
+                const emp = db_karyawan.find(k => k.nik === nik); 
+                const maxP = (parseFloat(emp.sisaKasbon)||0) + (currentEditSlipId ? (parseFloat(currentEditSlipData.potongan)||0) : 0); 
+                if(potongan > maxP) return showToast(`Potongan melebihi limit kasbon aktif`, "error"); 
+                
+                const isConfirmed = await showConfirm(currentEditSlipId?"Simpan Revisi?":"Terbitkan Slip Satuan?", `Akan memotong kasbon Rp ${potongan.toLocaleString()}.`, "Terbitkan"); 
+                if(!isConfirmed) return; 
+                
+                const tglA = fp.selectedDates[0]; 
+                const tglB = fp.selectedDates.length>1 ? fp.selectedDates[1] : tglA; 
+                const sData = { 
+                    nik: nik, 
+                    nama: emp.nama, 
+                    periode: per, 
+                    tglMulai: tglA.toISOString(), 
+                    tglAkhir: tglB.toISOString(), 
+                    potongan: potongan, 
+                    bersih: txtBrs, 
+                    gajiPokok: parseFloat(el('gaji-pokok').value)||0,
+                    tunjKehadiran: parseFloat(el('gaji-harian-total').value)||0,
+                    insentif: parseFloat(el('gaji-bonus-total').value)||0,
+                    tugasLuar: parseFloat(el('gaji-tugas-total').value)||0,
+                    reimburse: parseFloat(el('gaji-reimburse').value)||0,
+                    lainnya: parseFloat(el('gaji-lainnya').value)||0,
+                    tanggalBuat: currentEditSlipId ? currentEditSlipData.tanggalBuat : new Date().toISOString()
+                };
 
-        const renderLaporan = () => { const f = el('filter-bulan-laporan').value; if(!f) return; const y = parseInt(f.split('-')[0]), m = parseInt(f.split('-')[1]), dInM = new Date(y, m, 0).getDate(); let html = `<thead><tr><th class="sticky-col">Nama Pegawai</th>`; for(let i=1; i<=dInM; i++) { let d=new Date(y,m-1,i); html += `<th class="${d.getDay()===0?'col-minggu':''}"><span style="font-size:10px;">${['Min','Sen','Sel','Rab','Kam','Jum','Sab'][d.getDay()]}</span><br>${i}</th>`; } html += `<th>H</th><th>½</th><th>I</th><th>S</th><th>C</th><th>A</th><th>LK</th><th>MK</th></tr></thead><tbody>`; db_karyawan.forEach(emp => { const trStyle = emp.status === 'Nonaktif' ? 'style="background-color: #f1f5f9; color: #64748b;"' : ''; const nameDisplay = emp.status === 'Nonaktif' ? `<b>${emp.nama}</b><br><small style="color:var(--danger); font-size:10px; font-weight:800;">[ARSIP]</small>` : `<b>${emp.nama}</b>`; html += `<tr ${trStyle}><td class="sticky-col" ${trStyle}>${nameDisplay}</td>`; let tH=0, tSetengah=0, tI=0, tS=0, tC=0, tA=0, tLK=0, tMK=0; for(let i=1; i<=dInM; i++) { const att = db_kehadiran.find(a => a.nik === emp.nik && a.date === `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`); let c = `-`; if(att) { let symbol = '-'; let cCls = ''; if(att.status === 'Hadir') { tH++; symbol='H'; cCls='cell-hadir'; } else if(att.status === 'Izin 1/2 Hari') { tSetengah++; symbol='½'; cCls='cell-setengah'; } else if(att.status === 'Sakit') { tS++; symbol='S'; cCls='cell-sakit'; } else if(att.status === 'Cuti') { tC++; symbol='C'; cCls='cell-cuti'; } else if(att.status === 'Absen') { tA++; symbol='A'; cCls='cell-absen'; } else { tI++; symbol='I'; cCls='cell-izin'; } if(att.lk)tLK++; if(att.mk)tMK++; c = `<span class="${cCls}">${symbol}</span>`; if(att.lk)c+='<br><span class="badge" style="background:var(--primary);color:#fff;font-size:9px;padding:2px 4px;">LK</span>'; if(att.mk)c+='<br><span class="badge" style="background:var(--danger);color:#fff;font-size:9px;padding:2px 4px;">MK</span>'; } html += `<td class="${new Date(y,m-1,i).getDay()===0?'col-minggu':''}">${c}</td>`; } html += `<td><b>${tH}</b></td><td>${tSetengah}</td><td>${tI}</td><td>${tS}</td><td>${tC}</td><td><b style="color:var(--danger)">${tA}</b></td><td>${tLK}</td><td>${tMK}</td></tr>`; }); el('tabel-laporan').innerHTML = html + '</tbody>'; };
+                const batch = db.batch();
+                if(currentEditSlipId) {
+                    batch.update(db.collection("slip_gaji").doc(currentEditSlipId), sData);
+                    let selisihPotongan = potongan - (currentEditSlipData.potongan||0);
+                    if(selisihPotongan !== 0) {
+                        let sBaru = (emp.sisaKasbon||0) - selisihPotongan; if(sBaru < 0) sBaru = 0;
+                        batch.update(db.collection("karyawan").doc(nik), { sisaKasbon: sBaru });
+                        batch.set(db.collection("kasbon_log").doc(), { nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: "Koreksi Potongan", nominal: Math.abs(selisihPotongan), keterangan: `Koreksi Edit Slip ${per}`, status: "Selesai" });
+                    }
+                } else {
+                    batch.set(db.collection("slip_gaji").doc(), sData);
+                    if(potongan > 0) {
+                        let sBaru = (emp.sisaKasbon||0) - potongan; if(sBaru < 0) sBaru = 0;
+                        batch.update(db.collection("karyawan").doc(nik), { sisaKasbon: sBaru });
+                        batch.set(db.collection("kasbon_log").doc(), { nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: "Potongan Gaji", nominal: potongan, keterangan: `Pelunasan Gaji ${per}`, status: "Selesai" });
+                    }
+                }
 
-        const renderDetailRekapAbsen = () => { if(!currentDetailNik) return; let tH=0, tI=0, tA=0; const now = new Date(); const currMonthPrefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; db_kehadiran.filter(a => a.nik === currentDetailNik && a.date.startsWith(currMonthPrefix)).forEach(a => { if(a.status === 'Hadir' || a.status === 'Izin 1/2 Hari') tH++; else if(a.status === 'Absen') tA++; else tI++; }); el('det-rek-h').innerText = tH; el('det-rek-i').innerText = tI; el('det-rek-a').innerText = tA; };
-        const renderDetailAbsenHistory = () => { if(!currentDetailNik) return; let tbody = ''; const myAbsen = db_kehadiran.filter(a => a.nik === currentDetailNik).sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0, 30); myAbsen.forEach(a => { let infoExtra = a.shift || 'Pagi'; if(a.lk) infoExtra += ` <span class="badge badge-info" style="font-size:9px;">LK</span>`; if(a.mk) infoExtra += ` <span class="badge badge-danger" style="font-size:9px;">MK</span>`; if(a.lembur > 0) infoExtra += ` (+${a.lembur}J)`; let bCls = 'badge-success'; if(a.status==='Absen') bCls='badge-danger'; else if(a.status!=='Hadir') bCls='badge-info'; let sts = a.status === 'Izin 1/2 Hari' ? 'Izin ½ Hr' : a.status; let jamInfo = `In: ${a.waktuMasuk||'-'}<br>Out: ${a.waktuPulang||'-'}`; let fotoImg = '-'; if(a.fotoSelfieMasuk || a.fotoSelfiePulang) { let fSrc = a.fotoSelfieMasuk || a.fotoSelfiePulang; fotoImg = `<img src="${fSrc}" onclick="window.bukaViewerFoto('${fSrc}')" style="width:40px; height:40px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1; cursor:pointer;" title="Perbesar">`; } tbody += `<tr><td>${a.date}</td><td><span class="badge ${bCls}">${sts}</span></td><td style="font-size:11px;">${jamInfo}</td><td>${infoExtra}<br><small>${a.catatan||'-'}</small></td><td style="text-align:center;">${fotoImg}</td></tr>`; }); el('tbody-det-absen').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada riwayat.</td></tr>'; };
+                try {
+                    await batch.commit();
+                    showToast(currentEditSlipId ? "Slip direvisi!" : "Slip diterbitkan!");
+                    el('form-penggajian').reset(); el('gaji-nik').value = ""; el('gaji-periode-range')._flatpickr.clear(false); el('gaji-total').value = "0"; el('gaji-rekap-container').classList.add('hidden'); window.batalEditSlip();
+                } catch(e) { showToast("Gagal memproses slip!", "error"); }
+            };
 
-        const renderDetailReimburse = () => {
-            if(!currentDetailNik) return;
-            let tbody = '';
-            const reims = db_reimburse.filter(r => r.nik === currentDetailNik).sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
-            reims.forEach(r => {
-                let b = r.status==='Pending' ? 'badge-pending' : (r.status==='Disetujui' ? 'badge-success' : 'badge-danger');
-                tbody += `<tr>
-                    <td>${new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
-                    <td><b>${r.jenis}</b></td>
-                    <td><small style="display:block; max-width:200px; white-space:normal;">${r.keterangan}</small></td>
-                    <td style="color:var(--primary); font-weight:600;">Rp ${r.nominal.toLocaleString('id-ID')}</td>
-                    <td><span class="badge ${b}">${r.status}</span></td>
-                </tr>`;
-            });
-            if(el('tbody-det-reimburse')) el('tbody-det-reimburse').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada riwayat klaim reimbursement.</td></tr>';
-        };
+            window.editSlipGaji = (id) => {
+                const s = db_slip.find(x => x.id === id); if(!s) return;
+                currentEditSlipId = s.id; currentEditSlipData = s;
+                window.openMenu('menu-penggajian'); window.switchGajiView('satuan');
+                el('edit-slip-banner').classList.remove('hidden');
+                el('gaji-nik').value = s.nik;
+                el('gaji-periode-range')._flatpickr.setDate([new Date(s.tglMulai), new Date(s.tglAkhir)]);
+                el('gaji-pokok').value = s.gajiPokok || 0;
+                el('gaji-harian-total').value = s.tunjKehadiran || 0;
+                el('gaji-tugas-total').value = s.tugasLuar || 0;
+                el('gaji-bonus-total').value = s.insentif || 0;
+                el('gaji-lainnya').value = s.lainnya || 0;
+                el('gaji-reimburse').value = s.reimburse || 0;
+                el('gaji-potongan').value = s.potongan || 0;
+                hitungTotalGajiBawah(); jalankanAutoCalc();
+            };
 
-// Melanjutkan fungsi detail karyawan yang sempat terpotong di batas limit
-            window.lihatDetailKaryawan = (nik) => { 
-                currentDetailNik = nik; 
-                window.openMenu('menu-detail-karyawan'); 
-                const k = db_karyawan.find(x=>x.nik===nik); 
-                if(!k) return; 
-                el('det-nama').innerText=k.nama; 
-                el('det-info').innerText=`NIK: ${k.nik} | ${k.jabatan||'-'} | ${k.divisi||'-'}`; 
-                const outName = db_outlet.find(o => o.id === k.outletId)?.nama || "Pusat"; 
-                el('det-lokasi-badge').innerText=`📍 Lokasi: ${outName}`; 
-                el('det-hutang').innerText=`Rp ${(parseFloat(k.sisaKasbon)||0).toLocaleString('id-ID')}`; 
-                el('det-limit').innerText=`Limit Jatah: Rp ${(parseFloat(k.limitKasbon)||0).toLocaleString('id-ID')}`;
+            window.batalEditSlip = () => {
+                currentEditSlipId = null; currentEditSlipData = null;
+                el('edit-slip-banner').classList.add('hidden');
+                el('form-penggajian').reset(); el('gaji-nik').value = "";
+                if(el('gaji-periode-range')._flatpickr) el('gaji-periode-range')._flatpickr.clear(false);
+                el('gaji-rekap-container').classList.add('hidden');
+                el('peringatan-slip').classList.add('hidden');
+                hitungTotalGajiBawah();
+                el('btn-terbitkan-slip').innerText = "Terbitkan Slip Satuan";
+            };
 
-                // Detail Teks Lengkap
-                el('det-telp').innerText = k.telp || '-';
-                el('det-email').innerText = k.email || '-';
+            window.hapusSlipGaji = async (id) => {
+                const ok = await showConfirm("Hapus Slip?", "Data slip akan hilang. Nilai potongan kasbon yang pernah ditarik TIDAK akan dikembalikan otomatis.", "Hapus Permanen", true);
+                if(ok) {
+                    try { await db.collection("slip_gaji").doc(id).delete(); showToast("Slip dihapus!"); } catch(e) { showToast("Gagal hapus!", "error"); }
+                }
+            };
+
+            window.renderAllSlips = () => {
+                const search = el('search-slip').value.toLowerCase(); const filterBln = el('filter-bulan-slip').value;
+                let html = '';
+                db_slip.forEach(s => {
+                    let dMatch = true; if(filterBln) { let b = new Date(s.tglMulai).toISOString().substring(0,7); if(b !== filterBln) dMatch = false; }
+                    let sMatch = s.nama.toLowerCase().includes(search) || s.nik.toLowerCase().includes(search);
+                    if(dMatch && sMatch) {
+                        html += `<tr><td>${new Date(s.tanggalBuat).toLocaleDateString('id-ID')}</td><td><b>${s.periode}</b></td><td>${s.nama}<br><small>${s.nik}</small></td><td style="color:var(--success); font-weight:800;">${s.bersih}</td><td style="text-align:center;"><div style="display:flex; gap:6px; justify-content:center;"><button class="btn-outline" style="padding:6px 12px; font-size:12px; border-color:var(--primary); color:var(--primary);" onclick="window.lihatDetailSlipAdminAtauKaryawan('${s.id}')">Rincian</button><button class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="window.editSlipGaji('${s.id}')">Revisi</button><button class="btn-outline" style="padding:6px 12px; font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusSlipGaji('${s.id}')">Hapus</button></div></td></tr>`;
+                    }
+                });
+                el('tbody-all-slips').innerHTML = html || '<tr><td colspan="5" align="center">Tidak ada data slip.</td></tr>';
+            };
+
+            // MODUL LAPORAN 
+            function renderLaporan() {
+                const bth = el('filter-bulan-laporan').value; if(!bth) return;
+                const year = parseInt(bth.split('-')[0]); const month = parseInt(bth.split('-')[1]);
+                const daysInMonth = new Date(year, month, 0).getDate();
+                const today = new Date(); const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth() + 1);
+                
+                let thHtml = `<th class="sticky-col">Nama Pegawai / Tgl</th>`;
+                for(let i=1; i<=daysInMonth; i++) { 
+                    let curD = new Date(year, month-1, i); let isSun = curD.getDay()===0; let isToday = isCurrentMonth && (i === today.getDate());
+                    let thCls = ''; if(isSun) thCls += ' col-minggu'; if(isToday) thCls += ' col-hari-ini';
+                    thHtml += `<th class="${thCls}">${i}</th>`; 
+                }
+                let tblHtml = `<thead><tr>${thHtml}</tr></thead><tbody>`;
+
+                db_karyawan.forEach(k => {
+                    let isArsip = k.status === 'Nonaktif';
+                    let trBg = isArsip ? 'background:#f1f5f9; opacity:0.8;' : '';
+                    let rowHtml = `<tr style="${trBg}"><td class="sticky-col"><b>${k.nama}</b><br><small>${k.nik}</small></td>`;
+                    for(let i=1; i<=daysInMonth; i++) {
+                        let curD = new Date(year, month-1, i); let isSun = curD.getDay()===0; let isToday = isCurrentMonth && (i === today.getDate());
+                        let tglStr = `${year}-${String(month).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                        let tdCls = ''; if(isSun) tdCls += ' col-minggu'; if(isToday) tdCls += ' col-hari-ini';
+                        
+                        let att = db_kehadiran.find(a => a.nik === k.nik && a.date === tglStr);
+                        let cellTxt = '-';
+                        if(att) {
+                            if(att.status === 'Hadir') cellTxt = '<span style="color:var(--success);font-weight:bold;">H</span>';
+                            else if(att.status === 'Izin 1/2 Hari') cellTxt = '<span style="color:var(--info);font-weight:bold;">½</span>';
+                            else if(att.status === 'Sakit') cellTxt = '<span style="color:var(--info);font-weight:bold;">S</span>';
+                            else if(att.status === 'Cuti') cellTxt = '<span style="color:var(--purple);font-weight:bold;">C</span>';
+                            else if(att.status === 'Absen') cellTxt = '<span style="color:var(--danger);font-weight:bold;">A</span>';
+                            else cellTxt = '<span style="color:var(--warning);font-weight:bold;">I</span>';
+                        }
+                        rowHtml += `<td class="${tdCls}">${cellTxt}</td>`;
+                    }
+                    rowHtml += `</tr>`; tblHtml += rowHtml;
+                });
+                tblHtml += `</tbody>`; el('tabel-laporan').innerHTML = tblHtml;
+            }
+
+            window.exportLaporanCSV = () => {
+                const bth = el('filter-bulan-laporan').value; if(!bth) return;
+                const year = parseInt(bth.split('-')[0]); const month = parseInt(bth.split('-')[1]);
+                const daysInMonth = new Date(year, month, 0).getDate();
+                
+                let csv = "NIK,Nama Pegawai,Status";
+                for(let i=1; i<=daysInMonth; i++) csv += `,${i}`;
+                csv += "\n";
+                
+                db_karyawan.forEach(k => {
+                    csv += `="${k.nik}","${k.nama}","${k.status}"`;
+                    for(let i=1; i<=daysInMonth; i++) {
+                        let tglStr = `${year}-${String(month).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                        let att = db_kehadiran.find(a => a.nik === k.nik && a.date === tglStr);
+                        let cellTxt = '-';
+                        if(att) {
+                            if(att.status === 'Hadir') cellTxt = 'H';
+                            else if(att.status === 'Izin 1/2 Hari') cellTxt = '0.5';
+                            else if(att.status === 'Sakit') cellTxt = 'S';
+                            else if(att.status === 'Cuti') cellTxt = 'C';
+                            else if(att.status === 'Absen') cellTxt = 'A';
+                            else cellTxt = 'I';
+                        }
+                        csv += `,${cellTxt}`;
+                    }
+                    csv += "\n";
+                });
+                
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a"); const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url); link.setAttribute("download", `Rekap_Kehadiran_${bth}.csv`);
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            };
+
+            window.exportKaryawanCSV = () => {
+                let csv = "NIK,Nama Lengkap,Email,No. HP/WA,Jenis Kelamin,Tempat Lahir,Tgl Lahir,Alamat,Cabang/Outlet,Divisi,Jabatan,Status,Tgl Mulai,Sisa Cuti,Sisa Kasbon,Gaji Pokok,Gaji Kehadiran,Insentif,Limit Kasbon\n";
+                db_karyawan.forEach(k => {
+                    let outNama = db_outlet.find(o => o.id === k.outletId)?.nama || "Pusat";
+                    csv += `="${k.nik}","${k.nama}","${k.email||''}","="${k.telp||''}","${k.jk||''}","${k.tempatLahir||''}","${k.tglLahir||''}","${(k.alamat||'').replace(/\n/g, ' ')}","${outNama}","${k.divisi||''}","${k.jabatan||''}","${k.status}","${k.tglMulai||''}","${k.sisaCuti||0}","${k.sisaKasbon||0}","${k.gajiPokok||0}","${k.gajiHarian||0}","${k.bonusTetap||0}","${k.limitKasbon||0}"\n`;
+                });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a"); const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url); link.setAttribute("download", `Database_Karyawan_${getLocalToday()}.csv`);
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            };
+
+            // MODUL DETAIL KARYAWAN ADMIN
+            window.lihatDetailKaryawan = (nik) => {
+                const k = db_karyawan.find(x => x.nik === nik); if(!k) return;
+                currentDetailNik = nik;
+                el('det-nama').innerText = k.nama; el('det-info').innerText = `NIK: ${k.nik} | Divisi: ${k.divisi||'-'} | Jabatan: ${k.jabatan||'-'}`;
+                const outNama = db_outlet.find(o => o.id === k.outletId)?.nama || "Pusat";
+                el('det-lokasi-badge').innerText = `📍 Lokasi: ${outNama}`;
+                el('det-hutang').innerText = `Rp ${(parseFloat(k.sisaKasbon)||0).toLocaleString('id-ID')}`;
+                el('det-limit').innerText = `Limit Jatah: Rp ${(parseFloat(k.limitKasbon)||0).toLocaleString('id-ID')}`;
+                el('det-telp').innerText = k.telp || '-'; el('det-email').innerText = k.email || '-';
                 el('det-ttl').innerText = `${k.tempatLahir||'-'}, ${k.tglLahir||'-'}`;
                 el('det-masuk').innerText = k.tglMulai || '-';
                 el('det-gapok').innerText = `Rp ${(parseFloat(k.gajiPokok)||0).toLocaleString('id-ID')}`;
                 el('det-gahari').innerText = `Rp ${(parseFloat(k.gajiHarian)||0).toLocaleString('id-ID')}`;
                 el('det-bonus').innerText = `Rp ${(parseFloat(k.bonusTetap)||0).toLocaleString('id-ID')}`;
                 el('det-alamat').innerText = k.alamat || '-';
-
-                renderDetailRekapAbsen();
-                renderDetailAbsenHistory();
-                renderDetailReimburse();
-                renderDetailSlipGaji();
+                
+                renderDetailRekapAbsen(); renderDetailAbsenHistory(); renderDetailReimburse(); renderDetailSlipGaji();
+                window.openMenu('menu-detail-karyawan');
             };
 
-            const renderDetailSlipGaji = () => {
+            function renderDetailRekapAbsen() {
                 if(!currentDetailNik) return;
-                let tbody = '';
-                db_slip.filter(s => s.nik === currentDetailNik).sort((a,b) => new Date(b.tanggalBuat) - new Date(a.tanggalBuat)).forEach(s => {
-                    tbody += `<tr>
-                        <td><b>${s.periode}</b></td>
-                        <td style="color:var(--danger)">Rp ${(parseFloat(s.potongan)||0).toLocaleString('id-ID')}</td>
-                        <td style="color:var(--success); font-weight:800;">${s.bersih}</td>
-                        <td style="text-align:center;"><button class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="window.lihatDetailSlipAdminAtauKaryawan('${s.id}')">Lihat PDF</button></td>
-                    </tr>`;
+                let tH=0, tI=0, tA=0; const now = new Date(); const currMonthPrefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+                db_kehadiran.filter(a => a.nik === currentDetailNik && a.date.startsWith(currMonthPrefix)).forEach(a => { 
+                    if(a.status === 'Hadir' || a.status === 'Izin 1/2 Hari') tH++; else if(a.status === 'Absen') tA++; else tI++; 
                 });
-                el('tbody-det-slip').innerHTML = tbody || '<tr><td colspan="4" align="center">Belum ada riwayat slip gaji.</td></tr>';
-            };
+                el('det-rek-h').innerText = tH; el('det-rek-i').innerText = tI; el('det-rek-a').innerText = tA;
+            }
 
-            // ==========================================
-            // MODUL REIMBURSEMENT (ESS & ADMIN)
-            // ==========================================
+            function renderDetailAbsenHistory() {
+                if(!currentDetailNik) return;
+                let html = '';
+                const myAbsen = db_kehadiran.filter(a => a.nik === currentDetailNik).sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0, 30);
+                myAbsen.forEach(a => {
+                    let bCls = 'badge-success'; if(a.status==='Absen') bCls='badge-danger'; else if(a.status!=='Hadir') bCls='badge-info';
+                    let fotoHtml = a.fotoSelfieMasuk ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px;" onclick="bukaViewerFoto('${a.fotoSelfieMasuk}')">Masuk</button>` : '';
+                    if(a.fotoSelfiePulang) fotoHtml += ` <button class="btn-outline" style="padding:4px 8px; font-size:10px;" onclick="bukaViewerFoto('${a.fotoSelfiePulang}')">Pulang</button>`;
+                    
+                    html += `<tr><td>${a.date}</td><td><span class="badge ${bCls}">${a.status}</span></td><td style="font-size:11px;">In: ${a.waktuMasuk||'-'}<br>Out: ${a.waktuPulang||'-'}</td><td><small>${a.shift||'Pagi'} ${a.lk?'(LK)':''} ${a.mk?'(MK)':''}<br>${a.catatan||'-'}</small></td><td>${fotoHtml||'-'}</td></tr>`;
+                });
+                el('tbody-det-absen').innerHTML = html || '<tr><td colspan="5" align="center">Tidak ada riwayat kehadiran.</td></tr>';
+            }
             
-            // Preview Image Reimbursement Sebelum Submit
+            function renderDetailReimburse() {
+                if(!currentDetailNik) return; let html = '';
+                db_reimburse.filter(r => r.nik === currentDetailNik).forEach(r => {
+                    let badgeCls = r.status==='Pending'?'badge-pending':(r.status==='Disetujui'?'badge-success':'badge-danger');
+                    html += `<tr><td>${new Date(r.tanggal).toLocaleDateString('id-ID')}</td><td>${r.jenis}</td><td><small>${r.keterangan}</small></td><td>Rp ${r.nominal.toLocaleString('id-ID')}</td><td><span class="badge ${badgeCls}">${r.status}</span></td></tr>`;
+                });
+                el('tbody-det-reimburse').innerHTML = html || '<tr><td colspan="5" align="center">Belum ada riwayat klaim.</td></tr>';
+            }
+
+            function renderDetailSlipGaji() {
+                if(!currentDetailNik) return; let html = '';
+                db_slip.filter(s => s.nik === currentDetailNik).forEach(s => {
+                    html += `<tr><td><b>${s.periode}</b></td><td style="color:var(--danger)">Rp ${(s.potongan||0).toLocaleString('id-ID')}</td><td style="color:var(--success); font-weight:800;">${s.bersih}</td><td style="text-align:center;"><button class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="window.lihatDetailSlipAdminAtauKaryawan('${s.id}')">Rincian</button></td></tr>`;
+                });
+                el('tbody-det-slip').innerHTML = html || '<tr><td colspan="4" align="center">Tidak ada riwayat slip.</td></tr>';
+            }
+
+            // MODUL REIMBURSEMENT
             el('reim-file').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
+                const file = e.target.files[0]; if(!file) return;
+                const canvas = el('reim-canvas'); const ctx = canvas.getContext('2d');
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     const img = new Image();
                     img.onload = function() {
-                        const canvas = el('reim-canvas');
-                        const MAX_WIDTH = 600; // Resize agar database tidak berat
-                        const scaleSize = MAX_WIDTH / img.width;
-                        canvas.width = MAX_WIDTH;
-                        canvas.height = img.height * scaleSize;
-                        const ctx = canvas.getContext('2d');
+                        const MAX_WIDTH = 600; let scaleSize = MAX_WIDTH / img.width; if(scaleSize > 1) scaleSize = 1;
+                        canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    }
+                    };
                     img.src = event.target.result;
-                }
+                };
                 reader.readAsDataURL(file);
             });
 
-            // Karyawan Submit Reimburse
-            el('form-ess-reimburse').addEventListener('submit', async (e) => {
+            el('form-ess-reimburse').addEventListener('submit', async e => {
                 e.preventDefault();
-                const btn = el('btn-submit-reimburse');
-                btn.disabled = true; btn.innerText = "Mengirim...";
-                
-                const canvas = el('reim-canvas');
-                if (canvas.width === 0) {
-                    showToast("Harap upload bukti struk/kuitansi!", "error");
-                    btn.disabled = false; btn.innerText = "Kirim Pengajuan Klaim";
-                    return;
-                }
-                
-                // Kompresi kualitas JPEG menjadi 60% agar hemat kapasitas Firestore
-                const base64Img = canvas.toDataURL('image/jpeg', 0.6); 
-                
-                const data = {
-                    nik: currentUserData.nik,
-                    nama: currentUserData.nama,
-                    jenis: el('reim-jenis').value,
-                    nominal: parseFloat(el('reim-nominal').value),
-                    keterangan: el('reim-ket').value,
-                    buktiGambar: base64Img,
-                    tanggal: new Date().toISOString(),
-                    status: "Pending"
-                };
-
+                const canvas = el('reim-canvas'); if(canvas.width === 0) return showToast("Foto bukti belum termuat!", "warning");
+                const btn = el('btn-submit-reimburse'); btn.disabled = true; btn.innerText = "Mengirim...";
+                const base64Foto = canvas.toDataURL('image/jpeg', 0.6);
                 try {
-                    await db.collection("reimbursements").add(data);
-                    showToast("Klaim Reimbursement Terkirim!");
-                    el('form-ess-reimburse').reset();
-                    canvas.width = 0; canvas.height = 0; // Reset canvas
-                } catch(err) {
-                    showToast("Gagal mengirim klaim.", "error");
-                } finally {
-                    btn.disabled = false; btn.innerText = "Kirim Pengajuan Klaim";
-                }
+                    await db.collection("reimbursements").add({ nik: currentUserData.nik, nama: currentUserData.nama, tanggal: new Date().toISOString(), jenis: el('reim-jenis').value, nominal: parseFloat(el('reim-nominal').value)||0, keterangan: el('reim-ket').value, fileBukti: base64Foto, status: "Pending" });
+                    showToast("Pengajuan Klaim terkirim!"); el('form-ess-reimburse').reset(); el('reim-canvas').width = 0; el('reim-canvas').height = 0;
+                } catch(err) { showToast("Gagal mengirim klaim.", "error"); } finally { btn.disabled = false; btn.innerText = "Kirim Pengajuan Klaim"; }
             });
 
-            // Render Log Reimbursement di menu ESS Karyawan
             function renderESSReimburseLog() {
-                if(loginMode !== 'karyawan' || !currentUserData) return;
-                let tbody = '';
+                if(!currentUserData) return; let html = '';
                 db_reimburse.filter(r => r.nik === currentUserData.nik).forEach(r => {
-                    let b = r.status === 'Pending' ? 'badge-pending' : (r.status === 'Disetujui' ? 'badge-success' : 'badge-danger');
-                    let imgBtn = `<button class="btn-outline" style="padding:4px 8px; font-size:11px;" onclick="window.bukaViewerFoto('${r.buktiGambar}')">📸 Lihat Bukti</button>`;
-                    tbody += `<tr>
-                        <td>${new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
-                        <td><b>${r.jenis}</b><br><small>${r.keterangan}</small></td>
-                        <td style="font-weight:600;">Rp ${r.nominal.toLocaleString('id-ID')}</td>
-                        <td>${imgBtn}</td>
-                        <td><span class="badge ${b}">${r.status}</span></td>
-                    </tr>`;
+                    let b = r.status==='Pending'?'badge-pending':(r.status==='Disetujui'?'badge-success':'badge-danger');
+                    let btnBukti = `<button class="btn-outline" style="padding:4px 8px; font-size:10px;" onclick="bukaViewerFoto('${r.fileBukti}')">Lihat</button>`;
+                    html += `<tr><td>${new Date(r.tanggal).toLocaleDateString('id-ID')}</td><td><b>${r.jenis}</b><br><small>${r.keterangan}</small></td><td>Rp ${r.nominal.toLocaleString('id-ID')}</td><td>${btnBukti}</td><td><span class="badge ${b}">${r.status}</span></td></tr>`;
                 });
-                el('tbody-ess-reimburse-log').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada riwayat klaim Anda.</td></tr>';
+                el('tbody-ess-reimburse-log').innerHTML = html || '<tr><td colspan="5" align="center">Belum ada riwayat klaim.</td></tr>';
             }
 
-            // Render Approval Reimbursement di menu Admin HRD
             function renderAdminReimburse() {
-                let tbody = '';
-                db_reimburse.filter(r => r.status === 'Pending').forEach(r => {
-                    let imgBtn = `<button class="btn-outline" style="padding:4px 8px; font-size:11px;" onclick="window.bukaViewerFoto('${r.buktiGambar}')">📸 Cek Kuitansi</button>`;
-                    tbody += `<tr>
-                        <td><b>${r.nama}</b><br><small>${new Date(r.tanggal).toLocaleDateString('id-ID')}</small></td>
-                        <td><b>${r.jenis}</b><br><small>${r.keterangan}</small></td>
-                        <td style="color:var(--primary); font-weight:700;">Rp ${r.nominal.toLocaleString('id-ID')}</td>
-                        <td>${imgBtn}</td>
-                        <td style="text-align:center;">
-                            <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.prosesReimburse('${r.id}', 'Disetujui')">Setujui</button> 
-                            <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--danger); color:var(--danger); margin-top:4px;" onclick="window.prosesReimburse('${r.id}', 'Ditolak')">Tolak</button>
-                        </td>
-                    </tr>`;
+                let html = '';
+                db_reimburse.forEach(r => {
+                    let btnBukti = `<button class="btn-outline" style="padding:4px 8px; font-size:11px;" onclick="bukaViewerFoto('${r.fileBukti}')">🔍 Cek Kuitansi</button>`;
+                    let aksi = r.status==='Pending' ? `<button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.prosesReimburse('${r.id}', 'Disetujui')">Setujui</button> <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.prosesReimburse('${r.id}', 'Ditolak')">Tolak</button>` : `<span class="badge ${r.status==='Disetujui'?'badge-success':'badge-danger'}">${r.status}</span>`;
+                    html += `<tr><td><b>${r.nama}</b><br><small>${new Date(r.tanggal).toLocaleDateString('id-ID')}</small></td><td><b>${r.jenis}</b><br><small>${r.keterangan}</small></td><td style="color:var(--primary); font-weight:600;">Rp ${r.nominal.toLocaleString('id-ID')}</td><td>${btnBukti}</td><td style="text-align:center;">${aksi}</td></tr>`;
                 });
-                el('tbody-admin-reimburse').innerHTML = tbody || '<tr><td colspan="5" align="center">Tidak ada antrean reimbursement saat ini.</td></tr>';
+                el('tbody-admin-reimburse').innerHTML = html || '<tr><td colspan="5" align="center">Tidak ada antrean pengajuan reimbursement.</td></tr>';
             }
 
-            // Fungsi Admin memproses/menyetujui klaim
             window.prosesReimburse = async (id, status) => {
-                const ok = await showConfirm(`Konfirmasi Klaim`, `Yakin ingin mengubah status klaim ini menjadi ${status}? Dana yang disetujui akan diakumulasikan ke Slip Gaji nantinya.`, "Ya, Lanjutkan");
+                const ok = await showConfirm(`Konfirmasi ${status}?`, `Pengajuan akan diubah menjadi ${status}. Jika disetujui, dana akan cair pada Slip Gaji terdekat.`, "Ya, Proses");
                 if(ok) {
-                    await db.collection("reimbursements").doc(id).update({ status: status });
-                    showToast(`Klaim berhasil di-${status}!`);
+                    try { await db.collection("reimbursements").doc(id).update({ status: status }); showToast(`Klaim ${status}!`); } catch(e) { showToast("Gagal memproses!", "error"); }
                 }
             };
-
-            // ==========================================
-            // EXPORT CSV KARYAWAN & LAPORAN ABSENSI
-            // ==========================================
-            window.exportKaryawanCSV = () => {
-                let csvContent = "data:text/csv;charset=utf-8,NIK,Nama,Email,Telepon,TTL,JenisKelamin,Alamat,Divisi,Jabatan,Status,TanggalMulai,SisaCuti,SisaKasbon,GajiPokok\n";
-                db_karyawan.filter(k=>k.status !== 'Nonaktif').forEach(k => {
-                    let row = [
-                        k.nik, k.nama, k.email, k.telp, `"${k.tempatLahir}, ${k.tglLahir}"`, k.jk, `"${k.alamat}"`,
-                        k.divisi, k.jabatan, k.status, k.tglMulai, k.sisaCuti, k.sisaKasbon, k.gajiPokok
-                    ].join(",");
-                    csvContent += row + "\n";
-                });
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `Data_Karyawan_TehnikStainless_${getLocalToday()}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-            };
-
-            window.exportLaporanCSV = () => {
-                const table = el('tabel-laporan');
-                let csvContent = "data:text/csv;charset=utf-8,";
-                
-                for (let i = 0; i < table.rows.length; i++) {
-                    let rowData = [];
-                    let cols = table.rows[i].querySelectorAll("td, th");
-                    for (let j = 0; j < cols.length; j++) {
-                        let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, " ").trim();
-                        rowData.push(`"${data}"`);
-                    }
-                    csvContent += rowData.join(",") + "\n";
-                }
-                
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `Rekap_Absensi_${el('filter-bulan-laporan').value}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-            };
-
-            // Menutup loading awal jika user tidak login
-            auth.onAuthStateChanged(user => {
-                if(!user) {
-                    el('login-screen').classList.remove('hidden');
-                    el('app-screen').classList.add('hidden');
-                }
+            
+            // ADMIN MANUAL KASBON
+            el('form-kasbon-admin').addEventListener('submit', async (e) => {
+                e.preventDefault(); const nik = el('kasbon-nik').value; const nom = parseFloat(el('kasbon-nominal').value); const ket = el('kasbon-ket').value; if(!nik) return showToast("Pilih pegawai!", "error");
+                const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
+                const empRef = db.collection("karyawan").doc(nik); const emp = db_karyawan.find(k => k.nik === nik);
+                const sisaSkrg = parseFloat(emp.sisaKasbon)||0; const limit = parseFloat(emp.limitKasbon)||0;
+                if((sisaSkrg + nom) > limit) { btn.disabled = false; btn.innerText = "Potong Limit & Proses"; return showToast("Gagal: Total hutang akan melebihi Limit Kasbon yang diizinkan!", "error"); }
+                const batch = db.batch();
+                batch.update(empRef, { sisaKasbon: firebase.firestore.FieldValue.increment(nom) });
+                batch.set(db.collection("kasbon_log").doc(), { nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: "Pencairan (Admin)", nominal: nom, keterangan: ket, status: "Selesai" });
+                try { await batch.commit(); showToast("Kasbon manual berhasil dicatat!"); el('form-kasbon-admin').reset(); el('info-sisa-kasbon').innerText="Rp 0"; el('info-limit-kasbon').innerText="(Limit: 0)"; } catch(err) { showToast("Gagal proses", "error"); } finally { btn.disabled = false; btn.innerText = "Potong Limit & Proses"; }
             });
+            el('kasbon-nik').addEventListener('change', function() { const emp = db_karyawan.find(k => k.nik === this.value); if(emp) { el('info-sisa-kasbon').innerText = "Rp " + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID'); el('info-limit-kasbon').innerText = `(Limit: Rp ${(parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID')})`; } else { el('info-sisa-kasbon').innerText = "Rp 0"; el('info-limit-kasbon').innerText = "(Limit: 0)"; } });
 
-        </script>
-    </body>
+            // RENDER ARSIP KASBON LIST
+            function renderKasbonList() {
+                let html = ''; db_kasbon.forEach(k => { let b = k.status==='Pending'?'badge-pending':(k.jenis==='Potongan Gaji'?'badge-success':'badge-info'); let sts = k.status || (k.jenis==='Potongan Gaji'?'Lunas':'Cair'); let nomTxt = k.jenis==='Potongan Gaji' ? `<span style="color:var(--success)">+ Rp ${k.nominal.toLocaleString('id-ID')}</span>` : `<span style="color:var(--danger)">- Rp ${k.nominal.toLocaleString('id-ID')}</span>`; html += `<tr><td><b>${k.nama}</b></td><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td><span class="badge ${b}">${k.jenis}</span></td><td><b>${nomTxt}</b></td><td><small>${k.keterangan}</small></td><td style="text-align:center;">${sts}</td></tr>`; }); el('tbody-kasbon-list').innerHTML = html || '<tr><td colspan="6" align="center">Kosong</td></tr>';
+            }
+            db.collection("kasbon_log").onSnapshot(() => renderKasbonList());
+
+    </script>
+</body>
 </html>
