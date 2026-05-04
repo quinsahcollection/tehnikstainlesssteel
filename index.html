@@ -1000,53 +1000,123 @@
                 <div class="card"><div class="section-header" style="margin-bottom: 10px;"><h3 class="section-title">Rekapitulasi Kehadiran Total</h3><button class="btn-outline" style="font-size:13px; color:#059669; border-color:#10b981;" onclick="window.exportLaporanCSV()">📥 Export Laporan (Excel)</button></div><span class="section-subtitle" style="margin-bottom: 25px;">Baris abu-abu menandakan pegawai yang telah diarsip (Nonaktif).<br><br><b>Keterangan Kode:</b><br><span style="color:var(--success); font-weight:bold;">H</span> = Hadir Penuh | <span style="color:var(--info); font-weight:bold;">½</span> = Izin 1/2 Hari | <span style="color:var(--warning); font-weight:bold;">I</span> = Izin Penuh | <span style="color:var(--info); font-weight:bold;">S</span> = Sakit | <span style="color:var(--purple); font-weight:bold;">C</span> = Cuti Tahunan | <span style="color:var(--danger); font-weight:bold;">A</span> = Absen</span><div class="form-group" style="max-width: 300px; margin-bottom: 20px;"><label>Pilih Bulan & Tahun</label><input type="month" id="filter-bulan-laporan"></div><div class="table-responsive"><table class="table-laporan" id="tabel-laporan"></table></div></div>
             </div>
 
-            <div id="menu-penggajian" class="menu-content hidden">
-                <div class="card">
-                    <div id="edit-slip-banner" class="hidden" style="background:#e0f2fe; color:#0369a1; padding:15px; border-radius:10px; font-weight:600; margin-bottom:25px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #bae6fd;"><span>✏️ Sedang dalam Mode Edit/Revisi Slip Gaji.</span><button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px; background:#fff;" onclick="window.batalEditSlip()">Batal Edit</button></div>
-                    <div class="section-header" style="flex-wrap: wrap; gap: 15px; margin-bottom: 25px;"><h3 class="section-title">Proses Penggajian (Payroll)</h3><div class="view-toggle"><button class="toggle-btn active" id="btn-view-gaji-massal" onclick="window.switchGajiView('massal')">1. Mode Massal Cepat</button><button class="toggle-btn" id="btn-view-gaji-satuan" onclick="window.switchGajiView('satuan')">2. Mode Satuan / Revisi</button></div></div>
+           <div id="menu-penggajian" class="menu-content hidden">
+    <div class="card">
+        <div id="edit-slip-banner" class="hidden" style="background:#e0f2fe; color:#0369a1; padding:15px; border-radius:10px; font-weight:600; margin-bottom:25px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #bae6fd;">
+            <span>✏️ Sedang dalam Mode Edit/Revisi Slip Gaji.</span>
+            <button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px; background:#fff;" onclick="window.batalEditSlip()">Batal Edit</button>
+        </div>
+        
+        <div class="section-header" style="flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
+            <h3 class="section-title">Proses Penggajian (Payroll)</h3>
+            <div class="view-toggle">
+                <button class="toggle-btn active" id="btn-view-gaji-massal" onclick="window.switchGajiView('massal')">1. Mode Massal Cepat</button>
+                <button class="toggle-btn" id="btn-view-gaji-satuan" onclick="window.switchGajiView('satuan')">2. Mode Satuan / Revisi</button>
+            </div>
+        </div>
 
-                    <!-- MODE 1: PENGGAJIAN MASSAL -->
-                    <div id="view-gaji-massal">
-                        <span class="section-subtitle" style="margin-bottom: 25px;">Tentukan rentang tanggal cut-off, sistem akan menghitung seluruh gaji otomatis.</span>
-                        <div class="form-row" style="margin-bottom: 10px;"><div class="form-group"><label>Rentang Tanggal (Periode Cut-Off)</label><input type="text" id="gaji-massal-periode" required placeholder="Klik untuk memilih Tgl Awal s/d Tgl Akhir"></div></div>
-                        <button class="btn-outline" style="margin-bottom:25px; border-color:var(--primary); color:var(--primary); font-weight:700;" onclick="window.kalkulasiGajiMassal()">⚙️ Mulai Kalkulasi Massal</button>
-                        
-                        <div class="table-responsive hidden" id="wrap-tabel-massal-gaji" style="max-height:500px; overflow-y:auto; margin-bottom:20px; border:2px solid var(--primary-light); border-radius: 12px;">
-                            <table><thead style="position:sticky; top:0; z-index:2; background:#f8fafc; box-shadow:0 2px 5px rgba(0,0,0,0.05);"><tr><th style="width: 40px; text-align:center;"><input type="checkbox" id="check-all-gaji" onclick="window.toggleCheckAllGaji(this)" checked style="width:16px; height:16px;"></th><th>Pegawai Aktif</th><th>Total Rekap Kehadiran</th><th>Total Penghasilan</th><th>Potong Kasbon</th><th>Diterima Bersih</th></tr></thead><tbody id="tbody-gaji-massal"></tbody></table>
-                        </div>
-                        <div style="text-align: right;"><button type="button" id="btn-terbitkan-massal" class="btn hidden" onclick="window.terbitkanSlipMassal()">🚀 Terbitkan Slip Terpilih Sekaligus</button></div>
-                    </div>
-
-                    <!-- MODE 2: PENGGAJIAN SATUAN (REVISI) -->
-                    <div id="view-gaji-satuan" class="hidden">
-                        <form id="form-penggajian">
-                            <span class="section-subtitle" style="margin-bottom: 25px;">Gunakan form ini untuk merevisi slip atau menambah komponen manual.</span>
-                            <div class="form-row"><div class="form-group"><label>1. Pilih Pegawai</label><select required id="gaji-nik"></select></div><div class="form-group"><label>2. Rentang Tanggal (Periode)</label><input type="text" id="gaji-periode-range" required placeholder="Tgl Awal s/d Tgl Akhir"></div></div>
-                            <div id="peringatan-slip" class="hidden" style="background:#fee2e2; color:#b91c1c; padding:15px; border-radius:10px; font-weight:700; margin-bottom:25px; border:1px solid #fecaca;">⚠️ Peringatan: Terdapat irisan tanggal dengan Slip Gaji yang sudah pernah dicetak! Harap cek Arsip Slip.</div>
-                            
-                            <div id="gaji-rekap-container" class="hidden" style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 30px;">
-                                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-                                    <div class="badge" style="background:#fff; border:1px solid #e2e8f0; color:var(--text-muted); font-size:12px;"><span id="rek-h" style="color:var(--success); font-weight:800; font-size:16px; margin-right:5px;">0</span> Hadir</div>
-                                    <div class="badge" style="background:#fff; border:1px solid #e2e8f0; color:var(--text-muted); font-size:12px;"><span id="rek-setengah" style="color:var(--info); font-weight:800; font-size:16px; margin-right:5px;">0</span> Izin 1/2</div>
-                                    <div class="badge" style="background:#fff; border:1px solid #e2e8f0; color:var(--text-muted); font-size:12px;"><span id="rek-isc" style="color:var(--warning); font-weight:800; font-size:16px; margin-right:5px;">0</span> Izin/Sakit/Cuti</div>
-                                    <div class="badge" style="background:#fff; border:1px solid #e2e8f0; color:var(--text-muted); font-size:12px;"><span id="rek-a" style="color:var(--danger); font-weight:800; font-size:16px; margin-right:5px;">0</span> Absen</div>
-                                </div>
-                                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;"><table><thead style="position: sticky; top: 0; z-index: 10;"><tr><th>Tanggal</th><th>Hari</th><th>Status</th><th>Shift</th><th>Tugas/Lembur</th></tr></thead><tbody id="tbody-gaji-detail"></tbody></table></div>
-                            </div>
-                            
-                            <div class="section-header" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 25px;"><h3 class="section-title" style="font-size: 16px;">Rincian Komponen Gaji</h3></div>
-                            <div class="form-row"><div class="form-group"><label>Gaji Pokok Dasar</label><input type="number" id="gaji-pokok" value="0"></div><div class="form-group"><label>Gaji Kehadiran <span id="info-hadir" style="color:var(--primary); font-size:11px;"></span></label><input type="number" id="gaji-harian-total" value="0"></div></div>
-                            <div class="form-row"><div class="form-group"><label>Gaji Tugas (LK/MK) <span id="info-lkmk" style="color:var(--primary); font-size:11px;"></span></label><input type="number" id="gaji-tugas-total" value="0"></div><div class="form-group"><label>Total Bonus Insentif <span id="info-bonus" style="color:var(--primary); font-size:11px;"></span></label><input type="number" id="gaji-bonus-total" value="0"></div></div>
-                            <div class="form-row"><div class="form-group"><label>Tambahan Lain (Misal: Lembur Ekstra)</label><input type="number" id="gaji-lainnya" value="0"></div></div>
-                            <div class="form-row" style="background-color: #fff1f2; padding: 20px; border-radius: 12px; border: 1px solid #fecaca; margin-top: 10px;">
-                                <div class="form-group"><label style="color:var(--danger); font-size:14px;">Potongan Pelunasan Kasbon</label><input type="number" id="gaji-potongan" value="0" style="border-color: #fca5a5; font-size:16px; font-weight:bold;" min="0"></div>
-                                <div class="form-group"><label style="color:var(--primary); font-size:14px;">Gaji Bersih Diterima</label><input type="text" id="gaji-total" value="0" readonly style="font-weight:800; color:var(--text-main); border:none; background:transparent; font-size:28px; padding-left:0;"></div>
-                            </div>
-                            <div style="margin-top: 30px; text-align: right;"><button type="button" id="btn-terbitkan-slip" class="btn" style="padding:16px 30px; font-size:16px;" onclick="window.terbitkanSlipGaji()">Terbitkan & Cetak Slip</button></div>
-                        </form>
-                    </div>
+        <!-- MODE 1: PENGGAJIAN MASSAL -->
+        <div id="view-gaji-massal">
+            <span class="section-subtitle" style="margin-bottom: 25px;">Tentukan rentang tanggal cut-off, sistem akan menghitung seluruh gaji otomatis.</span>
+            <div class="form-row" style="margin-bottom: 10px;">
+                <div class="form-group">
+                    <label>Rentang Tanggal (Periode Cut-Off)</label>
+                    <input type="text" id="gaji-massal-periode" required placeholder="Klik untuk memilih Tgl Awal s/d Tgl Akhir">
                 </div>
             </div>
+            <button class="btn-outline" style="margin-bottom:25px; border-color:var(--primary); color:var(--primary); font-weight:700;" onclick="window.kalkulasiGajiMassal()">⚙️ Mulai Kalkulasi Massal</button>
+            
+            <div class="table-responsive hidden" id="wrap-tabel-massal-gaji" style="max-height:500px; overflow-y:auto; margin-bottom:20px; border:2px solid var(--primary-light); border-radius: 12px;">
+                <table>
+                    <thead style="position:sticky; top:0; z-index:2; background:#f8fafc; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                        <tr>
+                            <th style="width: 40px; text-align:center;"><input type="checkbox" id="check-all-gaji" onclick="window.toggleCheckAllGaji(this)" checked style="width:16px; height:16px;"></th>
+                            <th>Pegawai Aktif</th>
+                            <th>Total Rekap Kehadiran</th>
+                            <th>Total Penghasilan</th>
+                            <th>Potong Kasbon</th>
+                            <th>Diterima Bersih</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-gaji-massal"></tbody>
+                </table>
+            </div>
+            <div style="text-align: right;">
+                <button type="button" id="btn-terbitkan-massal" class="btn hidden" onclick="window.terbitkanSlipMassal()">🚀 Terbitkan Slip Terpilih Sekaligus</button>
+            </div>
+        </div>
+
+        <!-- MODE 2: PENGGAJIAN SATUAN (REVISI) -->
+        <div id="view-gaji-satuan" class="hidden">
+            <form id="form-penggajian">
+                <span class="section-subtitle" style="margin-bottom: 25px;">Gunakan form ini untuk merevisi slip atau menambah komponen manual.</span>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>1. Pilih Pegawai</label>
+                        <select required id="gaji-nik"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>2. Rentang Tanggal (Periode)</label>
+                        <input type="text" id="gaji-periode-range" required placeholder="Tgl Awal s/d Tgl Akhir">
+                    </div>
+                </div>
+                
+                <div id="peringatan-slip" class="hidden" style="background:#fee2e2; color:#b91c1c; padding:15px; border-radius:10px; font-weight:700; margin-bottom:25px; border:1px solid #fecaca;">
+                    ⚠️ Peringatan: Terdapat irisan tanggal dengan Slip Gaji yang sudah pernah dicetak! Harap cek Arsip Slip.
+                </div>
+                
+                <div id="gaji-rekap-container" class="hidden" style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 30px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+                        <div class="badge" style="background:#fff; border:1px solid #e2e8f0; color:var(--text-muted); font-size:12px;"><span id="rek-h" style="color:var(--success); font-weight:800; font-size:16px; margin-right:5px;">0</span> Hadir</div>
+                        <div class="badge" style="background:#fff; border:1px solid #e2e8f0; color:var(--text-muted); font-size:12px;"><span id="rek-setengah" style="color:var(--info); font-weight:800; font-size:16px; margin-right:5px;">0</span> Izin 1/2</div>
+                        <div class="badge" style="background:#fff; border:1px solid #e2e8f0; color:var(--text-muted); font-size:12px;"><span id="rek-isc" style="color:var(--warning); font-weight:800; font-size:16px; margin-right:5px;">0</span> Izin/Sakit/Cuti</div>
+                        <div class="badge" style="background:#fff; border:1px solid #e2e8f0; color:var(--text-muted); font-size:12px;"><span id="rek-a" style="color:var(--danger); font-weight:800; font-size:16px; margin-right:5px;">0</span> Absen</div>
+                        
+                        <!-- ELEMEN BARU DITAMBAHKAN DI SINI -->
+                        <div class="badge" style="background:#fff; border:1px solid #e2e8f0; color:var(--text-muted); font-size:12px;"><span id="rek-lk" style="color:var(--info); font-weight:800; font-size:16px; margin-right:5px;">0</span> LK</div>
+                        <div class="badge" style="background:#fff; border:1px solid #e2e8f0; color:var(--text-muted); font-size:12px;"><span id="rek-mk" style="color:var(--danger); font-weight:800; font-size:16px; margin-right:5px;">0</span> MK</div>
+                    </div>
+                    
+                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                        <table>
+                            <thead style="position: sticky; top: 0; z-index: 10;">
+                                <tr><th>Tanggal</th><th>Hari</th><th>Status</th><th>Shift</th><th>Tugas/Lembur</th></tr>
+                            </thead>
+                            <tbody id="tbody-gaji-detail"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="section-header" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 25px;">
+                    <h3 class="section-title" style="font-size: 16px;">Rincian Komponen Gaji</h3>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group"><label>Gaji Pokok Dasar</label><input type="number" id="gaji-pokok" value="0"></div>
+                    <div class="form-group"><label>Gaji Kehadiran <span id="info-hadir" style="color:var(--primary); font-size:11px;"></span></label><input type="number" id="gaji-harian-total" value="0"></div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group"><label>Gaji Tugas (LK/MK) <span id="info-lkmk" style="color:var(--primary); font-size:11px;"></span></label><input type="number" id="gaji-tugas-total" value="0"></div>
+                    <div class="form-group"><label>Total Bonus Insentif <span id="info-bonus" style="color:var(--primary); font-size:11px;"></span></label><input type="number" id="gaji-bonus-total" value="0"></div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group"><label>Tambahan Lain (Misal: Lembur Ekstra)</label><input type="number" id="gaji-lainnya" value="0"></div>
+                </div>
+                
+                <div class="form-row" style="background-color: #fff1f2; padding: 20px; border-radius: 12px; border: 1px solid #fecaca; margin-top: 10px;">
+                    <div class="form-group"><label style="color:var(--danger); font-size:14px;">Potongan Pelunasan Kasbon</label><input type="number" id="gaji-potongan" value="0" style="border-color: #fca5a5; font-size:16px; font-weight:bold;" min="0"></div>
+                    <div class="form-group"><label style="color:var(--primary); font-size:14px;">Gaji Bersih Diterima</label><input type="text" id="gaji-total" value="0" readonly style="font-weight:800; color:var(--text-main); border:none; background:transparent; font-size:28px; padding-left:0;"></div>
+                </div>
+                
+                <div style="margin-top: 30px; text-align: right;">
+                    <button type="button" id="btn-terbitkan-slip" class="btn" style="padding:16px 30px; font-size:16px;" onclick="window.terbitkanSlipGaji()">Terbitkan & Cetak Slip</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
             <!-- ========================================================= -->
             <!-- MODUL BARU: REIMBURSEMENT (KARYAWAN)                      -->
@@ -1311,8 +1381,7 @@
         flatpickr("#filter-bulan-laporan", { locale: "id", dateFormat: "Y-m", disableMobile: "true", plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })], onChange: () => renderLaporan() });
         flatpickr("#filter-bulan-slip", { locale: "id", dateFormat: "Y-m", disableMobile: "true", plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })], onChange: () => window.renderAllSlips() });
         flatpickr("#gaji-periode-range", { locale: "id", mode: "range", altFormat: "d M Y", dateFormat: "Y-m-d", disableMobile: "true", onChange: () => jalankanAutoCalc() });
-        flatpickr("#gaji-massal-periode", { locale: "id", mode: "range", altFormat: "d M Y", dateFormat: "Y-m-d", disableMobile: "true" });
-        flatpickr("#ess-izin-tgl-single", { locale: "id", dateFormat: "Y-m-d", disableMobile: "true" });
+        flatpickr("#gaji-massal-periode", { locale: "id", mode: "range", altFormat: "d M Y", dateFormat: "Y-m-d", disableMobile: "true", onChange: () => window.kalkulasiGajiMassal() });   flatpickr("#ess-izin-tgl-single", { locale: "id", dateFormat: "Y-m-d", disableMobile: "true" });
         flatpickr("#ess-izin-tgl-range", { locale: "id", mode: "range", dateFormat: "Y-m-d", disableMobile: "true" });
 
         const todayStr = getLocalToday();
