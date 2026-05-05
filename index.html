@@ -1008,7 +1008,7 @@
                             </div>
                             <div class="form-row">
                                 <div class="form-group"><label>Tugas Tambahan</label><div class="checkbox-group" style="margin-top: 5px;"><label class="checkbox-label" id="wrap-satuan-lk"><input type="checkbox" id="satuan-lk"> Luar Kota (LK)</label><label class="checkbox-label hidden" id="wrap-satuan-mk"><input type="checkbox" id="satuan-mk"> Minggu (MK)</label></div></div>
-                                <div class="form-group"><label>Lembur (Berapa Jam)</label><input type="number" id="satuan-lembur" value="0" min="0"></div>
+                                <div class="form-group"><label>Lembur (Berapa Jam)</label><input type="number" id="satuan-lembur" value="0" min="0" step="any"></div>
                             </div>
                             <div class="form-row"><div class="form-group"><label>Catatan Opsional</label><input type="text" id="satuan-catatan" placeholder="Cth: Izin pulang cepat karena urusan keluarga..."></div><div></div></div>
                             <div style="text-align: right;"><button type="submit" class="btn" id="btn-simpan-absen">Simpan Kehadiran</button></div>
@@ -2282,7 +2282,7 @@ el('form-ess-izin').addEventListener('submit', async e => {
             db_karyawan.filter(k => k.status !== 'Nonaktif').forEach(k => {
                 const att = db_kehadiran.find(a => a.nik === k.nik && a.date === d); let st = 'Hadir', sh = 'Pagi', lk=false, mk=false, lm = 0, ct = '';
                 if(att) { st = att.status; sh = att.shift || 'Pagi'; lk=att.lk; mk=att.mk; lm = att.lembur || 0; ct = att.catatan || ''; }
-                tbodyM += `<tr data-nik="${k.nik}"><td><b>${k.nama}</b></td><td><select class="m-status"><option value="Hadir" ${st==='Hadir'?'selected':''}>Hadir Penuh</option><option value="Izin 1/2 Hari" ${st==='Izin 1/2 Hari'?'selected':''}>Izin 1/2 Hari</option><option value="Izin" ${st==='Izin'?'selected':''}>Izin Penuh</option><option value="Sakit" ${st==='Sakit'?'selected':''}>Sakit</option><option value="Cuti" ${st==='Cuti'?'selected':''}>Cuti</option><option value="Absen" ${st==='Absen'?'selected':''}>Absen/Alpa</option></select></td><td><select class="m-shift"><option value="Pagi" ${sh==='Pagi'?'selected':''}>Pagi</option><option value="Siang" ${sh==='Siang'?'selected':''}>Siang</option><option value="Malam" ${sh==='Malam'?'selected':''}>Malam</option></select></td><td><div class="checkbox-group"><label class="checkbox-label wrap-m-lk" style="padding:6px; font-size:12px;"><input type="checkbox" class="m-lk" ${lk?'checked':''}> LK</label><label class="checkbox-label wrap-m-mk hidden" style="padding:6px; font-size:12px;"><input type="checkbox" class="m-mk" ${mk?'checked':''}> MK</label></div></td><td><input type="number" class="m-lembur" value="${lm}" style="width:60px; min-width:60px;"></td><td><input type="text" class="m-catatan" value="${ct}"></td></tr>`;
+                tbodyM += `<tr data-nik="${k.nik}"><td><b>${k.nama}</b></td><td><select class="m-status"><option value="Hadir" ${st==='Hadir'?'selected':''}>Hadir Penuh</option><option value="Izin 1/2 Hari" ${st==='Izin 1/2 Hari'?'selected':''}>Izin 1/2 Hari</option><option value="Izin" ${st==='Izin'?'selected':''}>Izin Penuh</option><option value="Sakit" ${st==='Sakit'?'selected':''}>Sakit</option><option value="Cuti" ${st==='Cuti'?'selected':''}>Cuti</option><option value="Absen" ${st==='Absen'?'selected':''}>Absen/Alpa</option></select></td><td><select class="m-shift"><option value="Pagi" ${sh==='Pagi'?'selected':''}>Pagi</option><option value="Siang" ${sh==='Siang'?'selected':''}>Siang</option><option value="Malam" ${sh==='Malam'?'selected':''}>Malam</option></select></td><td><div class="checkbox-group"><label class="checkbox-label wrap-m-lk" style="padding:6px; font-size:12px;"><input type="checkbox" class="m-lk" ${lk?'checked':''}> LK</label><label class="checkbox-label wrap-m-mk hidden" style="padding:6px; font-size:12px;"><input type="checkbox" class="m-mk" ${mk?'checked':''}> MK</label></div></td><td><input type="number" class="m-lembur" value="${lm}" step="any" style="width:60px; min-width:60px;"></td><td><input type="text" class="m-catatan" value="${ct}"></td></tr>`;
             }); el('tbody-massal').innerHTML = tbodyM; setTimeout(cekMinggu, 50);
         };
 
@@ -2301,6 +2301,7 @@ el('form-ess-izin').addEventListener('submit', async e => {
 
         el('form-kehadiran-massal').addEventListener('submit', function(e) {
     e.preventDefault(); 
+    const btn = e.submitter; btn.disabled = true; btn.innerText = "Menyimpan Massal..."; // <-- Tambahkan baris ini 
     const d = el('massal-tgl').value; 
     
     // --- MULAI PENGECEKAN KUNCI SLIP GAJI ---
@@ -2342,7 +2343,13 @@ el('form-ess-izin').addEventListener('submit', async e => {
         }
     }); 
     
-    batch.commit().then(() => showToast('Massal sukses ditimpa!'));
+    batch.commit().then(() => { 
+        showToast('Massal sukses ditimpa!');
+        btn.disabled = false; btn.innerText = "Simpan Data Massal"; // <-- Tambahkan baris ini
+    }).catch(err => {
+        showToast('Gagal memproses!', 'error');
+        btn.disabled = false; btn.innerText = "Simpan Data Massal"; // <-- Tambahkan baris ini
+    });
 });
 
         const cekMinggu = () => {
@@ -2439,6 +2446,8 @@ el('form-ess-izin').addEventListener('submit', async e => {
             const ok = await showConfirm("Terbitkan Massal?", `Akan mencetak slip gaji untuk ${slipsToProcess.length} orang. (Gaji Minus akan diabaikan)`, "Ya, Terbitkan"); 
             if(!ok) return; 
             
+            const btn = el('btn-terbitkan-massal'); btn.disabled = true; btn.innerText = "Sedang Menerbitkan..."; // <-- Tambahkan ini
+            
             const batch = db.batch(); 
             for(let sData of slipsToProcess) { 
                 batch.set(db.collection("slip_gaji").doc(), sData); 
@@ -2455,7 +2464,10 @@ el('form-ess-izin').addEventListener('submit', async e => {
                 showToast(`Selesai! ${slipsToProcess.length} slip diterbitkan.`); 
                 el('wrap-tabel-massal-gaji').classList.add('hidden'); 
                 el('btn-terbitkan-massal').classList.add('hidden'); 
-            } catch(e) { showToast("Gagal batch massal!", "error"); } 
+            } catch(e) { showToast("Gagal batch massal!", "error"); 
+            } finally {
+                btn.disabled = false; btn.innerText = "🚀 Terbitkan Slip Terpilih Sekaligus"; // <-- Tambahkan ini
+            }
         };
         
         const jalankanAutoCalc = () => {
