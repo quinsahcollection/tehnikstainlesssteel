@@ -1065,7 +1065,7 @@
                                 <div class="form-group hidden" id="wrap-admin-izin-tgl-range"><label>Rentang Tanggal (Mulai s/d Selesai)</label><input type="text" id="admin-izin-tgl-range" placeholder="Pilih rentang tanggal..."></div>
                             </div>
                             <div class="form-group" style="margin-bottom:15px;"><label>Alasan / Keterangan</label><input type="text" id="admin-izin-alasan" required></div>
-                            <div style="text-align: right;"><button type="submit" class="btn">Proses & Setujui Langsung</button></div>
+                            <div style="text-align: right;"><button type="submit" class="btn">Masukkan ke Antrean</button></div>
                         </form>
                     </div>
                 </div>
@@ -1279,11 +1279,10 @@
                             <div class="form-group"><label>Nominal (Rp)</label><input type="number" id="admin-reim-nominal" required min="1000"></div>
                             <div class="form-group"><label>Keterangan</label><input type="text" id="admin-reim-ket" required></div>
                         </div>
-                        <div style="text-align: right;"><button type="submit" class="btn">Proses & Setujui Langsung</button></div>
+                        <div style="text-align: right;"><button type="submit" class="btn">Masukkan ke Antrean</button></div>
                     </form>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -1458,10 +1457,45 @@
             el('btn-view-table').classList.toggle('active', mode === 'table'); 
         };
         window.switchGajiView = (mode) => { el('view-gaji-massal').classList.toggle('hidden', mode !== 'massal'); el('view-gaji-satuan').classList.toggle('hidden', mode !== 'satuan'); el('btn-view-gaji-massal').classList.toggle('active', mode === 'massal'); el('btn-view-gaji-satuan').classList.toggle('active', mode === 'satuan'); };
-
         window.switchLoginMode = (mode) => { loginMode = mode; el('tab-karyawan').classList.toggle('active', mode==='karyawan'); el('tab-admin').classList.toggle('active', mode==='admin'); el('lbl-login-user').innerText = mode==='admin' ? 'Username / ID Admin' : 'Email Akun Karyawan'; el('login-user').placeholder = mode==='admin' ? 'admin' : 'nama@perusahaan.com'; el('link-to-register').style.display = mode==='admin' ? 'none' : 'inline-block'; };
         window.toggleAuthView = (view) => { el('wrap-login').classList.toggle('hidden', view==='register'); el('wrap-register').classList.toggle('hidden', view==='login'); };
-        window.resetPassword = async () => { const emailReset = prompt("Masukkan alamat Email akun Anda yang terdaftar:"); if(!emailReset) return; try { await auth.sendPasswordResetEmail(emailReset); showToast("Berhasil! Link dikirim ke Email."); } catch (err) { showToast("Gagal mengirim link.", "error"); } };
+        window.resetPassword = async () => {
+            const overlay = el('custom-modal');
+            el('modal-title').innerText = "Reset Password";
+            
+            el('modal-text').innerHTML = `
+                <div style="margin-bottom:15px; font-size:13px; color:var(--text-muted);">Masukkan Email akun Anda. Link reset password akan dikirimkan ke kotak masuk email tersebut.</div>
+                <input type="email" id="input-reset-email" placeholder="email@perusahaan.com" style="width:100%; padding:12px; border:1px solid var(--border-color); border-radius:var(--radius-sm); font-size:14px; outline:none;">
+            `;
+            
+            const btnConfirm = el('modal-btn-confirm');
+            btnConfirm.innerText = "Kirim Link Reset";
+            btnConfirm.style.backgroundColor = "var(--primary)";
+            
+            const handleConfirm = async () => { 
+                const emailReset = el('input-reset-email').value;
+                if(!emailReset) return showToast("Email tidak boleh kosong!", "warning");
+                close(); 
+                try { 
+                    await auth.sendPasswordResetEmail(emailReset); 
+                    showToast("Berhasil! Link dikirim ke Email Anda."); 
+                } catch (err) { 
+                    showToast("Gagal mengirim link. Cek kembali penulisan email.", "error"); 
+                }
+            };
+            
+            const handleCancel = () => { close(); };
+            const close = () => { 
+                overlay.classList.remove('show'); 
+                btnConfirm.removeEventListener('click', handleConfirm); 
+                el('modal-btn-cancel').removeEventListener('click', handleCancel); 
+                setTimeout(() => { el('modal-text').innerText = 'Apakah Anda yakin?'; }, 300);
+            };
+            
+            btnConfirm.addEventListener('click', handleConfirm); 
+            el('modal-btn-cancel').addEventListener('click', handleCancel);
+            overlay.classList.add('show');
+        };
 
         auth.onAuthStateChanged(async (user) => {
             if (user && !currentUserData && loginMode === 'karyawan') {
@@ -1878,8 +1912,31 @@ if(el('ess-info-sisa-kasbon')) el('ess-info-sisa-kasbon').innerText = "Rp " + (p
             let tbodyIzin = ''; db_izin.filter(i => i.nik === nik).forEach(i => { let stBadge = i.status==='Pending'?'badge-pending':(i.status==='Disetujui'?'badge-success':'badge-danger'); tbodyIzin += `<tr><td>${new Date(i.waktuSubmit).toLocaleDateString('id-ID')}</td><td><b>${i.tipe}</b><br><small>${i.durasi}</small></td><td>${i.tglRaw}</td><td><small>${i.alasan}</small></td><td><span class="badge ${stBadge}">${i.status}</span></td></tr>`; }); el('tbody-ess-izin-log').innerHTML = tbodyIzin || '<tr><td colspan="5" align="center">Belum ada riwayat</td></tr>';
         }
 
-        async function startCamera() { try { streamKamera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }); el('camera-feed').srcObject = streamKamera; navigator.geolocation.getCurrentPosition( pos => { latGPS = pos.coords.latitude; lonGPS = pos.coords.longitude; el('gps-status').innerText = `📍 Lokasi GPS Ditemukan`; }, err => { el('gps-status').innerText = `⚠️ Izinkan Akses Lokasi (GPS) Anda!`; }); } catch (err) { el('gps-status').innerText = "Kamera tidak terdeteksi / diblokir browser."; } }
-        function stopCamera() { if(streamKamera) streamKamera.getTracks().forEach(track => track.stop()); }
+        let gpsWatcher = null;
+        async function startCamera() { 
+            try { 
+                streamKamera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }); 
+                el('camera-feed').srcObject = streamKamera; 
+                el('gps-status').innerText = `⏳ Sedang mencari satelit GPS...`;
+                
+                if(navigator.geolocation) {
+                   gpsWatcher = navigator.geolocation.watchPosition(pos => { 
+                       latGPS = pos.coords.latitude; 
+                       lonGPS = pos.coords.longitude; 
+                       el('gps-status').innerText = `📍 Lokasi GPS Terkunci`; 
+                   }, err => { 
+                       el('gps-status').innerText = `⚠️ Izinkan Akses Lokasi (GPS) Anda!`; 
+                   }, { enableHighAccuracy: true, maximumAge: 0 });
+                }
+            } catch (err) { 
+                el('gps-status').innerText = "Kamera tidak terdeteksi / diblokir browser."; 
+            } 
+        }
+
+        function stopCamera() { 
+            if(streamKamera) streamKamera.getTracks().forEach(track => track.stop()); 
+            if(gpsWatcher !== null && navigator.geolocation) navigator.geolocation.clearWatch(gpsWatcher);
+        }
 
         function cekStatusAbsenHariIni() {
             const today = getLocalToday();
@@ -2019,10 +2076,13 @@ el('form-ess-izin').addEventListener('submit', async e => {
     let tglRaw = ''; 
     if(durasi === 'Beberapa Hari') { 
         tglRaw = el('ess-izin-tgl-range').value; 
-        if(!tglRaw.includes(' to ')) return showToast('Pilih rentang dengan benar!', 'error'); 
+        if(!tglRaw.includes(' to ')) {
+            if(tglRaw.length === 10) tglRaw = `${tglRaw} to ${tglRaw}`;
+            else return showToast('Pilih rentang dengan benar!', 'error'); 
+        }
     } else { 
         tglRaw = el('ess-izin-tgl-single').value; 
-    } 
+    }
     
     const btn = e.submitter; btn.disabled = true; btn.innerText = "Mengirim..."; 
     
@@ -2884,6 +2944,63 @@ if(filterBln) {
                 });
             }
 
+// --- SCRIPT FORM IZIN MANUAL (ADMIN) ---
+el('form-izin-admin').addEventListener('submit', async e => {
+    e.preventDefault();
+    const nik = el('admin-izin-nik').value;
+    const tipe = el('admin-izin-tipe').value;
+    const durasi = el('admin-izin-durasi').value;
+    const alasan = el('admin-izin-alasan').value;
+    
+    let tglRaw = '';
+    if(durasi === 'Beberapa Hari') {
+        tglRaw = el('admin-izin-tgl-range').value;
+        if(!tglRaw.includes(' to ') && tglRaw.length === 10) tglRaw = `${tglRaw} to ${tglRaw}`;
+        if(!tglRaw.includes(' to ')) return showToast('Pilih rentang dengan benar!', 'error');
+    } else {
+        tglRaw = el('admin-izin-tgl-single').value;
+    }
+
+    const emp = db_karyawan.find(k => k.nik === nik);
+    if(!emp) return showToast("Pegawai tidak ditemukan!", "error");
+
+    const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
+    try {
+        await db.collection("pengajuan_izin").add({
+            nik: nik, nama: emp.nama, tipe: tipe, durasi: durasi, tglRaw: tglRaw,
+            alasan: alasan, status: "Pending", waktuSubmit: new Date().toISOString(), fotoBukti: "" 
+        });
+        showToast("Pengajuan berhasil dimasukkan ke antrean Pending!");
+        el('form-izin-admin').reset();
+        el('admin-izin-tgl-single')._flatpickr.clear();
+        if(el('admin-izin-tgl-range')._flatpickr) el('admin-izin-tgl-range')._flatpickr.clear();
+        window.aturInputTanggalIzinAdmin();
+    } catch(err) { showToast("Gagal memproses pengajuan.", "error"); } 
+    finally { btn.disabled = false; btn.innerText = "Masukkan ke Antrean"; }
+});
+
+// --- SCRIPT FORM REIMBURSE MANUAL (ADMIN) ---
+el('form-reimburse-admin').addEventListener('submit', async e => {
+    e.preventDefault();
+    const nik = el('admin-reim-nik').value;
+    const jenis = el('admin-reim-jenis').value;
+    const nominal = parseFloat(el('admin-reim-nominal').value) || 0;
+    const ket = el('admin-reim-ket').value;
+
+    if(!nik) return showToast("Pilih pegawai terlebih dahulu!", "error");
+    const emp = db_karyawan.find(k => k.nik === nik);
+    
+    const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
+    try {
+        await db.collection("reimbursements").add({
+            nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: jenis,
+            nominal: nominal, keterangan: ket, fileBukti: "", status: "Pending"
+        });
+        showToast("Reimburse berhasil dimasukkan ke antrean Pending!");
+        el('form-reimburse-admin').reset();
+    } catch(err) { showToast("Gagal memproses klaim.", "error"); } 
+    finally { btn.disabled = false; btn.innerText = "Masukkan ke Antrean"; }
+});
 // --- SCRIPT AGAR ADMIN BISA EDIT ABSENSI SATUAN ---
 window.cekDataAbsenSatuan = () => {
     const d = el('satuan-tgl').value; 
