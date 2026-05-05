@@ -587,6 +587,17 @@
             </div>
 
             <div id="menu-ess-kasbon" class="menu-content hidden">
+    <!-- TAMBAHAN: Kotak Info Limit dan Sisa Kasbon -->
+    <div class="dash-grid" style="margin-bottom: 20px;">
+        <div class="dash-card" style="border-left: 4px solid var(--info); padding: 15px;">
+            <div class="title">Jatah Limit Kasbon</div>
+            <div class="value" id="ess-info-limit-kasbon" style="font-size: 22px;">Rp 0</div>
+        </div>
+        <div class="dash-card" style="border-left: 4px solid var(--danger); padding: 15px;">
+            <div class="title">Hutang Kasbon Berjalan</div>
+            <div class="value" id="ess-info-sisa-kasbon" style="color:var(--danger); font-size: 22px;">Rp 0</div>
+        </div>
+    </div>
                 <div class="card"><h3 class="section-title">Ajukan Kasbon (Pinjaman)</h3><form id="form-ess-kasbon"><div class="form-row"><div class="form-group"><label>Nominal Pengajuan (Rp)</label><input type="number" id="ess-req-nominal" required min="10000" placeholder="Misal: 500000"></div><div class="form-group"><label>Alasan / Keperluan</label><input type="text" id="ess-req-ket" required placeholder="Jelaskan kebutuhan Anda"></div></div><div style="text-align: right;"><button type="submit" class="btn">Ajukan ke HRD</button></div></form></div>
                 <div class="card"><h3 class="section-title">Status Pengajuan Kasbon</h3><div class="table-responsive"><table><thead><tr><th>Tanggal</th><th>Nominal</th><th>Keterangan</th><th>Status</th></tr></thead><tbody id="tbody-ess-kasbon-log"></tbody></table></div></div>
             </div>
@@ -1778,6 +1789,9 @@
             
             el('ess-sisa-cuti').innerText = (emp.sisaCuti || 0) + " Hari"; 
             el('ess-sisa-kasbon').innerText = "Rp " + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID');
+            // Memasukkan data ke menu form kasbon
+if(el('ess-info-limit-kasbon')) el('ess-info-limit-kasbon').innerText = "Rp " + (parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID');
+if(el('ess-info-sisa-kasbon')) el('ess-info-sisa-kasbon').innerText = "Rp " + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID');
             
             const myOut = db_outlet.find(o => o.id === emp.outletId);
             el('ess-lokasi-outlet').innerText = myOut ? myOut.nama : "Belum Ditentukan";
@@ -1966,7 +1980,40 @@ el('form-ess-izin').addEventListener('submit', async e => {
         btn.disabled = false; btn.innerText = "Kirim Pengajuan ke HRD"; 
     } 
 });
-        el('form-ess-kasbon').addEventListener('submit', async e => { e.preventDefault(); const nom = parseFloat(el('ess-req-nominal').value); const ket = el('ess-req-ket').value; await db.collection("kasbon_log").add({ nik: currentUserData.nik, nama: currentUserData.nama, tanggal: new Date().toISOString(), jenis: "Pengajuan Karyawan", nominal: nom, keterangan: ket, status: "Pending" }); showToast("Pengajuan terkirim."); el('form-ess-kasbon').reset(); });
+      
+        el('form-ess-kasbon').addEventListener('submit', async e => { 
+    e.preventDefault(); 
+    const nom = parseFloat(el('ess-req-nominal').value); 
+    const ket = el('ess-req-ket').value; 
+    
+    // Cek limit kasbon vs hutang berjalan
+    const emp = db_karyawan.find(k => k.nik === currentUserData.nik) || currentUserData;
+    const sisaHutang = parseFloat(emp.sisaKasbon) || 0;
+    const limit = parseFloat(emp.limitKasbon) || 0;
+    
+    if ((sisaHutang + nom) > limit) {
+        return showToast(`Pengajuan Ditolak: Total hutang akan melebihi Limit Kasbon Anda! (Sisa Jatah: Rp ${(limit - sisaHutang).toLocaleString('id-ID')})`, "error");
+    }
+    
+    const btn = e.submitter; btn.disabled = true; btn.innerText = "Mengirim...";
+    try {
+        await db.collection("kasbon_log").add({ 
+            nik: currentUserData.nik, 
+            nama: currentUserData.nama, 
+            tanggal: new Date().toISOString(), 
+            jenis: "Pengajuan Karyawan", 
+            nominal: nom, 
+            keterangan: ket, 
+            status: "Pending" 
+        }); 
+        showToast("Pengajuan berhasil terkirim ke HRD."); 
+        el('form-ess-kasbon').reset(); 
+    } catch(err) {
+        showToast("Gagal mengirim pengajuan.", "error");
+    } finally {
+        btn.disabled = false; btn.innerText = "Ajukan ke HRD";
+    }
+});
 
         window.lihatDetailSlipAdminAtauKaryawan = (slipId) => { const s = db_slip.find(x => x.id === slipId); if(!s) return; currentSlipTemp = s; el('slip-modal-nama').innerText = s.nama; el('slip-modal-periode').innerText = s.periode; el('slip-modal-divisi').innerText = db_karyawan.find(k=>k.nik===s.nik)?.divisi || "-"; el('slip-modal-gapok').innerText = `Rp ${(parseFloat(s.gajiPokok)||0).toLocaleString('id-ID')}`; el('slip-modal-hadir').innerText = `Rp ${(parseFloat(s.tunjKehadiran)||0).toLocaleString('id-ID')}`; el('slip-modal-bonus').innerText = `Rp ${(parseFloat(s.insentif)||0).toLocaleString('id-ID')}`; el('slip-modal-lkmk').innerText = `Rp ${(parseFloat(s.tugasLuar)||0).toLocaleString('id-ID')}`; el('slip-modal-reimburse').innerText = `Rp ${(parseFloat(s.reimburse)||0).toLocaleString('id-ID')}`; el('slip-modal-potongan').innerText = `- Rp ${(parseFloat(s.potongan)||0).toLocaleString('id-ID')}`; el('slip-modal-bersih').innerText = s.bersih; el('modal-slip-detail').classList.add('show'); };
         window.downloadSlipPDF = () => { const element = document.getElementById('slip-export-content'); html2pdf().set({ margin: 0.5, filename: `Slip_${currentSlipTemp.nama}_${currentSlipTemp.periode}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a5', orientation: 'landscape' } }).from(element).save(); };
