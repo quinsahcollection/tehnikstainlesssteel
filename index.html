@@ -2022,13 +2022,50 @@ el('form-ess-izin').addEventListener('submit', async e => {
         });
 
         el('form-kehadiran-massal').addEventListener('submit', function(e) {
-            e.preventDefault(); const d = el('massal-tgl').value; const batch = db.batch();
-            document.querySelectorAll('#tbody-massal tr[data-nik]').forEach(r => {
-                const n = r.getAttribute('data-nik'); const s = r.querySelector('.m-status').value; const att = db_kehadiran.find(a => a.nik === n && a.date === d); const oldSt = att ? att.status : null;
-                batch.set(db.collection("kehadiran").doc(n + "_" + d), { date: d, nik: n, status: s, shift: r.querySelector('.m-shift').value, lk: r.querySelector('.m-lk').checked, mk: r.querySelector('.m-mk').checked, lembur: r.querySelector('.m-lembur').value, catatan: r.querySelector('.m-catatan').value }, {merge:true});
-                if (s==='Cuti' && oldSt!=='Cuti') batch.update(db.collection("karyawan").doc(n), { sisaCuti: firebase.firestore.FieldValue.increment(-1) }); else if (s!=='Cuti' && oldSt==='Cuti') batch.update(db.collection("karyawan").doc(n), { sisaCuti: firebase.firestore.FieldValue.increment(1) });
-            }); batch.commit().then(() => showToast('Massal sukses ditimpa!'));
-        });
+    e.preventDefault(); 
+    const d = el('massal-tgl').value; 
+    
+    // --- MULAI PENGECEKAN KUNCI SLIP GAJI ---
+    let slipTerkunci = db_slip.find(s => {
+        let sStart = new Date(s.tglMulai).setHours(0,0,0,0);
+        let sEnd = new Date(s.tglAkhir).setHours(23,59,59,999);
+        let tCek = new Date(d).getTime();
+        return tCek >= sStart && tCek <= sEnd;
+    });
+
+    if(slipTerkunci) {
+        // Hentikan proses dan tampilkan error
+        return showToast("⚠️ GAGAL! Ada slip gaji yang sudah terbit melingkupi tanggal ini. Hapus slip terkait terlebih dahulu.", "error");
+    }
+    // --- AKHIR PENGECEKAN KUNCI SLIP GAJI ---
+
+    const batch = db.batch();
+    document.querySelectorAll('#tbody-massal tr[data-nik]').forEach(r => {
+        const n = r.getAttribute('data-nik'); 
+        const s = r.querySelector('.m-status').value; 
+        const att = db_kehadiran.find(a => a.nik === n && a.date === d); 
+        const oldSt = att ? att.status : null;
+        
+        batch.set(db.collection("kehadiran").doc(n + "_" + d), { 
+            date: d, 
+            nik: n, 
+            status: s, 
+            shift: r.querySelector('.m-shift').value, 
+            lk: r.querySelector('.m-lk').checked, 
+            mk: r.querySelector('.m-mk').checked, 
+            lembur: r.querySelector('.m-lembur').value, 
+            catatan: r.querySelector('.m-catatan').value 
+        }, {merge:true});
+        
+        if (s==='Cuti' && oldSt!=='Cuti') {
+            batch.update(db.collection("karyawan").doc(n), { sisaCuti: firebase.firestore.FieldValue.increment(-1) }); 
+        } else if (s!=='Cuti' && oldSt==='Cuti') {
+            batch.update(db.collection("karyawan").doc(n), { sisaCuti: firebase.firestore.FieldValue.increment(1) }); 
+        }
+    }); 
+    
+    batch.commit().then(() => showToast('Massal sukses ditimpa!'));
+});
 
         const cekMinggu = () => {
             const s1 = (d => d ? new Date(d).getDay()===0 : false)(el('satuan-tgl').value); el('wrap-satuan-lk').classList.toggle('hidden', s1); el('wrap-satuan-mk').classList.toggle('hidden', !s1); if(s1)el('satuan-lk').checked=false;else el('satuan-mk').checked=false;
@@ -2634,29 +2671,55 @@ window.cekDataAbsenSatuan = () => {
     const d = el('satuan-tgl').value; 
     const n = el('satuan-nik').value;
     if(!d || !n) return;
-    
-    // Cari apakah sudah ada data absen di tanggal & NIK tersebut
-    const att = db_kehadiran.find(a => a.nik === n && a.date === d);
-    if(att) {
-        // Jika ADA, isi form dengan data lama agar bisa diedit
-        el('satuan-status').value = att.status;
-        el('satuan-shift').value = att.shift || 'Pagi';
-        el('satuan-jam-in').value = att.waktuMasuk || '';
-        el('satuan-jam-out').value = att.waktuPulang || '';
-        el('satuan-lk').checked = att.lk || false;
-        el('satuan-mk').checked = att.mk || false;
-        el('satuan-lembur').value = att.lembur || 0;
-        el('satuan-catatan').value = att.catatan || '';
-        el('btn-simpan-absen').innerText = "Update Kehadiran";
+
+    const btnSubmit = el('btn-simpan-absen');
+    let warnElement = el('warning-slip-locked');
+
+    // 1. CEK APAKAH TANGGAL INI SUDAH MASUK KE SLIP GAJI
+    let isLocked = db_slip.some(s => {
+        if(s.nik !== n) return false;
+        let sStart = new Date(s.tglMulai).setHours(0,0,0,0);
+        let sEnd = new Date(s.tglAkhir).setHours(23,59,59,999);
+        let tCek = new Date(d).getTime();
+        return tCek >= sStart && tCek <= sEnd;
+    });
+
+    if(isLocked) {
+        // Tampilkan peringatan & matikan tombol
+        btnSubmit.disabled = true;
+        btnSubmit.innerText = "🔒 Terkunci (Slip Gaji Sudah Terbit)";
+        btnSubmit.style.background = "var(--danger)";
+        if(!warnElement) {
+            btnSubmit.insertAdjacentHTML('beforebegin', '<div id="warning-slip-locked" style="color:var(--danger); font-weight:bold; font-size:12px; margin-bottom:15px; padding:10px; background:#fee2e2; border-radius:5px;">⚠️ Akses ditolak: Slip gaji untuk periode ini sudah dicetak. Hapus slip gaji terkait jika ingin mengedit absensi.</div>');
+        } else {
+            warnElement.style.display = 'block';
+        }
     } else {
-        // Jika TIDAK ADA, kosongkan form untuk input baru
-        el('form-kehadiran-satuan').reset();
-        el('satuan-tgl')._flatpickr.setDate(d);
-        el('satuan-nik').value = n;
-        el('btn-simpan-absen').innerText = "Simpan Kehadiran";
+        // Nyalakan kembali jika aman
+        btnSubmit.disabled = false;
+        btnSubmit.style.background = "var(--primary)";
+        if(warnElement) warnElement.style.display = 'none';
+
+        // Lanjutkan menarik data lama (autofill)
+        const att = db_kehadiran.find(a => a.nik === n && a.date === d);
+        if(att) {
+            el('satuan-status').value = att.status;
+            el('satuan-shift').value = att.shift || 'Pagi';
+            el('satuan-jam-in').value = att.waktuMasuk || '';
+            el('satuan-jam-out').value = att.waktuPulang || '';
+            el('satuan-lk').checked = att.lk || false;
+            el('satuan-mk').checked = att.mk || false;
+            el('satuan-lembur').value = att.lembur || 0;
+            el('satuan-catatan').value = att.catatan || '';
+            btnSubmit.innerText = "Update Kehadiran";
+        } else {
+            el('form-kehadiran-satuan').reset();
+            el('satuan-tgl')._flatpickr.setDate(d);
+            el('satuan-nik').value = n;
+            btnSubmit.innerText = "Simpan Kehadiran";
+        }
+        aturDisableKehadiran(el('satuan-status').value, el('satuan-lk'), el('satuan-mk'), el('satuan-lembur'), el('wrap-satuan-lk'), el('wrap-satuan-mk'));
     }
-    // Sesuaikan elemen mana saja yang mati (disabled) berdasarkan status
-    aturDisableKehadiran(el('satuan-status').value, el('satuan-lk'), el('satuan-mk'), el('satuan-lembur'), el('wrap-satuan-lk'), el('wrap-satuan-mk'));
 };
 
 // Pasang trigger (pemicu) agar fungsinya berjalan saat Tanggal atau NIK diubah
