@@ -1253,7 +1253,7 @@
         let pendingMassalSlips = [];
         
         // VARIABEL PETA (MAP)
-        let outletMap = null; let outletMarker = null;
+        let outletMap = null; let outletMarker = null; let outletCircle = null;
 
         const getLocalToday = () => {
             const d = new Date();
@@ -1307,26 +1307,56 @@
         }
 
         function initMap() {
-            if (outletMap) { outletMap.invalidateSize(); return; }
-            outletMap = L.map('map-picker').setView([-6.200000, 106.816666], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors', maxZoom: 19 }).addTo(outletMap);
-            outletMarker = L.marker([-6.200000, 106.816666], {draggable: true}).addTo(outletMap);
-            outletMarker.on('dragend', function(e) { const pos = outletMarker.getLatLng(); el('out-lat').value = pos.lat.toFixed(6); el('out-lon').value = pos.lng.toFixed(6); });
-            outletMap.on('click', function(e) { outletMarker.setLatLng(e.latlng); el('out-lat').value = e.latlng.lat.toFixed(6); el('out-lon').value = e.latlng.lng.toFixed(6); });
-        }
+    if (outletMap) { outletMap.invalidateSize(); return; }
+    outletMap = L.map('map-picker').setView([-6.200000, 106.816666], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(outletMap);
+    
+    outletMarker = L.marker([-6.200000, 106.816666], {draggable: true}).addTo(outletMap);
+    
+    // Inisialisasi Lingkaran
+    let radVal = parseInt(el('out-radius').value) || 50;
+    outletCircle = L.circle([-6.200000, 106.816666], { radius: radVal, color: 'var(--primary)', fillColor: 'var(--primary)', fillOpacity: 0.2 }).addTo(outletMap);
+
+    outletMarker.on('dragend', function(e) { 
+        const pos = outletMarker.getLatLng(); 
+        el('out-lat').value = pos.lat.toFixed(6); el('out-lon').value = pos.lng.toFixed(6); 
+        outletCircle.setLatLng(pos);
+    });
+    
+    outletMap.on('click', function(e) { 
+        outletMarker.setLatLng(e.latlng); outletCircle.setLatLng(e.latlng);
+        el('out-lat').value = e.latlng.lat.toFixed(6); el('out-lon').value = e.latlng.lng.toFixed(6); 
+    });
+    
+    // Auto-update lingkaran saat input radius diketik
+    el('out-radius').addEventListener('input', function() {
+        if(outletCircle) outletCircle.setRadius(parseInt(this.value) || 50);
+    });
+}
 
         window.getLocationGPS = () => {
-            const btnText = el('gps-status-outlet');
-            if (navigator.geolocation) {
-                btnText.innerText = "(Mencari...)";
-                navigator.geolocation.getCurrentPosition(pos => {
-                    const lat = pos.coords.latitude; const lon = pos.coords.longitude;
-                    el('out-lat').value = lat.toFixed(6); el('out-lon').value = lon.toFixed(6);
-                    if(outletMap && outletMarker) { const newLatLng = new L.LatLng(lat, lon); outletMap.setView(newLatLng, 17); outletMarker.setLatLng(newLatLng); }
-                    btnText.innerText = "✅"; showToast("Lokasi Anda berhasil dideteksi!");
-                }, err => { btnText.innerText = "❌ Gagal"; showToast("Akses lokasi ditolak atau GPS tidak aktif!", "error"); }, { enableHighAccuracy: true });
-            } else { showToast("Browser tidak mendukung fitur GPS.", "error"); }
-        };
+    const btnText = el('gps-status-outlet');
+    if (navigator.geolocation) {
+        btnText.innerText = "(Mencari...)";
+        navigator.geolocation.getCurrentPosition(pos => {
+            const lat = pos.coords.latitude; const lon = pos.coords.longitude;
+            el('out-lat').value = lat.toFixed(6); el('out-lon').value = lon.toFixed(6);
+            if(outletMap && outletMarker) { 
+                const newLatLng = new L.LatLng(lat, lon); 
+                outletMap.setView(newLatLng, 17); 
+                outletMarker.setLatLng(newLatLng); 
+                
+                // --- TAMBAHAN UNTUK LINGKARAN ---
+                if(outletCircle) outletCircle.setLatLng(newLatLng);
+            }
+            btnText.innerText = "✅"; showToast("Lokasi Anda berhasil dideteksi!");
+        }, err => { 
+            btnText.innerText = "❌ Gagal"; showToast("Akses lokasi ditolak atau GPS tidak aktif!", "error"); 
+        }, { enableHighAccuracy: true });
+    } else { 
+        showToast("Browser tidak mendukung fitur GPS.", "error"); 
+    }
+};
 
         window.openMenu = (m) => {
             if(m !== 'menu-detail-karyawan') currentDetailNik = null;
@@ -1459,8 +1489,52 @@
             const btn = el('btn-simpan-outlet'); btn.disabled = true; btn.innerText = "Menyimpan..."; const data = { nama: el('out-nama').value, alamat: el('out-alamat').value, lat: parseFloat(el('out-lat').value), lon: parseFloat(el('out-lon').value), radius: parseInt(el('out-radius').value)||50 }; const id = el('out-id').value;
             try { if(id) await db.collection("outlets").doc(id).update(data); else await db.collection("outlets").add(data); showToast("Outlet berhasil disimpan!"); window.resetFormOutlet(); } catch(err) { showToast("Gagal menyimpan outlet.", "error"); } finally { btn.disabled = false; btn.innerText = "Simpan Lokasi Outlet"; }
         });
-        window.resetFormOutlet = () => { el('form-outlet').reset(); el('out-id').value = ''; el('btn-simpan-outlet').innerText = "Simpan Lokasi Outlet"; el('btn-batal-outlet').classList.add('hidden'); el('gps-status-outlet').innerText = ""; if(outletMap && outletMarker) { const newLatLng = new L.LatLng(-6.200000, 106.816666); outletMap.setView(newLatLng, 13); outletMarker.setLatLng(newLatLng); } };
-        window.editOutlet = (id) => { const o = db_outlet.find(x => x.id === id); if(!o) return; el('out-id').value = o.id; el('out-nama').value = o.nama; el('out-alamat').value = o.alamat; el('out-lat').value = o.lat; el('out-lon').value = o.lon; el('out-radius').value = o.radius; el('btn-simpan-outlet').innerText = "Perbarui Outlet"; el('btn-batal-outlet').classList.remove('hidden'); if(outletMap && outletMarker) { const newLatLng = new L.LatLng(o.lat, o.lon); outletMap.setView(newLatLng, 17); outletMarker.setLatLng(newLatLng); } window.scrollTo({top:0, behavior:'smooth'}); };
+        window.resetFormOutlet = () => { 
+    el('form-outlet').reset(); 
+    el('out-id').value = ''; 
+    el('btn-simpan-outlet').innerText = "Simpan Lokasi Outlet"; 
+    el('btn-batal-outlet').classList.add('hidden'); 
+    el('gps-status-outlet').innerText = ""; 
+    
+    if(outletMap && outletMarker) { 
+        const newLatLng = new L.LatLng(-6.200000, 106.816666); 
+        outletMap.setView(newLatLng, 13); 
+        outletMarker.setLatLng(newLatLng);
+        
+        // --- TAMBAHAN UNTUK RESET LINGKARAN ---
+        if(outletCircle) {
+            outletCircle.setLatLng(newLatLng); // Kembalikan ke posisi awal
+            outletCircle.setRadius(50); // Kembalikan ke radius standar (50m)
+        }
+    } 
+};
+        window.editOutlet = (id) => { 
+    const o = db_outlet.find(x => x.id === id); 
+    if(!o) return; 
+    
+    el('out-id').value = o.id; 
+    el('out-nama').value = o.nama; 
+    el('out-alamat').value = o.alamat; 
+    el('out-lat').value = o.lat; 
+    el('out-lon').value = o.lon; 
+    el('out-radius').value = o.radius; 
+    
+    el('btn-simpan-outlet').innerText = "Perbarui Outlet"; 
+    el('btn-batal-outlet').classList.remove('hidden'); 
+    
+    if(outletMap && outletMarker) { 
+        const newLatLng = new L.LatLng(o.lat, o.lon); 
+        outletMap.setView(newLatLng, 17); 
+        outletMarker.setLatLng(newLatLng);
+        
+        // --- TAMBAHAN UNTUK LINGKARAN & RADIUSNYA ---
+        if(outletCircle) {
+            outletCircle.setLatLng(newLatLng); // Memindahkan lingkaran ke lokasi edit
+            outletCircle.setRadius(parseInt(o.radius) || 50); // Menyesuaikan ukuran radius sesuai data
+        }
+    } 
+    window.scrollTo({top:0, behavior:'smooth'}); 
+};
         window.hapusOutlet = async (id) => { const ok = await showConfirm("Hapus Outlet?", "Pastikan tidak ada karyawan yang masih aktif ditempatkan di outlet ini.", "Hapus Permanen", true); if(ok) { await db.collection("outlets").doc(id).delete(); showToast("Outlet dihapus!"); } };
 
 
