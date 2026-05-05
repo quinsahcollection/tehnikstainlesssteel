@@ -1422,8 +1422,8 @@
         // Listener Reimbursement
         db.collection("reimbursements").orderBy("tanggal", "desc").onSnapshot(snap => { db_reimburse = []; snap.forEach(doc => db_reimburse.push({id: doc.id, ...doc.data()})); updateAdminDash(); renderESSDashboard(); if(currentDetailNik) renderDetailReimburse(); if(!el('menu-reimburse').classList.contains('hidden')) renderAdminReimburse(); if(!el('menu-ess-reimburse').classList.contains('hidden')) renderESSReimburseLog(); });
 
-        flatpickr("input[type='date']", { locale: "id", dateFormat: "Y-m-d", disableMobile: "true" });
-        flatpickr("#massal-tgl", { locale: "id", dateFormat: "Y-m-d", disableMobile: "true", onChange: () => syncFormMassal() });
+        flatpickr("input[type='date']", { locale: "id", dateFormat: "Y-m-d", disableMobile: "true", maxDate: "today" });
+        flatpickr("#massal-tgl", { locale: "id", dateFormat: "Y-m-d", disableMobile: "true", maxDate: "today", onChange: () => syncFormMassal() });
         flatpickr("#filter-bulan-laporan", { locale: "id", dateFormat: "Y-m", disableMobile: "true", plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })], onChange: () => renderLaporan() });
         flatpickr("#filter-bulan-slip", { locale: "id", dateFormat: "Y-m", disableMobile: "true", plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })], onChange: () => window.renderAllSlips() });
         flatpickr("#gaji-periode-range", { locale: "id", mode: "range", altFormat: "d M Y", dateFormat: "Y-m-d", disableMobile: "true", onChange: () => jalankanAutoCalc() });
