@@ -1476,7 +1476,100 @@
         
         window.bukaSettingMaster = (type, title) => { el('view-setting-hub').classList.add('hidden'); el('view-setting-outlet').classList.add('hidden'); el('view-setting-master').classList.remove('hidden'); el('title-setting-master').innerText = title; el('master-type').value = type; el('wrap-master-level').classList.toggle('hidden', type !== 'jabatan'); window.batalEditMaster(); window.renderTabelMaster(type); };
 
-        window.renderTabelMaster = (type) => { let data = type === 'divisi' ? db_divisi : (type === 'jabatan' ? db_jabatan : db_status); let html = ''; data.forEach(d => { let textNama = d.nama; if(type === 'jabatan' && d.level) textNama = `<span style="font-size:11px; color:var(--primary); font-weight:700;">${d.level}</span><br>${d.nama}`; html += `<tr><td><b style="font-size:14px; color:var(--text-main);">${textNama}</b></td><td style="text-align:center;"><div style="display:flex; gap:6px; justify-content:center;"><button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="window.editMaster('${type}', '${d.id}', '${d.nama}', '${d.level||''}')">Edit</button><button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusMaster('${type}', '${d.id}')">Hapus</button></div></td></tr>`; }); el('tbody-master-list').innerHTML = html || `<tr><td colspan="2" align="center" style="padding:20px;">Belum ada master data ${type}.</td></tr>`; };
+        window.renderTabelMaster = (type) => {
+            let data = type === 'divisi' ? db_divisi : (type === 'jabatan' ? db_jabatan : db_status);
+            let html = '';
+
+            if (data.length === 0) {
+                el('tbody-master-list').innerHTML = `<tr><td colspan="2" align="center" style="padding:20px;">Belum ada master data ${type}.</td></tr>`;
+                return;
+            }
+
+            if (type === 'jabatan') {
+                // TAMPILAN POHON FAKTOR (GROUPING) UNTUK JABATAN
+                let levels = ['Eksekutif', 'Manajer', 'Staf Senior/Spesialis', 'Entry Level (Staf)'];
+                
+                levels.forEach(lvl => {
+                    let jabs = data.filter(j => (j.level || 'Entry Level (Staf)') === lvl);
+                    if(jabs.length > 0) {
+                        // Header Baris Grup
+                        html += `<tr style="background-color: var(--primary-light);">
+                                    <td colspan="2" style="padding: 10px 15px;"><b style="color: var(--primary); font-size: 12px; letter-spacing: 0.5px;">❖ LEVEL: ${lvl.toUpperCase()}</b></td>
+                                 </tr>`;
+                        
+                        // Anak cabang (Jabatan) dengan Garis Menyambung
+                        jabs.forEach((d, index) => {
+                            // Cek apakah ini item terakhir di grup ini untuk memotong garis vertikal
+                            let isLast = index === jabs.length - 1; 
+                            
+                            html += `<tr>
+                                <td style="padding: 0;">
+                                    <div style="position: relative; padding: 12px 15px 12px 40px; min-height: 40px; display: flex; align-items: center;">
+                                        <!-- Garis Vertikal (menyambung ke atas & bawah) -->
+                                        <div style="position: absolute; left: 20px; top: 0; bottom: ${isLast ? '50%' : '0'}; width: 2px; background-color: #94a3b8;"></div>
+                                        <!-- Garis Horizontal (mengarah ke teks) -->
+                                        <div style="position: absolute; left: 20px; top: 50%; width: 12px; height: 2px; background-color: #94a3b8;"></div>
+                                        
+                                        <b style="font-size:14px; color:var(--text-main); position: relative; z-index: 1;">${d.nama}</b>
+                                    </div>
+                                </td>
+                                <td style="text-align:center; vertical-align: middle;">
+                                    <div style="display:flex; gap:6px; justify-content:center;">
+                                        <button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="window.editMaster('${type}', '${d.id}', '${d.nama.replace(/'/g, "\\'")}', '${d.level||''}')">Edit</button>
+                                        <button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusMaster('${type}', '${d.id}')">Hapus</button>
+                                    </div>
+                                </td>
+                            </tr>`;
+                        });
+                    }
+                });
+
+                // Menangani data lama yang tidak punya level / di luar daftar level
+                let jabsLain = data.filter(j => !levels.includes(j.level || 'Entry Level (Staf)'));
+                if(jabsLain.length > 0) {
+                    html += `<tr style="background-color: #f1f5f9;">
+                                <td colspan="2" style="padding: 10px 15px;"><b style="color: var(--text-muted); font-size: 12px;">❖ LEVEL: LAINNYA</b></td>
+                             </tr>`;
+                    jabsLain.forEach((d, index) => {
+                        let isLast = index === jabsLain.length - 1;
+                        html += `<tr>
+                            <td style="padding: 0;">
+                                <div style="position: relative; padding: 12px 15px 12px 40px; min-height: 40px; display: flex; align-items: center;">
+                                    <!-- Garis Vertikal -->
+                                    <div style="position: absolute; left: 20px; top: 0; bottom: ${isLast ? '50%' : '0'}; width: 2px; background-color: #94a3b8;"></div>
+                                    <!-- Garis Horizontal -->
+                                    <div style="position: absolute; left: 20px; top: 50%; width: 12px; height: 2px; background-color: #94a3b8;"></div>
+                                    
+                                    <b style="font-size:14px; color:var(--text-main); position: relative; z-index: 1;">${d.nama}</b>
+                                </div>
+                            </td>
+                            <td style="text-align:center; vertical-align: middle;">
+                                <div style="display:flex; gap:6px; justify-content:center;">
+                                    <button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="window.editMaster('${type}', '${d.id}', '${d.nama.replace(/'/g, "\\'")}', '${d.level||''}')">Edit</button>
+                                    <button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusMaster('${type}', '${d.id}')">Hapus</button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+                }
+
+            } else {
+                // TAMPILAN DATAR (NORMAL) UNTUK DIVISI & STATUS
+                data.forEach(d => {
+                    html += `<tr>
+                        <td style="padding: 12px 15px;"><b style="font-size:14px; color:var(--text-main);">${d.nama}</b></td>
+                        <td style="text-align:center; vertical-align: middle;">
+                            <div style="display:flex; gap:6px; justify-content:center;">
+                                <button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="window.editMaster('${type}', '${d.id}', '${d.nama.replace(/'/g, "\\'")}', '')">Edit</button>
+                                <button type="button" class="btn-outline" style="padding:6px 12px; font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusMaster('${type}', '${d.id}')">Hapus</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+            }
+
+            el('tbody-master-list').innerHTML = html;
+        };
         
         window.editMaster = (type, id, nama, level) => { el('master-type').value = type; el('master-id').value = id; el('master-nama').value = nama; if(type==='jabatan') el('master-level').value = level || 'Entry Level (Staf)'; el('btn-simpan-master').innerText = 'Simpan Perubahan'; el('btn-batal-master').classList.remove('hidden'); };
         
