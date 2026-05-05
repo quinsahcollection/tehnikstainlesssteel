@@ -2383,15 +2383,19 @@ if(filterBln) {
     const daysInMonth = new Date(year, month, 0).getDate();
     const today = new Date(); const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth() + 1);
     
-    // 1. BAGIAN HEADER TABEL (Tambahan 6 Kolom Total)
+    // 1. BAGIAN HEADER TABEL
     let thHtml = `<th class="sticky-col">Nama Pegawai / Tgl</th>`;
-    thHtml += `<th style="background:#e2e8f0; color:#2b3445;" title="Hadir Penuh">ΣH</th><th style="background:#e2e8f0; color:#2b3445;" title="Izin Setengah Hari">Σ½</th><th style="background:#e2e8f0; color:#2b3445;" title="Izin Penuh">ΣI</th><th style="background:#e2e8f0; color:#2b3445;" title="Sakit">ΣS</th><th style="background:#e2e8f0; color:#2b3445;" title="Cuti">ΣC</th><th style="background:#e2e8f0; color:#2b3445;" title="Absen/Alpa">ΣA</th>`;
     
+    // Looping tanggal diletakkan LEBIH DULU
     for(let i=1; i<=daysInMonth; i++) { 
         let curD = new Date(year, month-1, i); let isSun = curD.getDay()===0; let isToday = isCurrentMonth && (i === today.getDate());
         let thCls = ''; if(isSun) thCls += ' col-minggu'; if(isToday) thCls += ' col-hari-ini';
         thHtml += `<th class="${thCls}">${i}</th>`; 
     }
+    
+    // Kolom Total diletakkan DI AKHIR (Paling Kanan)
+    thHtml += `<th style="background:#e2e8f0; color:#2b3445; border-left:2px solid #cbd5e1;" title="Hadir Penuh">ΣH</th><th style="background:#e2e8f0; color:#2b3445;" title="Izin Setengah Hari">Σ½</th><th style="background:#e2e8f0; color:#2b3445;" title="Izin Penuh">ΣI</th><th style="background:#e2e8f0; color:#2b3445;" title="Sakit">ΣS</th><th style="background:#e2e8f0; color:#2b3445;" title="Cuti">ΣC</th><th style="background:#e2e8f0; color:#2b3445;" title="Absen/Alpa">ΣA</th>`;
+    
     let tblHtml = `<thead><tr>${thHtml}</tr></thead><tbody>`;
 
     // 2. BAGIAN ISI TABEL & PENGHITUNGAN
@@ -2399,7 +2403,6 @@ if(filterBln) {
         let isArsip = k.status === 'Nonaktif';
         let trBg = isArsip ? 'background:#f1f5f9; opacity:0.8;' : '';
         
-        // Siapkan variabel penghitung untuk tiap karyawan
         let totH=0, totSetengah=0, totI=0, totS=0, totC=0, totA=0;
         let daysHtml = '';
         
@@ -2422,9 +2425,12 @@ if(filterBln) {
         }
         
         let rowHtml = `<tr style="${trBg}"><td class="sticky-col"><b>${k.nama}</b><br><small>${k.nik}</small></td>`;
-        // Gabungkan angka total ke dalam baris
-        rowHtml += `<td style="font-weight:800; color:var(--success); text-align:center;">${totH}</td><td style="font-weight:800; color:var(--info); text-align:center;">${totSetengah}</td><td style="font-weight:800; color:var(--warning); text-align:center;">${totI}</td><td style="font-weight:800; color:var(--info); text-align:center;">${totS}</td><td style="font-weight:800; color:var(--purple); text-align:center;">${totC}</td><td style="font-weight:800; color:var(--danger); text-align:center;">${totA}</td>`;
-        rowHtml += daysHtml + `</tr>`;
+        
+        // Gabungkan elemen hari LEBIH DULU
+        rowHtml += daysHtml;
+        
+        // Angka total digabungkan DI AKHIR
+        rowHtml += `<td style="font-weight:800; color:var(--success); text-align:center; border-left:2px solid #cbd5e1;">${totH}</td><td style="font-weight:800; color:var(--info); text-align:center;">${totSetengah}</td><td style="font-weight:800; color:var(--warning); text-align:center;">${totI}</td><td style="font-weight:800; color:var(--info); text-align:center;">${totS}</td><td style="font-weight:800; color:var(--purple); text-align:center;">${totC}</td><td style="font-weight:800; color:var(--danger); text-align:center;">${totA}</td></tr>`;
         
         tblHtml += rowHtml;
     });
