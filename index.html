@@ -572,6 +572,11 @@
                             <div class="form-group hidden" id="wrap-izin-tgl-range"><label>Rentang Tanggal (Mulai s/d Selesai)</label><input type="text" id="ess-izin-tgl-range" placeholder="Pilih rentang tanggal..."></div>
                             <div class="form-group"><label>Alasan / Keterangan Lengkap</label><input type="text" id="ess-izin-alasan" required placeholder="Contoh: Menghadiri acara keluarga / Demam tinggi"></div>
                         </div>
+                        <div style="background:#fff1f2; border:1px dashed #fca5a5; padding:15px; border-radius:8px; margin-bottom:20px;">
+    <label style="color:var(--danger); display:block; margin-bottom:10px;">📸 Upload Surat Dokter / Bukti Pendukung (Opsional)</label>
+    <input type="file" id="ess-izin-file" accept="image/*" style="font-size:12px; padding:5px; border:none; background:transparent;">
+    <canvas id="ess-izin-canvas" style="display:none;"></canvas>
+</div>
                         <div style="text-align: right;"><button type="submit" class="btn">Kirim Pengajuan ke HRD</button></div>
                     </form>
                 </div>
@@ -1802,7 +1807,72 @@
         window.ulangKamera = () => { el('camera-feed').style.display = 'block'; el('camera-result').style.display = 'none'; cekStatusAbsenHariIni(); if(el('btn-capture-masuk')) el('btn-capture-masuk').disabled = false; if(el('btn-capture-pulang')) el('btn-capture-pulang').disabled = false; el('btn-capture-masuk').innerText = "📸 CHECK-IN (MASUK)"; el('btn-capture-pulang').innerText = "📸 CHECK-OUT (PULANG)"; };
 
         window.aturInputTanggalIzin = () => { const val = el('ess-izin-durasi').value; if(val === 'Beberapa Hari') { el('wrap-izin-tgl-single').classList.add('hidden'); el('wrap-izin-tgl-range').classList.remove('hidden'); el('ess-izin-tgl-single').removeAttribute('required'); el('ess-izin-tgl-range').setAttribute('required', 'true'); } else { el('wrap-izin-tgl-range').classList.add('hidden'); el('wrap-izin-tgl-single').classList.remove('hidden'); el('ess-izin-tgl-range').removeAttribute('required'); el('ess-izin-tgl-single').setAttribute('required', 'true'); } };
-        el('form-ess-izin').addEventListener('submit', async e => { e.preventDefault(); const tipe = el('ess-izin-tipe').value; const durasi = el('ess-izin-durasi').value; const alasan = el('ess-izin-alasan').value; let tglRaw = ''; if(durasi === 'Beberapa Hari') { tglRaw = el('ess-izin-tgl-range').value; if(!tglRaw.includes(' to ')) return showToast('Pilih rentang dengan benar!', 'error'); } else { tglRaw = el('ess-izin-tgl-single').value; } const btn = e.submitter; btn.disabled = true; btn.innerText = "Mengirim..."; try { await db.collection("pengajuan_izin").add({ nik: currentUserData.nik, nama: currentUserData.nama, tipe: tipe, durasi: durasi, tglRaw: tglRaw, alasan: alasan, status: "Pending", waktuSubmit: new Date().toISOString() }); showToast("Pengajuan terkirim!"); el('form-ess-izin').reset(); el('ess-izin-tgl-single')._flatpickr.clear(); if(el('ess-izin-tgl-range')._flatpickr) el('ess-izin-tgl-range')._flatpickr.clear(); window.aturInputTanggalIzin(); } catch(err) { showToast("Gagal kirim.", "error"); } finally { btn.disabled = false; btn.innerText = "Kirim Pengajuan ke HRD"; } });
+        // --- SCRIPT UNTUK PREVIEW & KOMPRES FOTO IZIN ---
+if(el('ess-izin-file')) {
+    el('ess-izin-file').addEventListener('change', function(e) {
+        const file = e.target.files[0]; if(!file) return;
+        const canvas = el('ess-izin-canvas'); const ctx = canvas.getContext('2d');
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const MAX_WIDTH = 600; let scaleSize = MAX_WIDTH / img.width; if(scaleSize > 1) scaleSize = 1;
+                canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// --- SCRIPT UNTUK MENYIMPAN FORM IZIN KE DATABASE ---
+el('form-ess-izin').addEventListener('submit', async e => { 
+    e.preventDefault(); 
+    const tipe = el('ess-izin-tipe').value; 
+    const durasi = el('ess-izin-durasi').value; 
+    const alasan = el('ess-izin-alasan').value; 
+    
+    let tglRaw = ''; 
+    if(durasi === 'Beberapa Hari') { 
+        tglRaw = el('ess-izin-tgl-range').value; 
+        if(!tglRaw.includes(' to ')) return showToast('Pilih rentang dengan benar!', 'error'); 
+    } else { 
+        tglRaw = el('ess-izin-tgl-single').value; 
+    } 
+    
+    const btn = e.submitter; btn.disabled = true; btn.innerText = "Mengirim..."; 
+    
+    // Ambil data foto dari Canvas (jika ada)
+    let base64Izin = '';
+    const canvasIzin = el('ess-izin-canvas');
+    if(canvasIzin && canvasIzin.width > 0) base64Izin = canvasIzin.toDataURL('image/jpeg', 0.6);
+    
+    try { 
+        await db.collection("pengajuan_izin").add({ 
+            nik: currentUserData.nik, 
+            nama: currentUserData.nama, 
+            tipe: tipe, 
+            durasi: durasi, 
+            tglRaw: tglRaw, 
+            alasan: alasan, 
+            status: "Pending", 
+            waktuSubmit: new Date().toISOString(),
+            fotoBukti: base64Izin // Simpan foto ke database
+        }); 
+        
+        showToast("Pengajuan terkirim!"); 
+        el('form-ess-izin').reset(); 
+        el('ess-izin-tgl-single')._flatpickr.clear(); 
+        if(el('ess-izin-tgl-range')._flatpickr) el('ess-izin-tgl-range')._flatpickr.clear(); 
+        if(canvasIzin) { canvasIzin.width = 0; canvasIzin.height = 0; } // Reset canvas foto
+        window.aturInputTanggalIzin(); 
+    } catch(err) { 
+        showToast("Gagal kirim.", "error"); 
+    } finally { 
+        btn.disabled = false; btn.innerText = "Kirim Pengajuan ke HRD"; 
+    } 
+});
         el('form-ess-kasbon').addEventListener('submit', async e => { e.preventDefault(); const nom = parseFloat(el('ess-req-nominal').value); const ket = el('ess-req-ket').value; await db.collection("kasbon_log").add({ nik: currentUserData.nik, nama: currentUserData.nama, tanggal: new Date().toISOString(), jenis: "Pengajuan Karyawan", nominal: nom, keterangan: ket, status: "Pending" }); showToast("Pengajuan terkirim."); el('form-ess-kasbon').reset(); });
 
         window.lihatDetailSlipAdminAtauKaryawan = (slipId) => { const s = db_slip.find(x => x.id === slipId); if(!s) return; currentSlipTemp = s; el('slip-modal-nama').innerText = s.nama; el('slip-modal-periode').innerText = s.periode; el('slip-modal-divisi').innerText = db_karyawan.find(k=>k.nik===s.nik)?.divisi || "-"; el('slip-modal-gapok').innerText = `Rp ${(parseFloat(s.gajiPokok)||0).toLocaleString('id-ID')}`; el('slip-modal-hadir').innerText = `Rp ${(parseFloat(s.tunjKehadiran)||0).toLocaleString('id-ID')}`; el('slip-modal-bonus').innerText = `Rp ${(parseFloat(s.insentif)||0).toLocaleString('id-ID')}`; el('slip-modal-lkmk').innerText = `Rp ${(parseFloat(s.tugasLuar)||0).toLocaleString('id-ID')}`; el('slip-modal-reimburse').innerText = `Rp ${(parseFloat(s.reimburse)||0).toLocaleString('id-ID')}`; el('slip-modal-potongan').innerText = `- Rp ${(parseFloat(s.potongan)||0).toLocaleString('id-ID')}`; el('slip-modal-bersih').innerText = s.bersih; el('modal-slip-detail').classList.add('show'); };
@@ -1833,10 +1903,13 @@
             if(el('tbody-approval-kasbon')) el('tbody-approval-kasbon').innerHTML = tbodyKasbonApp || '<tr><td colspan="4" align="center">Tidak ada antrean pengajuan kasbon.</td></tr>';
 
             let tbodyIzinApp = '';
-            pendingIzin.forEach(i => { tbodyIzinApp += `<tr><td><b>${i.nama}</b><br><small>${new Date(i.waktuSubmit).toLocaleDateString('id-ID')}</small></td><td><b>${i.tipe}</b><br><small>${i.durasi}</small></td><td>${i.tglRaw}</td><td><small>${i.alasan}</small></td><td style="text-align:center;"><button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.approveIzinReq(this, '${i.id}', '${i.nik}', '${i.tipe}', '${i.durasi}', '${i.tglRaw}')">Setujui</button> <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.rejectIzinReq(this, '${i.id}')">Tolak</button></td></tr>`; });
+            pendingIzin.forEach(i => { 
+            // Jika ada fotoBukti, munculkan tombol untuk melihat
+            let btnBukti = i.fotoBukti ? `<br><button class="btn-outline" style="padding:4px 8px; font-size:10px; margin-top:5px; border-color:var(--info); color:var(--info);" onclick="bukaViewerFoto('${i.fotoBukti}')">🔍 Cek Bukti</button>` : '';
+    
+            tbodyIzinApp += `<tr><td><b>${i.nama}</b><br><small>${new Date(i.waktuSubmit).toLocaleDateString('id-ID')}</small></td><td><b>${i.tipe}</b><br><small>${i.durasi}</small></td><td>${i.tglRaw}</td><td><small>${i.alasan}</small>${btnBukti}</td><td style="text-align:center;"><button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.approveIzinReq(this, '${i.id}', '${i.nik}', '${i.tipe}', '${i.durasi}', '${i.tglRaw}')">Setujui</button> <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.rejectIzinReq(this, '${i.id}')">Tolak</button></td></tr>`; 
+            });
             if(el('tbody-approval-izin')) el('tbody-approval-izin').innerHTML = tbodyIzinApp || '<tr><td colspan="5" align="center">Tidak ada antrean pengajuan izin.</td></tr>';
-
-
             let optOut = '<option value="">-- Pilih Outlet Penempatan --</option>'; 
             let optTargetOut = '<option value="Semua">📢 Semua Outlet (Global)</option>';
             db_outlet.forEach(o => { optOut += `<option value="${o.id}">${o.nama}</option>`; optTargetOut += `<option value="${o.id}">${o.nama}</option>`; }); 
@@ -2305,44 +2378,58 @@ if(filterBln) {
 
             // MODUL LAPORAN 
             function renderLaporan() {
-                const bth = el('filter-bulan-laporan').value; if(!bth) return;
-                const year = parseInt(bth.split('-')[0]); const month = parseInt(bth.split('-')[1]);
-                const daysInMonth = new Date(year, month, 0).getDate();
-                const today = new Date(); const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth() + 1);
-                
-                let thHtml = `<th class="sticky-col">Nama Pegawai / Tgl</th>`;
-                for(let i=1; i<=daysInMonth; i++) { 
-                    let curD = new Date(year, month-1, i); let isSun = curD.getDay()===0; let isToday = isCurrentMonth && (i === today.getDate());
-                    let thCls = ''; if(isSun) thCls += ' col-minggu'; if(isToday) thCls += ' col-hari-ini';
-                    thHtml += `<th class="${thCls}">${i}</th>`; 
-                }
-                let tblHtml = `<thead><tr>${thHtml}</tr></thead><tbody>`;
+    const bth = el('filter-bulan-laporan').value; if(!bth) return;
+    const year = parseInt(bth.split('-')[0]); const month = parseInt(bth.split('-')[1]);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const today = new Date(); const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth() + 1);
+    
+    // 1. BAGIAN HEADER TABEL (Tambahan 6 Kolom Total)
+    let thHtml = `<th class="sticky-col">Nama Pegawai / Tgl</th>`;
+    thHtml += `<th style="background:#e2e8f0; color:#2b3445;" title="Hadir Penuh">ΣH</th><th style="background:#e2e8f0; color:#2b3445;" title="Izin Setengah Hari">Σ½</th><th style="background:#e2e8f0; color:#2b3445;" title="Izin Penuh">ΣI</th><th style="background:#e2e8f0; color:#2b3445;" title="Sakit">ΣS</th><th style="background:#e2e8f0; color:#2b3445;" title="Cuti">ΣC</th><th style="background:#e2e8f0; color:#2b3445;" title="Absen/Alpa">ΣA</th>`;
+    
+    for(let i=1; i<=daysInMonth; i++) { 
+        let curD = new Date(year, month-1, i); let isSun = curD.getDay()===0; let isToday = isCurrentMonth && (i === today.getDate());
+        let thCls = ''; if(isSun) thCls += ' col-minggu'; if(isToday) thCls += ' col-hari-ini';
+        thHtml += `<th class="${thCls}">${i}</th>`; 
+    }
+    let tblHtml = `<thead><tr>${thHtml}</tr></thead><tbody>`;
 
-                db_karyawan.forEach(k => {
-                    let isArsip = k.status === 'Nonaktif';
-                    let trBg = isArsip ? 'background:#f1f5f9; opacity:0.8;' : '';
-                    let rowHtml = `<tr style="${trBg}"><td class="sticky-col"><b>${k.nama}</b><br><small>${k.nik}</small></td>`;
-                    for(let i=1; i<=daysInMonth; i++) {
-                        let curD = new Date(year, month-1, i); let isSun = curD.getDay()===0; let isToday = isCurrentMonth && (i === today.getDate());
-                        let tglStr = `${year}-${String(month).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                        let tdCls = ''; if(isSun) tdCls += ' col-minggu'; if(isToday) tdCls += ' col-hari-ini';
-                        
-                        let att = db_kehadiran.find(a => a.nik === k.nik && a.date === tglStr);
-                        let cellTxt = '-';
-                        if(att) {
-                            if(att.status === 'Hadir') cellTxt = '<span style="color:var(--success);font-weight:bold;">H</span>';
-                            else if(att.status === 'Izin 1/2 Hari') cellTxt = '<span style="color:var(--info);font-weight:bold;">½</span>';
-                            else if(att.status === 'Sakit') cellTxt = '<span style="color:var(--info);font-weight:bold;">S</span>';
-                            else if(att.status === 'Cuti') cellTxt = '<span style="color:var(--purple);font-weight:bold;">C</span>';
-                            else if(att.status === 'Absen') cellTxt = '<span style="color:var(--danger);font-weight:bold;">A</span>';
-                            else cellTxt = '<span style="color:var(--warning);font-weight:bold;">I</span>';
-                        }
-                        rowHtml += `<td class="${tdCls}">${cellTxt}</td>`;
-                    }
-                    rowHtml += `</tr>`; tblHtml += rowHtml;
-                });
-                tblHtml += `</tbody>`; el('tabel-laporan').innerHTML = tblHtml;
+    // 2. BAGIAN ISI TABEL & PENGHITUNGAN
+    db_karyawan.forEach(k => {
+        let isArsip = k.status === 'Nonaktif';
+        let trBg = isArsip ? 'background:#f1f5f9; opacity:0.8;' : '';
+        
+        // Siapkan variabel penghitung untuk tiap karyawan
+        let totH=0, totSetengah=0, totI=0, totS=0, totC=0, totA=0;
+        let daysHtml = '';
+        
+        for(let i=1; i<=daysInMonth; i++) {
+            let curD = new Date(year, month-1, i); let isSun = curD.getDay()===0; let isToday = isCurrentMonth && (i === today.getDate());
+            let tglStr = `${year}-${String(month).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+            let tdCls = ''; if(isSun) tdCls += ' col-minggu'; if(isToday) tdCls += ' col-hari-ini';
+            
+            let att = db_kehadiran.find(a => a.nik === k.nik && a.date === tglStr);
+            let cellTxt = '-';
+            if(att) {
+                if(att.status === 'Hadir') { cellTxt = '<span style="color:var(--success);font-weight:bold;">H</span>'; totH++; }
+                else if(att.status === 'Izin 1/2 Hari') { cellTxt = '<span style="color:var(--info);font-weight:bold;">½</span>'; totSetengah++; }
+                else if(att.status === 'Sakit') { cellTxt = '<span style="color:var(--info);font-weight:bold;">S</span>'; totS++; }
+                else if(att.status === 'Cuti') { cellTxt = '<span style="color:var(--purple);font-weight:bold;">C</span>'; totC++; }
+                else if(att.status === 'Absen') { cellTxt = '<span style="color:var(--danger);font-weight:bold;">A</span>'; totA++; }
+                else { cellTxt = '<span style="color:var(--warning);font-weight:bold;">I</span>'; totI++; }
             }
+            daysHtml += `<td class="${tdCls}">${cellTxt}</td>`;
+        }
+        
+        let rowHtml = `<tr style="${trBg}"><td class="sticky-col"><b>${k.nama}</b><br><small>${k.nik}</small></td>`;
+        // Gabungkan angka total ke dalam baris
+        rowHtml += `<td style="font-weight:800; color:var(--success); text-align:center;">${totH}</td><td style="font-weight:800; color:var(--info); text-align:center;">${totSetengah}</td><td style="font-weight:800; color:var(--warning); text-align:center;">${totI}</td><td style="font-weight:800; color:var(--info); text-align:center;">${totS}</td><td style="font-weight:800; color:var(--purple); text-align:center;">${totC}</td><td style="font-weight:800; color:var(--danger); text-align:center;">${totA}</td>`;
+        rowHtml += daysHtml + `</tr>`;
+        
+        tblHtml += rowHtml;
+    });
+    tblHtml += `</tbody>`; el('tabel-laporan').innerHTML = tblHtml;
+}
 
             window.exportLaporanCSV = () => {
                 const bth = el('filter-bulan-laporan').value; if(!bth) return;
@@ -2536,6 +2623,39 @@ if(filterBln) {
                 });
             }
 
+// --- SCRIPT AGAR ADMIN BISA EDIT ABSENSI SATUAN ---
+window.cekDataAbsenSatuan = () => {
+    const d = el('satuan-tgl').value; 
+    const n = el('satuan-nik').value;
+    if(!d || !n) return;
+    
+    // Cari apakah sudah ada data absen di tanggal & NIK tersebut
+    const att = db_kehadiran.find(a => a.nik === n && a.date === d);
+    if(att) {
+        // Jika ADA, isi form dengan data lama agar bisa diedit
+        el('satuan-status').value = att.status;
+        el('satuan-shift').value = att.shift || 'Pagi';
+        el('satuan-jam-in').value = att.waktuMasuk || '';
+        el('satuan-jam-out').value = att.waktuPulang || '';
+        el('satuan-lk').checked = att.lk || false;
+        el('satuan-mk').checked = att.mk || false;
+        el('satuan-lembur').value = att.lembur || 0;
+        el('satuan-catatan').value = att.catatan || '';
+        el('btn-simpan-absen').innerText = "Update Kehadiran";
+    } else {
+        // Jika TIDAK ADA, kosongkan form untuk input baru
+        el('form-kehadiran-satuan').reset();
+        el('satuan-tgl')._flatpickr.setDate(d);
+        el('satuan-nik').value = n;
+        el('btn-simpan-absen').innerText = "Simpan Kehadiran";
+    }
+    // Sesuaikan elemen mana saja yang mati (disabled) berdasarkan status
+    aturDisableKehadiran(el('satuan-status').value, el('satuan-lk'), el('satuan-mk'), el('satuan-lembur'), el('wrap-satuan-lk'), el('wrap-satuan-mk'));
+};
+
+// Pasang trigger (pemicu) agar fungsinya berjalan saat Tanggal atau NIK diubah
+el('satuan-tgl').addEventListener('change', window.cekDataAbsenSatuan);
+el('satuan-nik').addEventListener('change', window.cekDataAbsenSatuan);
             // RENDER ARSIP KASBON LIST
             function renderKasbonList() {
                 let html = ''; db_kasbon.forEach(k => { 
