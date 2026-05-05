@@ -1949,7 +1949,12 @@
                 
                 let tReimburse = 0; db_reimburse.filter(r => r.nik === emp.nik && r.status === 'Disetujui').forEach(r => { let rD = new Date(r.tanggal); rD.setHours(0,0,0,0); if(rD >= d1Start && rD <= d2End) tReimburse += r.nominal; });
                 const mGH = parseFloat(emp.gajiHarian)||0; const mBT = parseFloat(emp.bonusTetap)||0; const gPokok = parseFloat(emp.gajiPokok)||0; const gHadir = dHadir * mGH; const gTugas = (dLK + dMK) * mGH; const gBonus = dHadir * mBT; const tPenghasilan = gPokok + gHadir + gTugas + gBonus + tReimburse; let potongan = parseFloat(emp.sisaKasbon)||0; const bersih = tPenghasilan - potongan; const bersihStr = (bersih<0?'- ':'')+'Rp '+Math.abs(bersih).toLocaleString('id-ID');
-                let isOverlap = db_slip.some(s => { if(s.nik !== emp.nik) return false; let sD1=new Date(s.tglMulai), sD2=new Date(s.tglAkhir); sD1.setHours(0,0,0,0); sD2.setHours(23,59,59,999); return (d1Start <= sD2 && d2End >= sD1); });
+                let isOverlap = db_slip.some(s => { 
+    if(s.nik !== emp.nik) return false; 
+    let sD1=new Date(s.tglMulai), sD2=new Date(s.tglAkhir); 
+    sD1.setHours(0,0,0,0); sD2.setHours(23,59,59,999); 
+    return (s.periode === per) || (d1Start <= sD2 && d2End >= sD1); 
+});
                 
                 if(!isOverlap) {
                     pendingMassalSlips.push({ nik: emp.nik, nama: emp.nama, periode: per, tglMulai: fp.selectedDates[0].toISOString(), tglAkhir: (fp.selectedDates.length>1?fp.selectedDates[1]:fp.selectedDates[0]).toISOString(), potongan: potongan, bersih: bersihStr, gajiPokok: gPokok, tunjKehadiran: gHadir, insentif: gBonus, tugasLuar: gTugas, reimburse: tReimburse, tanggalBuat: new Date().toISOString() });
