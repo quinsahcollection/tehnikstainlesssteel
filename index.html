@@ -1636,15 +1636,12 @@
 
         flatpickr("input[type='date']", { locale: "id", dateFormat: "Y-m-d", disableMobile: true, maxDate: "today" });
         flatpickr("#massal-tgl", { locale: "id", dateFormat: "Y-m-d", disableMobile: true, maxDate: "today", onChange: () => syncFormMassal() });
-        flatpickr("#filter-bulan-laporan", { locale: "id", dateFormat: "Y-m", plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })], onChange: () => renderLaporan() });
-        flatpickr("#filter-bulan-slip", { locale: "id", dateFormat: "Y-m", plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })], onChange: () => window.renderAllSlips() });
+        flatpickr("#filter-bulan-laporan", { locale: "id", dateFormat: "Y-m", disableMobile: true, plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })], onChange: () => renderLaporan() });
+        flatpickr("#filter-bulan-slip", { locale: "id", dateFormat: "Y-m", disableMobile: true, plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })], onChange: () => window.renderAllSlips() });
         flatpickr("#gaji-periode-range", { locale: "id", mode: "range", altFormat: "d M Y", dateFormat: "Y-m-d", disableMobile: true, onChange: () => jalankanAutoCalc() });
         flatpickr("#gaji-massal-periode", { locale: "id", mode: "range", altFormat: "d M Y", dateFormat: "Y-m-d", disableMobile: true, onChange: () => window.kalkulasiGajiMassal() });   
-        
-        // --- PERBAIKAN: Tambahkan minDate: "today" agar karyawan tidak bisa memilih hari kemarin ---
-        flatpickr("#ess-izin-tgl-single", { locale: "id", dateFormat: "Y-m-d", disableMobile: true, minDate: "today" });
-        flatpickr("#ess-izin-tgl-range", { locale: "id", mode: "range", dateFormat: "Y-m-d", disableMobile: true, rangeSeparator: " to ", minDate: "today" });
-        // (Untuk admin dibiarkan tanpa minDate agar tetap bisa input susulan/manual jika perlu)
+        flatpickr("#ess-izin-tgl-single", { locale: "id", dateFormat: "Y-m-d", disableMobile: true });
+        flatpickr("#ess-izin-tgl-range", { locale: "id", mode: "range", dateFormat: "Y-m-d", disableMobile: true, rangeSeparator: " to " });
         flatpickr("#admin-izin-tgl-single", { locale: "id", dateFormat: "Y-m-d", disableMobile: true });
         flatpickr("#admin-izin-tgl-range", { locale: "id", mode: "range", dateFormat: "Y-m-d", disableMobile: true, rangeSeparator: " to " });
 
@@ -1991,17 +1988,7 @@ if(el('ess-info-sisa-limit-kasbon')) el('ess-info-sisa-limit-kasbon').innerText 
 
             let tbodyKas = ''; db_kasbon.filter(k => k.nik === nik).slice(0, 10).forEach(k => { let b = k.status==='Pending' ? 'badge-pending' : (k.status==='Disetujui'||k.jenis==='Potongan Gaji' ? 'badge-success' : 'badge-danger'); let stTxt = k.status || (k.jenis==='Potongan Gaji'?'Lunas':'Selesai'); tbodyKas += `<tr><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td>Rp ${k.nominal.toLocaleString('id-ID')}</td><td><small>${k.keterangan}</small></td><td><span class="badge ${b}">${stTxt}</span></td></tr>`; }); el('tbody-ess-kasbon-log').innerHTML = tbodyKas || '<tr><td colspan="4" align="center">Kosong</td></tr>';
             let tbodySlip = ''; db_slip.filter(s => s.nik === nik).forEach(s => { tbodySlip += `<tr><td><b>${s.periode}</b></td><td style="color:var(--success); font-weight:800;">${s.bersih}</td><td><button class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="lihatDetailSlipAdminAtauKaryawan('${s.id}')">Rincian</button></td></tr>`; }); el('tbody-ess-slip').innerHTML = tbodySlip || '<tr><td colspan="3" align="center">Kosong</td></tr>';
-            let tbodyIzin = ''; 
-            db_izin.filter(i => i.nik === nik).forEach(i => { 
-            // Tambah warna badge untuk Dibatalkan
-            let stBadge = i.status==='Pending'?'badge-pending':(i.status==='Disetujui'?'badge-success':(i.status==='Dibatalkan'?'badge-info':'badge-danger')); 
-    
-            // Tombol Batal muncul jika status Pending atau Disetujui
-            let btnBatal = (i.status === 'Pending' || i.status === 'Disetujui') ? `<br><button type="button" style="margin-top:5px; padding:4px 8px; font-size:10px; border:1px solid var(--danger); background:transparent; color:var(--danger); border-radius:4px; cursor:pointer; font-weight:bold;" onclick="window.batalkanIzinKaryawan('${i.id}')">Batalkan</button>` : '';
-
-            tbodyIzin += `<tr><td>${new Date(i.waktuSubmit).toLocaleDateString('id-ID')}</td><td><b>${i.tipe}</b><br><small>${i.durasi}</small></td><td>${i.tglRaw}</td><td><small>${i.alasan}</small></td><td><span class="badge ${stBadge}">${i.status}</span>${btnBatal}</td></tr>`; 
-            }); 
-            el('tbody-ess-izin-log').innerHTML = tbodyIzin || '<tr><td colspan="5" align="center">Belum ada riwayat</td></tr>';
+            let tbodyIzin = ''; db_izin.filter(i => i.nik === nik).forEach(i => { let stBadge = i.status==='Pending'?'badge-pending':(i.status==='Disetujui'?'badge-success':'badge-danger'); tbodyIzin += `<tr><td>${new Date(i.waktuSubmit).toLocaleDateString('id-ID')}</td><td><b>${i.tipe}</b><br><small>${i.durasi}</small></td><td>${i.tglRaw}</td><td><small>${i.alasan}</small></td><td><span class="badge ${stBadge}">${i.status}</span></td></tr>`; }); el('tbody-ess-izin-log').innerHTML = tbodyIzin || '<tr><td colspan="5" align="center">Belum ada riwayat</td></tr>';
         }
 
         let gpsWatcher = null;
@@ -2024,39 +2011,6 @@ if(el('ess-info-sisa-limit-kasbon')) el('ess-info-sisa-limit-kasbon').innerText 
                 el('gps-status').innerText = "Kamera tidak terdeteksi / diblokir browser."; 
             } 
         }
-
-        window.batalkanIzinKaryawan = async (id) => {
-    const ok = await showConfirm("Batalkan Pengajuan?", "Anda yakin ingin membatalkan pengajuan ini?", "Ya, Batalkan", true);
-    if(!ok) return;
-
-    const izin = db_izin.find(x => x.id === id);
-    if(!izin) return;
-
-    try {
-        if(izin.status === 'Disetujui') {
-            const batch = db.batch();
-            batch.update(db.collection("pengajuan_izin").doc(id), { status: "Dibatalkan" });
-
-            let dates = window.getDatesFromRange(izin.tglRaw);
-            // Kembalikan Jatah Cuti
-            if(izin.tipe === 'Cuti') {
-                batch.update(db.collection('karyawan').doc(izin.nik), { sisaCuti: firebase.firestore.FieldValue.increment(dates.length) });
-            }
-            // Hapus blokir absensi
-            dates.forEach(d => {
-                batch.delete(db.collection('kehadiran').doc(izin.nik + '_' + d));
-            });
-            await batch.commit();
-            showToast("Izin/Cuti berhasil dibatalkan dan kuota dikembalikan.");
-        } else {
-            // Jika masih Pending
-            await db.collection("pengajuan_izin").doc(id).update({ status: "Dibatalkan" });
-            showToast("Pengajuan berhasil dibatalkan.");
-        }
-    } catch(e) {
-        showToast("Gagal membatalkan.", "error");
-    }
-};
 
         function stopCamera() { 
             if(streamKamera) streamKamera.getTracks().forEach(track => track.stop()); 
@@ -2193,23 +2147,6 @@ ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     });
 }
 
-// HELPER: Untuk mengekstrak tanggal dari string range
-window.getDatesFromRange = (rangeStr) => {
-    let dates = [];
-    if(rangeStr.includes(' to ')) {
-        let parts = rangeStr.split(' to ');
-        let d1 = new Date(parts[0] + "T12:00:00");
-        let d2 = new Date(parts[1] + "T12:00:00");
-        while(d1 <= d2) {
-            dates.push(`${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`);
-            d1.setDate(d1.getDate()+1);
-        }
-    } else {
-        dates.push(rangeStr);
-    }
-    return dates;
-};
-
 // --- SCRIPT UNTUK MENYIMPAN FORM IZIN KE DATABASE ---
 el('form-ess-izin').addEventListener('submit', async e => { 
     e.preventDefault(); 
@@ -2220,6 +2157,7 @@ el('form-ess-izin').addEventListener('submit', async e => {
     let tglRaw = ''; 
     if(durasi === 'Beberapa Hari') { 
         tglRaw = el('ess-izin-tgl-range').value;
+        // Normalisasi kata penghubung rentang
         tglRaw = tglRaw.replace(' sampai ', ' to ').replace(' s.d. ', ' to ');
         
         if(!tglRaw || tglRaw.trim() === '') return showToast('Pilih rentang tanggal!', 'error');
@@ -2232,36 +2170,31 @@ el('form-ess-izin').addEventListener('submit', async e => {
         if(!tglRaw) return showToast('Pilih tanggal!', 'error');
     }
     
-    // --- PERBAIKAN: Blokir jika sudah ada pengajuan di tanggal yang sama ---
-    let reqDates = window.getDatesFromRange(tglRaw);
-    let isDuplicate = db_izin.some(i => {
-        if(i.nik === currentUserData.nik && (i.status === 'Pending' || i.status === 'Disetujui')) {
-            let extDates = window.getDatesFromRange(i.tglRaw);
-            return reqDates.some(d => extDates.includes(d)); // Cek irisan tanggal
-        }
-        return false;
-    });
-
-    if(isDuplicate) {
-        return showToast("Gagal: Anda sudah memiliki pengajuan Pending/Disetujui di tanggal tersebut!", "error");
-    }
-
     const btn = e.submitter; btn.disabled = true; btn.innerText = "Mengirim..."; 
+    
+    // Ambil data foto dari Canvas (jika ada)
     let base64Izin = '';
     const canvasIzin = el('ess-izin-canvas');
     if(canvasIzin && canvasIzin.width > 0) base64Izin = canvasIzin.toDataURL('image/jpeg', 0.6);
     
     try { 
         await db.collection("pengajuan_izin").add({ 
-            nik: currentUserData.nik, nama: currentUserData.nama, tipe: tipe, durasi: durasi, 
-            tglRaw: tglRaw, alasan: alasan, status: "Pending", waktuSubmit: new Date().toISOString(), fotoBukti: base64Izin 
+            nik: currentUserData.nik, 
+            nama: currentUserData.nama, 
+            tipe: tipe, 
+            durasi: durasi, 
+            tglRaw: tglRaw, 
+            alasan: alasan, 
+            status: "Pending", 
+            waktuSubmit: new Date().toISOString(),
+            fotoBukti: base64Izin // Simpan foto ke database
         }); 
         
         showToast("Pengajuan terkirim!"); 
         el('form-ess-izin').reset(); 
         el('ess-izin-tgl-single')._flatpickr.clear(); 
         if(el('ess-izin-tgl-range')._flatpickr) el('ess-izin-tgl-range')._flatpickr.clear(); 
-        if(canvasIzin) { canvasIzin.width = 0; canvasIzin.height = 0; }
+        if(canvasIzin) { canvasIzin.width = 0; canvasIzin.height = 0; } // Reset canvas foto
         window.aturInputTanggalIzin(); 
     } catch(err) { 
         showToast("Gagal kirim.", "error"); 
