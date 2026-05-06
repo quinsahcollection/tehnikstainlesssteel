@@ -3090,39 +3090,47 @@ if(filterBln) {
             }
 
 // --- SCRIPT FORM IZIN MANUAL (ADMIN) ---
-el('form-izin-admin').addEventListener('submit', async e => {
-    e.preventDefault();
-    const nik = el('admin-izin-nik').value;
-    const tipe = el('admin-izin-tipe').value;
-    const durasi = el('admin-izin-durasi').value;
-    const alasan = el('admin-izin-alasan').value;
-    
-    let tglRaw = '';
-    if(durasi === 'Beberapa Hari') {
-        tglRaw = el('admin-izin-tgl-range').value;
-        if(!tglRaw.includes(' to ') && tglRaw.length === 10) tglRaw = `${tglRaw} to ${tglRaw}`;
-        if(!tglRaw.includes(' to ')) return showToast('Pilih rentang dengan benar!', 'error');
-    } else {
-        tglRaw = el('admin-izin-tgl-single').value;
-    }
+if (el('form-izin-admin')) {
+    el('form-izin-admin').addEventListener('submit', async e => {
+        e.preventDefault();
+        const nik = el('admin-izin-nik').value;
+        const tipe = el('admin-izin-tipe').value;
+        const durasi = el('admin-izin-durasi').value;
+        const alasan = el('admin-izin-alasan').value;
+        
+        let tglRaw = '';
+        if (durasi === 'Beberapa Hari') {
+            tglRaw = el('admin-izin-tgl-range').value;
+            if(!tglRaw.includes(' to ') && tglRaw.length === 10) tglRaw = `${tglRaw} to ${tglRaw}`;
+            if(!tglRaw.includes(' to ')) return window.showToast('Pilih rentang dengan benar!', 'error');
+        } else {
+            tglRaw = el('admin-izin-tgl-single').value;
+        }
 
-    const emp = db_karyawan.find(k => k.nik === nik);
-    if(!emp) return showToast("Pegawai tidak ditemukan!", "error");
+        const emp = db_karyawan.find(k => k.nik === nik);
+        if (!emp) return window.showToast("Pegawai tidak ditemukan!", "error");
 
-    const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
-    try {
-        await db.collection("pengajuan_izin").add({
-            nik: nik, nama: emp.nama, tipe: tipe, durasi: durasi, tglRaw: tglRaw,
-            alasan: alasan, status: "Pending", waktuSubmit: new Date().toISOString(), fotoBukti: "" 
-        });
-        showToast("Pengajuan berhasil dimasukkan ke antrean Pending!");
-        el('form-izin-admin').reset();
-        el('admin-izin-tgl-single')._flatpickr.clear();
-        if(el('admin-izin-tgl-range')._flatpickr) el('admin-izin-tgl-range')._flatpickr.clear();
-        window.aturInputTanggalIzinAdmin();
-    } catch(err) { showToast("Gagal memproses pengajuan.", "error"); } 
-    finally { btn.disabled = false; btn.innerText = "Masukkan ke Antrean"; }
-});
+        const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
+        try {
+            await db.collection("pengajuan_izin").add({
+                nik: nik, nama: emp.nama, tipe: tipe, durasi: durasi, tglRaw: tglRaw,
+                alasan: alasan, status: "Pending", waktuSubmit: new Date().toISOString(), fotoBukti: "" 
+            });
+            window.showToast("Pengajuan berhasil dimasukkan ke antrean Pending!");
+            el('form-izin-admin').reset();
+            
+            // PERBAIKAN: Gunakan optional chaining (?.) untuk mencegah error jika flatpickr belum me-load
+            el('admin-izin-tgl-single')?._flatpickr?.clear();
+            el('admin-izin-tgl-range')?._flatpickr?.clear();
+            
+            if(typeof window.aturInputTanggalIzinAdmin === 'function') window.aturInputTanggalIzinAdmin();
+        } catch(err) { 
+            window.showToast("Gagal memproses pengajuan.", "error"); 
+        } finally { 
+            btn.disabled = false; btn.innerText = "Masukkan ke Antrean"; 
+        }
+    });
+}
 
 // --- SCRIPT FORM REIMBURSE MANUAL (ADMIN) ---
 el('form-reimburse-admin').addEventListener('submit', async e => {
