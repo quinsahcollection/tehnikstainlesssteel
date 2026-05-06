@@ -2102,7 +2102,9 @@ if(el('ess-izin-file')) {
             img.onload = function() {
                 const MAX_WIDTH = 600; let scaleSize = MAX_WIDTH / img.width; if(scaleSize > 1) scaleSize = 1;
                 canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+ctx.fillStyle = "#ffffff";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             };
             img.src = event.target.result;
         };
