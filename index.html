@@ -1072,6 +1072,15 @@
                             <div style="text-align: right;"><button type="submit" class="btn">Masukkan ke Antrean</button></div>
                         </form>
                     </div>
+                    <div class="card" style="margin-bottom:20px;">
+                        <h3 class="section-title">Riwayat Keputusan Cuti & Izin</h3>
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>Nama & Tgl Pengajuan</th><th>Tipe & Durasi</th><th>Rentang Tanggal</th><th>Alasan</th><th style="text-align:center;">Status HRD</th></tr></thead>
+                                <tbody id="tbody-admin-izin-log"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -2254,6 +2263,14 @@ el('form-ess-izin').addEventListener('submit', async e => {
             tbodyIzinApp += `<tr><td><b>${i.nama}</b><br><small>${new Date(i.waktuSubmit).toLocaleDateString('id-ID')}</small></td><td><b>${i.tipe}</b><br><small>${i.durasi}</small></td><td>${i.tglRaw}</td><td><small>${i.alasan}</small>${btnBukti}</td><td style="text-align:center;"><button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.approveIzinReq(this, '${i.id}', '${i.nik}', '${i.tipe}', '${i.durasi}', '${i.tglRaw}')">Setujui</button> <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.rejectIzinReq(this, '${i.id}')">Tolak</button></td></tr>`; 
             });
             if(el('tbody-approval-izin')) el('tbody-approval-izin').innerHTML = tbodyIzinApp || '<tr><td colspan="5" align="center">Tidak ada antrean pengajuan izin.</td></tr>';
+            // Render Riwayat Cuti & Izin (Admin)
+            let tbodyIzinLog = '';
+            db_izin.filter(i => i.status !== 'Pending').forEach(i => {
+            let stBadge = i.status === 'Disetujui' ? 'badge-success' : 'badge-danger';
+            let btnBukti = i.fotoBukti ? `<br><button class="btn-outline" style="padding:4px 8px; font-size:10px; margin-top:5px; border-color:var(--info); color:var(--info);" onclick="bukaViewerFoto('${i.fotoBukti}')">🔍 Cek Bukti</button>` : '';
+            tbodyIzinLog += `<tr><td><b>${i.nama}</b><br><small>${new Date(i.waktuSubmit).toLocaleDateString('id-ID')}</small></td><td><b>${i.tipe}</b><br><small>${i.durasi}</small></td><td>${i.tglRaw}</td><td><small>${i.alasan}</small>${btnBukti}</td><td style="text-align:center;"><span class="badge ${stBadge}">${i.status}</span></td></tr>`;
+            });
+            if(el('tbody-admin-izin-log')) el('tbody-admin-izin-log').innerHTML = tbodyIzinLog || '<tr><td colspan="5" align="center">Tidak ada riwayat pengajuan izin.</td></tr>';
             let optOut = '<option value="">-- Pilih Outlet Penempatan --</option>'; 
             let optTargetOut = '<option value="Semua">📢 Semua Outlet (Global)</option>';
             db_outlet.forEach(o => { optOut += `<option value="${o.id}">${o.nama}</option>`; optTargetOut += `<option value="${o.id}">${o.nama}</option>`; }); 
