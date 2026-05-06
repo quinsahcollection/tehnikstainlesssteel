@@ -3172,6 +3172,177 @@ el('satuan-nik').addEventListener('change', window.cekDataAbsenSatuan);
             }
             db.collection("kasbon_log").onSnapshot(() => renderKasbonList());
 
+
+        // ==========================================
+// SCRIPT TAMBAHAN: MODUL REIMBURSEMENT
+// ==========================================
+
+// 1. Preview & Kompresi Foto Struk/Kuitansi
+if(el('reim-file')) {
+    el('reim-file').addEventListener('change', function(e) {
+        const file = e.target.files[0]; if(!file) return;
+        const canvas = el('reim-canvas'); const ctx = canvas.getContext('2d');
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const MAX_WIDTH = 600; let scaleSize = MAX_WIDTH / img.width; if(scaleSize > 1) scaleSize = 1;
+                canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// 2. Submit Pengajuan Klaim Karyawan (ESS)
+if(el('form-ess-reimburse')) {
+    el('form-ess-reimburse').addEventListener('submit', async e => {
+        e.preventDefault();
+        const btn = el('btn-submit-reimburse'); 
+        btn.disabled = true; btn.innerText = "Mengirim...";
+
+        let base64Foto = '';
+        const canvas = el('reim-canvas');
+        if(canvas && canvas.width > 0) base64Foto = canvas.toDataURL('image/jpeg', 0.6);
+
+        const dataKlaim = {
+            nik: currentUserData.nik,
+            nama: currentUserData.nama,
+            tanggal: new Date().toISOString(), // Waktu submit sistem
+            tanggalNota: el('reim-tgl-nota').value,
+            jenis: el('reim-jenis').value,
+            nominal: parseFloat(el('reim-nominal').value) || 0,
+            keterangan: el('reim-ket').value,
+            fotoBukti: base64Foto,
+            status: "Pending" // Masuk antrean HRD
+        };
+
+        try {
+            await db.collection("reimbursements").add(dataKlaim);
+            showToast("Pengajuan Reimburse berhasil dikirim ke HRD!");
+            el('form-ess-reimburse').reset();
+            if(canvas) { canvas.width = 0; canvas.height = 0; }
+        } catch(err) {
+            showToast("Gagal mengirim data klaim.", "error");
+        } finally {
+            btn.disabled = false; btn.innerText = "Kirim Pengajuan Klaim";
+        }
+    });
+}
+
+// 3. Render Tabel Riwayat Klaim Karyawan (ESS)
+window.renderESSReimburseLog = () => {
+    if(!currentUserData) return;
+    let tbody = '';
+    db_reimburse.filter(r => r.nik === currentUserData.nik).forEach(r => {
+        let stBadge = r.status==='Pending'?'badge-pending':(r.status==='Disetujui'?'badge-success':'badge-danger');
+        let btnBukti = r.fotoBukti ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; border-color:var(--info); color:var(--info);" onclick="bukaViewerFoto('${r.fotoBukti}')">🔍 Cek Bukti</button>` : '-';
+
+        tbody += `<tr>
+            <td>${new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
+            <td><b>${r.jenis}</b><br><small>${r.keterangan}</small><br><small style="color:var(--primary);">Tgl Nota: ${r.tanggalNota||'-'}</small></td>
+            <td>Rp ${(r.nominal||0).toLocaleString('id-ID')}</td>
+            <td>${btnBukti}</td>
+            <td><span class="badge ${stBadge}">${r.status}</span></td>
+        </tr>`;
+    });
+    if(el('tbody-ess-reimburse-log')) {
+        el('tbody-ess-reimburse-log').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada riwayat klaim.</td></tr>';
+    }
+};
+
+// 4. Render Tabel Antrean Klaim di Dashboard Admin
+window.renderAdminReimburse = () => {
+    let tbody = '';
+    let pendingR = db_reimburse.filter(r => r.status === 'Pending');
+    let historyR = db_reimburse.filter(r => r.status !== 'Pending').slice(0, 30); // Limit 30 riwayat terakhir
+    let allToShow = [...pendingR, ...historyR];
+
+    allToShow.forEach(r => {
+        let btnBukti = r.fotoBukti ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; border-color:var(--info); color:var(--info);" onclick="bukaViewerFoto('${r.fotoBukti}')">🔍 Cek Bukti</button>` : '-';
+        let aksi = r.status === 'Pending' ? `
+            <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.prosesReimburse('${r.id}', 'Disetujui')">Setujui</button>
+            <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.prosesReimburse('${r.id}', 'Ditolak')">Tolak</button>
+        ` : `<span class="badge ${r.status==='Disetujui'?'badge-success':'badge-danger'}">${r.status}</span>`;
+
+        tbody += `<tr>
+            <td><b>${r.nama}</b><br><small>${new Date(r.tanggal).toLocaleDateString('id-ID')}</small></td>
+            <td><b>${r.jenis}</b><br><small>${r.keterangan}</small><br><small style="color:var(--primary);">Tgl Nota: ${r.tanggalNota||'-'}</small></td>
+            <td style="color:var(--primary); font-weight:bold;">Rp ${(r.nominal||0).toLocaleString('id-ID')}</td>
+            <td>${btnBukti}</td>
+            <td style="text-align:center; display:flex; gap:5px; justify-content:center;">${aksi}</td>
+        </tr>`;
+    });
+    if(el('tbody-admin-reimburse')) {
+        el('tbody-admin-reimburse').innerHTML = tbody || '<tr><td colspan="5" align="center">Tidak ada antrean / data klaim.</td></tr>';
+    }
+};
+
+// 5. Fungsi Admin Memproses Persetujuan Klaim
+window.prosesReimburse = async (id, status) => {
+    const ok = await showConfirm(`Konfirmasi ${status}?`, `Yakin ingin memproses klaim ini menjadi ${status}?`, "Ya, Proses");
+    if(ok) {
+        try {
+            await db.collection("reimbursements").doc(id).update({ status: status });
+            showToast(`Klaim berhasil ${status}!`);
+        } catch(err) {
+            showToast("Gagal memproses klaim.", "error");
+        }
+    }
+};
+
+// 6. Fungsi Admin Input Klaim Manual (REVISI: Status menjadi Pending)
+if(el('form-reimburse-admin')) {
+    el('form-reimburse-admin').addEventListener('submit', async e => {
+        e.preventDefault();
+        const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
+        const nik = el('admin-reim-nik').value;
+        const emp = db_karyawan.find(k => k.nik === nik);
+
+        const data = {
+            nik: nik,
+            nama: emp ? emp.nama : "Unknown",
+            tanggal: new Date().toISOString(),
+            tanggalNota: el('admin-reim-tgl-nota').value,
+            jenis: el('admin-reim-jenis').value,
+            nominal: parseFloat(el('admin-reim-nominal').value) || 0,
+            keterangan: el('admin-reim-ket').value,
+            status: "Pending", // <-- Diubah: Sekarang masuk antrean Pending terlebih dahulu
+            fotoBukti: ""
+        };
+
+        try {
+            await db.collection("reimbursements").add(data);
+            showToast("Reimburse berhasil dimasukkan ke antrean (Pending)!");
+            el('form-reimburse-admin').reset();
+        } catch(err) {
+            showToast("Gagal menambah klaim.", "error");
+        } finally {
+            btn.disabled = false; btn.innerText = "Masukkan ke Antrean";
+        }
+    });
+}
+
+// 7. Render Data Reimburse di Halaman Detail Karyawan (Menu Admin)
+window.renderDetailReimburse = () => {
+    if(!currentDetailNik) return;
+    let tbody = '';
+    db_reimburse.filter(r => r.nik === currentDetailNik).forEach(r => {
+        let stBadge = r.status==='Pending'?'badge-pending':(r.status==='Disetujui'?'badge-success':'badge-danger');
+        tbody += `<tr>
+            <td>${r.tanggalNota||'-'}<br><small>Submit: ${new Date(r.tanggal).toLocaleDateString('id-ID')}</small></td>
+            <td><b>${r.jenis}</b></td>
+            <td><small>${r.keterangan}</small></td>
+            <td style="color:var(--primary); font-weight:bold;">Rp ${(r.nominal||0).toLocaleString('id-ID')}</td>
+            <td><span class="badge ${stBadge}">${r.status}</span></td>
+        </tr>`;
+    });
+    if(el('tbody-det-reimburse')) {
+        el('tbody-det-reimburse').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada riwayat reimburse</td></tr>';
+    }
+};
         // }); // <-- Buka komentar baris ini jika seluruh fungsi JS Anda dibungkus oleh document.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
