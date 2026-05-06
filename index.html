@@ -3252,19 +3252,21 @@ if(el('reim-file')) {
 }
 
 // 2. Submit Pengajuan Klaim Karyawan (ESS)
-if(el('form-ess-reimburse')) {
+if (el('form-ess-reimburse')) {
     el('form-ess-reimburse').addEventListener('submit', async e => {
         e.preventDefault();
-        const btn = el('btn-submit-reimburse'); 
+        // Menggunakan e.submitter lebih aman daripada mengambil dari ID
+        const btn = e.submitter; 
         btn.disabled = true; btn.innerText = "Mengirim...";
 
         let base64Foto = '';
         const canvas = el('reim-canvas');
-        if(canvas && canvas.width > 0) base64Foto = canvas.toDataURL('image/jpeg', 0.6);
+        if (canvas && canvas.width > 0) base64Foto = canvas.toDataURL('image/jpeg', 0.6);
 
+        // Tambahan keamanan data dengan optional chaining (?.)
         const dataKlaim = {
-            nik: currentUserData.nik,
-            nama: currentUserData.nama,
+            nik: window.currentUserData?.nik || '-',
+            nama: window.currentUserData?.nama || '-',
             tanggal: new Date().toISOString(), // Waktu submit sistem
             tanggalNota: el('reim-tgl-nota').value,
             jenis: el('reim-jenis').value,
@@ -3276,11 +3278,11 @@ if(el('form-ess-reimburse')) {
 
         try {
             await db.collection("reimbursements").add(dataKlaim);
-            showToast("Pengajuan Reimburse berhasil dikirim ke HRD!");
+            window.showToast("Pengajuan Reimburse berhasil dikirim ke HRD!");
             el('form-ess-reimburse').reset();
-            if(canvas) { canvas.width = 0; canvas.height = 0; }
+            if (canvas) { canvas.width = 0; canvas.height = 0; }
         } catch(err) {
-            showToast("Gagal mengirim data klaim.", "error");
+            window.showToast("Gagal mengirim data klaim.", "error");
         } finally {
             btn.disabled = false; btn.innerText = "Kirim Pengajuan Klaim";
         }
