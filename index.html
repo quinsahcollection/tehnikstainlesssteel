@@ -1934,8 +1934,14 @@
             el('ess-sisa-cuti').innerText = (emp.sisaCuti || 0) + " Hari"; 
             el('ess-sisa-kasbon').innerText = "Rp " + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID');
             // Memasukkan data ke menu form kasbon
-if(el('ess-info-limit-kasbon')) el('ess-info-limit-kasbon').innerText = "Rp " + (parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID');
-if(el('ess-info-sisa-kasbon')) el('ess-info-sisa-kasbon').innerText = "Rp " + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID');
+let limitK = parseFloat(emp.limitKasbon) || 0;
+let hutangK = parseFloat(emp.sisaKasbon) || 0;
+let sisaLimitK = limitK - hutangK; 
+if(sisaLimitK < 0) sisaLimitK = 0;
+
+if(el('ess-info-limit-kasbon')) el('ess-info-limit-kasbon').innerText = "Rp " + limitK.toLocaleString('id-ID');
+if(el('ess-info-sisa-kasbon')) el('ess-info-sisa-kasbon').innerText = "Rp " + hutangK.toLocaleString('id-ID');
+if(el('ess-info-sisa-limit-kasbon')) el('ess-info-sisa-limit-kasbon').innerText = "Rp " + sisaLimitK.toLocaleString('id-ID');
             
             const myOut = db_outlet.find(o => o.id === emp.outletId);
             el('ess-lokasi-outlet').innerText = myOut ? myOut.nama : "Belum Ditentukan";
