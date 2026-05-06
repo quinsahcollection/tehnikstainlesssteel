@@ -3609,6 +3609,154 @@ window.renderAdminReimburseHistory = () => {
         el('tbody-admin-reimburse-history').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada riwayat arsip.</td></tr>';
     }
 };
+
+// ==========================================
+        // MODUL REIMBURSEMENT (KLAIM DANA)
+        // ==========================================
+
+        // 1. Fungsi Tampil Riwayat Reimburse (Karyawan / ESS)
+        window.renderESSReimburseLog = () => {
+            let tbody = '';
+            db_reimburse.filter(r => r.nik === currentUserData.nik).forEach(r => {
+                let stBadge = r.status === 'Pending' ? 'badge-pending' : (r.status === 'Disetujui' ? 'badge-success' : 'badge-danger');
+                let btnBukti = r.fotoBukti ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; border-color:var(--info); color:var(--info);" onclick="bukaViewerFoto('${r.fotoBukti}')">🔍 Cek Bukti</button>` : '-';
+                
+                // Tombol batal hanya muncul jika masih Pending
+                let actionBtn = r.status === 'Pending' ? 
+                    `<button class="btn-outline" style="padding:4px 8px; font-size:10px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusPengajuan('reimbursements', '${r.id}')">Batal/Hapus</button>` : '-';
+
+                tbody += `<tr>
+                    <td>${new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
+                    <td><b>${r.jenis}</b><br><small>${r.keterangan}</small></td>
+                    <td style="color:var(--primary); font-weight:700;">Rp ${r.nominal.toLocaleString('id-ID')}</td>
+                    <td>${btnBukti}</td>
+                    <td><span class="badge ${stBadge}">${r.status}</span></td>
+                    <td style="text-align:center;">${actionBtn}</td>
+                </tr>`;
+            });
+            if(el('tbody-ess-reimburse-log')) el('tbody-ess-reimburse-log').innerHTML = tbody || '<tr><td colspan="6" align="center">Belum ada riwayat klaim/reimburse.</td></tr>';
+        };
+
+        // 2. Fungsi Tampil Antrean Reimburse (Admin)
+        window.renderAdminReimburse = () => {
+            let tbody = '';
+            db_reimburse.forEach(r => {
+                let stBadge = r.status === 'Pending' ? 'badge-pending' : (r.status === 'Disetujui' ? 'badge-success' : 'badge-danger');
+                let btnBukti = r.fotoBukti ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; border-color:var(--info); color:var(--info); margin-top:5px;" onclick="bukaViewerFoto('${r.fotoBukti}')">🔍 Cek Bukti</button>` : '-';
+
+                let actionBtn = '';
+                if(r.status === 'Pending') {
+                    actionBtn = `
+                        <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.prosesReimburse('${r.id}', 'Disetujui')">Setujui</button> 
+                        <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.prosesReimburse('${r.id}', 'Ditolak')">Tolak</button>
+                    `;
+                } else {
+                    actionBtn = `<button class="btn-outline" style="padding:4px 8px; font-size:10px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusPengajuan('reimbursements', '${r.id}')">Hapus Riwayat</button>`;
+                }
+
+                tbody += `<tr>
+                    <td><b>${r.nama}</b><br><small>${new Date(r.tanggal).toLocaleDateString('id-ID')}</small></td>
+                    <td><b>${r.jenis}</b><br><small>${r.keterangan}</small></td>
+                    <td style="color:var(--danger); font-weight:700;">Rp ${r.nominal.toLocaleString('id-ID')}</td>
+                    <td>${btnBukti}</td>
+                    <td style="text-align:center;">
+                        ${r.status === 'Pending' ? actionBtn : `<span class="badge ${stBadge}">${r.status}</span><div style="margin-top:6px;">${actionBtn}</div>`}
+                    </td>
+                </tr>`;
+            });
+            if(el('tbody-admin-reimburse')) el('tbody-admin-reimburse').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada pengajuan klaim.</td></tr>';
+        };
+
+        // 3. Fungsi Admin Proses Setuju/Tolak Reimburse
+        window.prosesReimburse = async (id, status) => {
+            const ok = await showConfirm(`Konfirmasi ${status}?`, `Yakin ingin memproses pengajuan klaim ini menjadi ${status}?`, "Ya, Proses");
+            if(ok) {
+                await db.collection("reimbursements").doc(id).update({ status: status });
+                showToast(`Klaim berhasil ${status}!`);
+            }
+        };
+
+        // 4. Script Preview & Kompres Foto Bukti Nota
+        if(el('reim-file')) {
+            el('reim-file').addEventListener('change', function(e) {
+                const file = e.target.files[0]; if(!file) return;
+                const canvas = el('reim-canvas'); const ctx = canvas.getContext('2d');
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const MAX_WIDTH = 600; let scaleSize = MAX_WIDTH / img.width; if(scaleSize > 1) scaleSize = 1;
+                        canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 5. Submit Form Klaim Karyawan (ESS)
+        if(el('form-ess-reimburse')) {
+            el('form-ess-reimburse').addEventListener('submit', async e => {
+                e.preventDefault();
+                const btn = el('btn-submit-reimburse'); btn.disabled = true; btn.innerText = "Mengirim...";
+                
+                // Ambil gambar dari canvas
+                let base64Foto = '';
+                const canvas = el('reim-canvas');
+                if(canvas && canvas.width > 0) base64Foto = canvas.toDataURL('image/jpeg', 0.6);
+
+                try {
+                    await db.collection("reimbursements").add({
+                        nik: currentUserData.nik,
+                        nama: currentUserData.nama,
+                        tanggalNota: el('reim-tgl-nota').value,
+                        jenis: el('reim-jenis').value,
+                        nominal: parseFloat(el('reim-nominal').value),
+                        keterangan: el('reim-ket').value,
+                        fotoBukti: base64Foto,
+                        status: "Pending",
+                        tanggal: new Date().toISOString()
+                    });
+                    showToast("Klaim berhasil diajukan!");
+                    el('form-ess-reimburse').reset();
+                    if(canvas) { canvas.width = 0; canvas.height = 0; } // Bersihkan foto
+                } catch(err) {
+                    showToast("Gagal mengirim klaim.", "error");
+                } finally {
+                    btn.disabled = false; btn.innerText = "Kirim Pengajuan Klaim";
+                }
+            });
+        }
+
+        // 6. Submit Input Klaim Manual oleh Admin
+        if(el('form-reimburse-admin')) {
+            el('form-reimburse-admin').addEventListener('submit', async e => {
+                e.preventDefault();
+                const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
+                const nik = el('admin-reim-nik').value;
+                const emp = db_karyawan.find(k => k.nik === nik);
+                
+                try {
+                    await db.collection("reimbursements").add({
+                        nik: nik,
+                        nama: emp ? emp.nama : "-",
+                        tanggalNota: el('admin-reim-tgl-nota').value,
+                        jenis: el('admin-reim-jenis').value,
+                        nominal: parseFloat(el('admin-reim-nominal').value),
+                        keterangan: el('admin-reim-ket').value,
+                        status: "Disetujui", // Kalau Admin yang input, otomatis disetujui
+                        tanggal: new Date().toISOString()
+                    });
+                    showToast("Reimburse manual berhasil ditambahkan!");
+                    el('form-reimburse-admin').reset();
+                } catch(err) {
+                    showToast("Gagal memproses klaim manual.", "error");
+                } finally {
+                    btn.disabled = false; btn.innerText = "Masukkan ke Antrean";
+                }
+            });
+        }
         // }); // <-- Buka komentar baris ini jika seluruh fungsi JS Anda dibungkus oleh document.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
