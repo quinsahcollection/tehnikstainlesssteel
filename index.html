@@ -2902,8 +2902,13 @@ if(filterBln) {
                 el('det-nama').innerText = k.nama; el('det-info').innerText = `NIK: ${k.nik} | Divisi: ${k.divisi||'-'} | Jabatan: ${k.jabatan||'-'}`;
                 const outNama = db_outlet.find(o => o.id === k.outletId)?.nama || "Pusat";
                 el('det-lokasi-badge').innerText = `📍 Lokasi: ${outNama}`;
-                el('det-hutang').innerText = `Rp ${(parseFloat(k.sisaKasbon)||0).toLocaleString('id-ID')}`;
-                el('det-limit').innerText = `Limit Jatah: Rp ${(parseFloat(k.limitKasbon)||0).toLocaleString('id-ID')}`;
+                let limitK2 = parseFloat(k.limitKasbon) || 0;
+                let hutangK2 = parseFloat(k.sisaKasbon) || 0;
+                let sisaLimitK2 = limitK2 - hutangK2; 
+                if(sisaLimitK2 < 0) sisaLimitK2 = 0;
+
+                el('det-hutang').innerText = `Rp ${hutangK2.toLocaleString('id-ID')}`;
+                el('det-limit').innerHTML = `Limit Jatah: Rp ${limitK2.toLocaleString('id-ID')}<br><span style="color:var(--success); font-weight:800; display:block; margin-top:6px;">Tersedia: Rp ${sisaLimitK2.toLocaleString('id-ID')}</span>`;
                 el('det-telp').innerText = k.telp || '-'; el('det-email').innerText = k.email || '-';
                 el('det-ttl').innerText = `${k.tempatLahir||'-'}, ${k.tglLahir||'-'}`;
                 el('det-masuk').innerText = k.tglMulai || '-';
