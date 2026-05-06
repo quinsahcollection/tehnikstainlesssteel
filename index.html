@@ -3343,6 +3343,141 @@ window.renderDetailReimburse = () => {
         el('tbody-det-reimburse').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada riwayat reimburse</td></tr>';
     }
 };
+
+// ==========================================
+// 1. FUNGSI GLOBAL: HAPUS DATA (Bisa dipakai Izin, Kasbon, Reimburse)
+// ==========================================
+window.hapusDokumen = async (koleksi, id) => {
+    // Gunakan showConfirm jika Bapak punya modal konfirmasi custom, 
+    // atau gunakan confirm bawaan JS di bawah ini:
+    const ok = confirm("Yakin ingin menghapus data ini secara permanen? Tindakan ini tidak bisa dibatalkan.");
+    if(ok) {
+        try {
+            await db.collection(koleksi).doc(id).delete();
+            showToast("Data berhasil dihapus dari sistem!");
+            // Note: Firebase onSnapshot biasanya akan otomatis memicu render ulang UI
+        } catch(err) {
+            showToast("Gagal menghapus data.", "error");
+        }
+    }
+};
+
+// ==========================================
+// 2. FUNGSI EDIT / REVISI DATA
+// ==========================================
+// Pendekatan tercepat: menggunakan Prompt untuk revisi langsung.
+// Untuk tampilan yang lebih "modern", Bapak bisa menghubungkan 
+// fungsi ini untuk membuka Modal Form Edit di HTML nantinya.
+
+window.editDataReimburse = async (id, nominalLama, ketLama) => {
+    const nominalBaru = prompt("Revisi Nominal (Rp):", nominalLama);
+    if (nominalBaru === null) return; // Dibatalkan admin
+    
+    const ketBaru = prompt("Revisi Keterangan:", ketLama);
+    if (ketBaru === null) return; // Dibatalkan admin
+
+    try {
+        await db.collection("reimbursements").doc(id).update({
+            nominal: parseFloat(nominalBaru) || 0,
+            keterangan: ketBaru
+        });
+        showToast("Data Reimburse berhasil direvisi!");
+    } catch(err) {
+        showToast("Gagal merevisi data.", "error");
+    }
+};
+
+window.editDataIzin = async (id, tglMulaiLama, tglSelesaiLama) => {
+    const tglMulaiBaru = prompt("Revisi Tanggal Mulai (YYYY-MM-DD):", tglMulaiLama);
+    if (tglMulaiBaru === null) return;
+    
+    const tglSelesaiBaru = prompt("Revisi Tanggal Selesai (YYYY-MM-DD):", tglSelesaiLama);
+    if (tglSelesaiBaru === null) return;
+
+    try {
+        await db.collection("izin").doc(id).update({ // Sesuaikan dengan nama koleksi izin Bapak
+            tanggalMulai: tglMulaiBaru,
+            tanggalSelesai: tglSelesaiBaru
+        });
+        showToast("Tanggal Izin/Sakit berhasil direvisi!");
+    } catch(err) {
+        showToast("Gagal merevisi data izin.", "error");
+    }
+};
+
+
+// ==========================================
+// 3. RENDER TABEL: ANTREAN PERSETUJUAN (PENDING)
+// ==========================================
+window.renderAdminReimbursePending = () => {
+    let tbody = '';
+    // Hanya ambil yang Pending
+    let pendingR = db_reimburse.filter(r => r.status === 'Pending');
+
+    pendingR.forEach(r => {
+        let btnBukti = r.fotoBukti ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; border-color:var(--info); color:var(--info);" onclick="bukaViewerFoto('${r.fotoBukti}')">🔍 Cek Bukti</button>` : '-';
+        
+        // Tombol Aksi Lengkap: Setujui, Tolak, Edit, Hapus
+        let aksi = `
+            <div style="display:flex; gap:5px; justify-content:center; flex-wrap:wrap;">
+                <button class="btn-outline" style="padding:4px 8px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.prosesReimburse('${r.id}', 'Disetujui')">Setujui</button>
+                <button class="btn-outline" style="padding:4px 8px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.prosesReimburse('${r.id}', 'Ditolak')">Tolak</button>
+                <button class="btn-outline" style="padding:4px 8px; font-size:11px; border-color:var(--warning); color:var(--warning);" onclick="window.editDataReimburse('${r.id}', '${r.nominal}', '${r.keterangan}')">Edit</button>
+                <button class="btn-outline" style="padding:4px 8px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.hapusDokumen('reimbursements', '${r.id}')">Hapus</button>
+            </div>
+        `;
+
+        tbody += `<tr>
+            <td><b>${r.nama}</b><br><small>${new Date(r.tanggal).toLocaleDateString('id-ID')}</small></td>
+            <td><b>${r.jenis}</b><br><small>${r.keterangan}</small></td>
+            <td style="color:var(--primary); font-weight:bold;">Rp ${(r.nominal||0).toLocaleString('id-ID')}</td>
+            <td>${btnBukti}</td>
+            <td style="text-align:center;">${aksi}</td>
+        </tr>`;
+    });
+    
+    // Pastikan di HTML ada <tbody id="tbody-admin-reimburse-pending">
+    if(el('tbody-admin-reimburse-pending')) {
+        el('tbody-admin-reimburse-pending').innerHTML = tbody || '<tr><td colspan="5" align="center">Tidak ada antrean klaim.</td></tr>';
+    }
+};
+
+
+// ==========================================
+// 4. RENDER TABEL: RIWAYAT / ARSIP (DISETUJUI & DITOLAK)
+// ==========================================
+window.renderAdminReimburseHistory = () => {
+    let tbody = '';
+    // Ambil yang BUKAN Pending (Disetujui / Ditolak)
+    let historyR = db_reimburse.filter(r => r.status !== 'Pending').slice(0, 50); // Limit 50 data terakhir agar ringan
+
+    historyR.forEach(r => {
+        let btnBukti = r.fotoBukti ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; border-color:var(--info); color:var(--info);" onclick="bukaViewerFoto('${r.fotoBukti}')">🔍 Cek Bukti</button>` : '-';
+        
+        let stBadge = r.status === 'Disetujui' ? 'badge-success' : 'badge-danger';
+        
+        // Aksi untuk Riwayat: Hanya Edit dan Hapus
+        let aksi = `
+            <div style="display:flex; gap:5px; justify-content:center;">
+                <button class="btn-outline" style="padding:4px 8px; font-size:11px; border-color:var(--warning); color:var(--warning);" onclick="window.editDataReimburse('${r.id}', '${r.nominal}', '${r.keterangan}')">Edit</button>
+                <button class="btn-outline" style="padding:4px 8px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.hapusDokumen('reimbursements', '${r.id}')">Hapus</button>
+            </div>
+        `;
+
+        tbody += `<tr>
+            <td><b>${r.nama}</b><br><small>${new Date(r.tanggal).toLocaleDateString('id-ID')}</small></td>
+            <td><b>${r.jenis}</b><br><small>${r.keterangan}</small></td>
+            <td style="color:var(--primary); font-weight:bold;">Rp ${(r.nominal||0).toLocaleString('id-ID')}</td>
+            <td><span class="badge ${stBadge}">${r.status}</span></td>
+            <td style="text-align:center;">${aksi}</td>
+        </tr>`;
+    });
+    
+    // Pastikan di HTML ada <tbody id="tbody-admin-reimburse-history">
+    if(el('tbody-admin-reimburse-history')) {
+        el('tbody-admin-reimburse-history').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada riwayat arsip.</td></tr>';
+    }
+};
         // }); // <-- Buka komentar baris ini jika seluruh fungsi JS Anda dibungkus oleh document.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
