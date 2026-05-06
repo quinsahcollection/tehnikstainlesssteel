@@ -1612,9 +1612,9 @@
         flatpickr("#gaji-periode-range", { locale: "id", mode: "range", altFormat: "d M Y", dateFormat: "Y-m-d", disableMobile: true, onChange: () => jalankanAutoCalc() });
         flatpickr("#gaji-massal-periode", { locale: "id", mode: "range", altFormat: "d M Y", dateFormat: "Y-m-d", disableMobile: true, onChange: () => window.kalkulasiGajiMassal() });   
         flatpickr("#ess-izin-tgl-single", { locale: "id", dateFormat: "Y-m-d", disableMobile: true });
-        flatpickr("#ess-izin-tgl-range", { locale: "id", mode: "range", dateFormat: "Y-m-d", disableMobile: true });
+        flatpickr("#ess-izin-tgl-range", { locale: "id", mode: "range", dateFormat: "Y-m-d", disableMobile: true, rangeSeparator: " to " });
         flatpickr("#admin-izin-tgl-single", { locale: "id", dateFormat: "Y-m-d", disableMobile: true });
-        flatpickr("#admin-izin-tgl-range", { locale: "id", mode: "range", dateFormat: "Y-m-d", disableMobile: true });
+        flatpickr("#admin-izin-tgl-range", { locale: "id", mode: "range", dateFormat: "Y-m-d", disableMobile: true, rangeSeparator: " to " });
 
         const todayStr = getLocalToday();
         el('satuan-tgl')._flatpickr.setDate(todayStr); el('massal-tgl')._flatpickr.setDate(todayStr); el('filter-bulan-laporan')._flatpickr.setDate(todayStr.substring(0, 7)); 
