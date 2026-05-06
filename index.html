@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0061f2">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>YARCH - HR Enterprise</title>
+    <title>Tehnik Stainless - HR Enterprise</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -292,7 +292,7 @@
     <!-- TAMPILAN LOGIN & SIGNUP -->
     <div id="login-screen">
         <div class="login-card">
-            <div class="brand-logo" style="color: var(--primary);">Yarch Absensi</div>
+            <div class="brand-logo" style="color: var(--primary);">Tehnik Stainless</div>
             <div class="brand-subtitle">Enterprise HR Portal</div>
             
             <div id="wrap-login">
@@ -343,7 +343,7 @@
         
         <!-- HEADER MOBILE -->
         <div class="mobile-header" style="display:none;">
-            <div><div style="color:var(--primary); font-weight:800; font-size: 18px;">Yarch HR</div></div>
+            <div><div style="color:var(--primary); font-weight:800; font-size: 18px;">Tehnik HR</div></div>
             <button class="btn-hamburger" id="btn-hamburger" onclick="window.toggleMobileMenu()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
@@ -364,7 +364,7 @@
 
         <div class="sidebar">
             <div class="sidebar-header">
-                <div class="brand-logo">Yarch Absensi</div><div class="brand-subtitle">Enterprise HR Portal</div>
+                <div class="brand-logo">Tehnik Stainless</div><div class="brand-subtitle">Enterprise HR Portal</div>
             </div>
             
             <!-- MENU ADMIN -->
@@ -2157,25 +2157,7 @@ if(el('ess-info-sisa-limit-kasbon')) el('ess-info-sisa-limit-kasbon').innerText 
 
         window.ulangKamera = () => { el('camera-feed').style.display = 'block'; el('camera-result').style.display = 'none'; cekStatusAbsenHariIni(); if(el('btn-capture-masuk')) el('btn-capture-masuk').disabled = false; if(el('btn-capture-pulang')) el('btn-capture-pulang').disabled = false; el('btn-capture-masuk').innerText = "📸 CHECK-IN (MASUK)"; el('btn-capture-pulang').innerText = "📸 CHECK-OUT (PULANG)"; };
 
-        window.aturInputTanggalIzin = () => { 
-    const val = el('ess-izin-durasi').value; 
-    if(val === 'Beberapa Hari') { 
-        el('wrap-izin-tgl-single').classList.add('hidden'); 
-        el('wrap-izin-tgl-range').classList.remove('hidden'); 
-        el('ess-izin-tgl-single').removeAttribute('required'); 
-        el('ess-izin-tgl-range').setAttribute('required', 'true'); 
-        
-        // --- PERBAIKAN: Paksa render ulang UI Flatpickr saat un-hide ---
-        if(el('ess-izin-tgl-range')._flatpickr) {
-            el('ess-izin-tgl-range')._flatpickr.redraw();
-        }
-    } else { 
-        el('wrap-izin-tgl-range').classList.add('hidden'); 
-        el('wrap-izin-tgl-single').classList.remove('hidden'); 
-        el('ess-izin-tgl-range').removeAttribute('required'); 
-        el('ess-izin-tgl-single').setAttribute('required', 'true'); 
-    } 
-};
+        window.aturInputTanggalIzin = () => { const val = el('ess-izin-durasi').value; if(val === 'Beberapa Hari') { el('wrap-izin-tgl-single').classList.add('hidden'); el('wrap-izin-tgl-range').classList.remove('hidden'); el('ess-izin-tgl-single').removeAttribute('required'); el('ess-izin-tgl-range').setAttribute('required', 'true'); } else { el('wrap-izin-tgl-range').classList.add('hidden'); el('wrap-izin-tgl-single').classList.remove('hidden'); el('ess-izin-tgl-range').removeAttribute('required'); el('ess-izin-tgl-single').setAttribute('required', 'true'); } };
         window.aturInputTanggalIzinAdmin = () => { 
     const val = el('admin-izin-durasi').value; 
     if(val === 'Beberapa Hari') { 
