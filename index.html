@@ -2874,10 +2874,24 @@ if(filterBln) {
                 let html = '';
                 
                 db_reimburse.filter(r => r.nik === currentDetailNik).forEach(r => {
-                    let badgeCls = r.status==='Pending'?'badge-pending':(r.status==='Disetujui'?'badge-success':'badge-danger');
+                    let badgeCls = r.status === 'Pending' ? 'badge-pending' : (r.status === 'Disetujui' ? 'badge-success' : 'badge-danger');
                     
-                    html += `<tr><td>${r.tanggalNota||new Date(r.tanggal).toLocaleDateString('id-ID')}</td><td>${r.jenis}</td><td><small>${r.keterangan}</small></td><td>Rp ${r.nominal.toLocaleString('id-ID')}</td><td><span class="badge ${badgeCls}">${r.status}</span></td></tr>`;
+                    // Format Tanggal
+                    let tglNotaStr = r.tanggalNota || new Date(r.tanggal || r.tanggalSubmit).toLocaleDateString('id-ID');
+                    let tglSubmitStr = new Date(r.tanggalSubmit || r.tanggal).toLocaleDateString('id-ID');
+
+                    html += `<tr>
+                        <td>
+                            <b>${tglNotaStr}</b><br>
+                            <small style="color:#94a3b8">Submit: ${tglSubmitStr}</small>
+                        </td>
+                        <td><b>${r.jenis}</b></td>
+                        <td><small>${r.keterangan}</small></td>
+                        <td style="color:var(--primary); font-weight:600;">Rp ${r.nominal.toLocaleString('id-ID')}</td>
+                        <td><span class="badge ${badgeCls}">${r.status}</span></td>
+                    </tr>`;
                 });
+                
                 el('tbody-det-reimburse').innerHTML = html || '<tr><td colspan="5" align="center">Belum ada riwayat klaim.</td></tr>';
             }
 
