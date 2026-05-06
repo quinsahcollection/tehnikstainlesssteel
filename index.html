@@ -586,7 +586,7 @@
                 </div>
                 <div class="card">
                     <h3 class="section-title">Riwayat Pengajuan Anda</h3>
-                    <div class="table-responsive"><table><thead><tr><th>Tanggal Input</th><th>Tipe & Durasi</th><th>Rentang Waktu</th><th>Alasan</th><th>Status HRD</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-ess-izin-log"></tbody></table></div>
+                    <div class="table-responsive"><table><thead><tr><th>Tanggal Input</th><th>Tipe & Durasi</th><th>Rentang Waktu</th><th>Alasan</th><th>Status HRD</th></tr></thead><tbody id="tbody-ess-izin-log"></tbody></table></div>
                 </div>
             </div>
 
@@ -603,7 +603,7 @@
         </div>
     </div>
                 <div class="card"><h3 class="section-title">Ajukan Kasbon (Pinjaman)</h3><form id="form-ess-kasbon"><div class="form-row"><div class="form-group"><label>Nominal Pengajuan (Rp)</label><input type="number" id="ess-req-nominal" required min="10000" placeholder="Misal: 500000"></div><div class="form-group"><label>Alasan / Keperluan</label><input type="text" id="ess-req-ket" required placeholder="Jelaskan kebutuhan Anda"></div></div><div style="text-align: right;"><button type="submit" class="btn">Ajukan ke HRD</button></div></form></div>
-                <div class="card"><h3 class="section-title">Status Pengajuan Kasbon</h3><div class="table-responsive"><table><thead><tr><th>Tanggal</th><th>Nominal</th><th>Keterangan</th><th>Status</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-ess-kasbon-log"></tbody></table></div></div>
+                <div class="card"><h3 class="section-title">Status Pengajuan Kasbon</h3><div class="table-responsive"><table><thead><tr><th>Tanggal</th><th>Nominal</th><th>Keterangan</th><th>Status</th></tr></thead><tbody id="tbody-ess-kasbon-log"></tbody></table></div></div>
             </div>
 
             <div id="menu-ess-slip" class="menu-content hidden">
@@ -957,7 +957,7 @@
                     <h3 class="section-title">Riwayat Reimbursement / Klaim</h3>
                     <div class="table-responsive">
                         <table>
-                            <thead><tr><th>Tanggal Nota & Submit</th><th>Jenis Klaim</th><th>Keterangan Detail</th><th>Nominal</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Tanggal Submit</th><th>Jenis Klaim</th><th>Keterangan Detail</th><th>Nominal</th><th>Status</th></tr></thead>
                             <tbody id="tbody-det-reimburse"></tbody>
                         </table>
                     </div>
@@ -1038,14 +1038,14 @@
                         <h3 class="section-title">Manajemen Cuti & Izin</h3>
                     </div>
                     <div class="card" style="margin-bottom:20px;">
-    <h3 class="section-title">Riwayat Pengajuan Cuti & Izin</h3>
-    <div class="table-responsive">
-        <table>
-            <thead><tr><th>Nama & Tgl Pengajuan</th><th>Tipe & Durasi</th><th>Rentang Tanggal</th><th>Alasan</th><th>Status Akhir</th></tr></thead>
-            <tbody id="tbody-riwayat-izin-admin"></tbody>
-        </table>
-    </div>
-</div>
+                        <h3 class="section-title">Persetujuan Cuti/Izin</h3>
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>Nama & Tgl Pengajuan</th><th>Tipe & Durasi</th><th>Rentang Tanggal</th><th>Alasan</th><th style="text-align:center;">Aksi Persetujuan</th></tr></thead>
+                                <tbody id="tbody-approval-izin"></tbody>
+                            </table>
+                        </div>
+                    </div>
                     <div class="card">
                         <h3 class="section-title">Input Cuti/Izin Manual (Admin)</h3>
                         <form id="form-izin-admin">
@@ -1242,7 +1242,7 @@
                     <h3 class="section-title">Riwayat Klaim Anda</h3>
                     <div class="table-responsive">
                         <table>
-                            <thead><tr><th>Tanggal Input</th><th>Jenis & Keterangan</th><th>Nominal</th><th>Bukti</th><th>Status HRD</th><th style="text-align:center;">Aksi</th></tr></thead>
+                            <thead><tr><th>Tanggal Input</th><th>Jenis & Keterangan</th><th>Nominal</th><th>Bukti</th><th>Status HRD</th></tr></thead>
                             <tbody id="tbody-ess-reimburse-log"></tbody>
                         </table>
                     </div>
@@ -1871,18 +1871,7 @@
         window.hapusPengumuman = async (id) => { const ok = await showConfirm("Hapus Pengumuman?", "Data akan dihapus permanen dari history.", "Hapus", true); if(ok) { await db.collection("pengumuman").doc(id).delete(); showToast("Pengumuman dihapus!"); } };
         window.ubahStatusPengumuman = async (id, currentStatus) => { const newStatus = currentStatus === 'Aktif' ? 'Draft' : 'Aktif'; await db.collection("pengumuman").doc(id).update({status: newStatus}); showToast(`Status diubah menjadi ${newStatus}!`); };
 
-        // FUNGSI GLOBAL UNTUK MENGHAPUS PENGAJUAN (Bisa dipakai Admin & Karyawan)
-window.hapusPengajuan = async (koleksiTarget, docId) => {
-    const ok = await showConfirm("Batalkan/Hapus Pengajuan?", "Apakah Anda yakin ingin menghapus data ini secara permanen?", "Ya, Hapus", true);
-    if(ok) {
-        try {
-            await db.collection(koleksiTarget).doc(docId).delete();
-            showToast("Data berhasil dihapus!");
-        } catch (error) {
-            showToast("Gagal menghapus data.", "error");
-        }
-    }
-};
+
         // ==========================================
         // MODUL 1: ESS (DASHBOARD, CAMERA CHECK-IN/OUT)
         // ==========================================
@@ -1922,33 +1911,10 @@ if(el('ess-info-sisa-kasbon')) el('ess-info-sisa-kasbon').innerText = "Rp " + (p
             });
             el('tbody-ess-kehadiran').innerHTML = tbodyAbs || '<tr><td colspan="4" align="center">Belum ada absen tercatat</td></tr>';
 
-            // --- RIWAYAT KASBON KARYAWAN ---
-let tbodyKas = ''; 
-db_kasbon.filter(k => k.nik === nik).slice(0, 10).forEach(k => { 
-    let b = k.status==='Pending' ? 'badge-pending' : (k.status==='Disetujui'||k.jenis==='Potongan Gaji' ? 'badge-success' : 'badge-danger'); 
-    let stTxt = k.status || (k.jenis==='Potongan Gaji'?'Lunas':'Selesai'); 
-    
-    // Tombol Aksi (Hanya muncul jika Pending)
-    let actionBtn = k.status === 'Pending' ? 
-        `<button class="btn-outline" style="padding:4px 8px; font-size:10px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusPengajuan('kasbon_log', '${k.id}')">Batal/Hapus</button>` : '-';
-        
-    tbodyKas += `<tr><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td>Rp ${k.nominal.toLocaleString('id-ID')}</td><td><small>${k.keterangan}</small></td><td><span class="badge ${b}">${stTxt}</span></td><td style="text-align:center;">${actionBtn}</td></tr>`; 
-}); 
-el('tbody-ess-kasbon-log').innerHTML = tbodyKas || '<tr><td colspan="5" align="center">Kosong</td></tr>';
+            let tbodyKas = ''; db_kasbon.filter(k => k.nik === nik).slice(0, 10).forEach(k => { let b = k.status==='Pending' ? 'badge-pending' : (k.status==='Disetujui'||k.jenis==='Potongan Gaji' ? 'badge-success' : 'badge-danger'); let stTxt = k.status || (k.jenis==='Potongan Gaji'?'Lunas':'Selesai'); tbodyKas += `<tr><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td>Rp ${k.nominal.toLocaleString('id-ID')}</td><td><small>${k.keterangan}</small></td><td><span class="badge ${b}">${stTxt}</span></td></tr>`; }); el('tbody-ess-kasbon-log').innerHTML = tbodyKas || '<tr><td colspan="4" align="center">Kosong</td></tr>';
             let tbodySlip = ''; db_slip.filter(s => s.nik === nik).forEach(s => { tbodySlip += `<tr><td><b>${s.periode}</b></td><td style="color:var(--success); font-weight:800;">${s.bersih}</td><td><button class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="lihatDetailSlipAdminAtauKaryawan('${s.id}')">Rincian</button></td></tr>`; }); el('tbody-ess-slip').innerHTML = tbodySlip || '<tr><td colspan="3" align="center">Kosong</td></tr>';
-// --- RIWAYAT IZIN/CUTI KARYAWAN ---
-let tbodyIzin = ''; 
-db_izin.filter(i => i.nik === nik).forEach(i => { 
-    let stBadge = i.status==='Pending'?'badge-pending':(i.status==='Disetujui'?'badge-success':'badge-danger'); 
-    
-    // Tombol Aksi (Hanya muncul jika Pending)
-    let actionBtn = i.status === 'Pending' ? 
-        `<button class="btn-outline" style="padding:4px 8px; font-size:10px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusPengajuan('pengajuan_izin', '${i.id}')">Batal/Hapus</button>` : '-';
-        
-    tbodyIzin += `<tr><td>${new Date(i.waktuSubmit).toLocaleDateString('id-ID')}</td><td><b>${i.tipe}</b><br><small>${i.durasi}</small></td><td>${i.tglRaw}</td><td><small>${i.alasan}</small></td><td><span class="badge ${stBadge}">${i.status}</span></td><td style="text-align:center;">${actionBtn}</td></tr>`; 
-}); 
-el('tbody-ess-izin-log').innerHTML = tbodyIzin || '<tr><td colspan="6" align="center">Belum ada riwayat</td></tr>';
-}
+            let tbodyIzin = ''; db_izin.filter(i => i.nik === nik).forEach(i => { let stBadge = i.status==='Pending'?'badge-pending':(i.status==='Disetujui'?'badge-success':'badge-danger'); tbodyIzin += `<tr><td>${new Date(i.waktuSubmit).toLocaleDateString('id-ID')}</td><td><b>${i.tipe}</b><br><small>${i.durasi}</small></td><td>${i.tglRaw}</td><td><small>${i.alasan}</small></td><td><span class="badge ${stBadge}">${i.status}</span></td></tr>`; }); el('tbody-ess-izin-log').innerHTML = tbodyIzin || '<tr><td colspan="5" align="center">Belum ada riwayat</td></tr>';
+        }
 
         let gpsWatcher = null;
         async function startCamera() { 
@@ -2211,13 +2177,6 @@ el('form-ess-izin').addEventListener('submit', async e => {
             if(el('notif-dot-kasbon')) el('notif-dot-kasbon').style.display = pendingReq.length > 0 ? 'block' : 'none';
             if(el('notif-dot-reimburse')) el('notif-dot-reimburse').style.display = pendingReim.length > 0 ? 'block' : 'none';
 
-            // RENDER ARSIP TRANSAKSI KASBON (ADMIN)
-            let tbodyKasbonList = '';
-            db_kasbon.forEach(k => {
-            tbodyKasbonList += `<tr><td>${k.nama}</td><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td><span class="badge badge-info">${k.jenis}</span></td><td>Rp ${k.nominal.toLocaleString('id-ID')}</td><td>${k.keterangan}</td><td style="text-align:center;"><button class="btn-outline" style="padding:4px 8px; font-size:10px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusPengajuan('kasbon_log', '${k.id}')">Hapus Data</button></td></tr>`;
-            });
-            if(el('tbody-kasbon-list')) el('tbody-kasbon-list').innerHTML = tbodyKasbonList || '<tr><td colspan="6" align="center">Belum ada transaksi kasbon.</td></tr>';
-            
             // RENDER TABEL APPROVAL PENDING AGAR ADMIN BISA PROSES & HILANGKAN DOT
             let tbodyKasbonApp = '';
             pendingReq.forEach(k => { tbodyKasbonApp += `<tr><td><b>${k.nama}</b><br><small>${k.nik}</small></td><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td><b style="color:var(--danger)">Rp ${k.nominal.toLocaleString('id-ID')}</b><br><small>${k.keterangan}</small></td><td style="text-align:center;"><button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.prosesKasbon('${k.id}', 'Disetujui', '${k.nik}', ${k.nominal})">Setujui</button> <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.prosesKasbon('${k.id}', 'Ditolak', '${k.nik}', 0)">Tolak</button></td></tr>`; });
@@ -2407,45 +2366,27 @@ el('form-ess-izin').addEventListener('submit', async e => {
         el('tbody-massal').addEventListener('change', function(e) { if(e.target.classList.contains('m-status')) { const r = e.target.closest('tr'); aturDisableKehadiran(e.target.value, r.querySelector('.m-lk'), r.querySelector('.m-mk'), r.querySelector('.m-lembur'), r.querySelector('.wrap-m-lk'), r.querySelector('.wrap-m-mk')); } });
 
         window.approveIzinReq = async (btnDOM, id, nik, tipe, durasi, tglRaw) => { 
-    btnDOM.disabled = true; let dates = []; 
-    if(tglRaw.includes(' to ')) { 
-        let parts = tglRaw.split(' to '); let d1 = new Date(parts[0]); let d2 = new Date(parts[1]); 
-        while(d1 <= d2) { 
-            let safeDateStr = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
-            dates.push(safeDateStr); 
-            d1.setDate(d1.getDate()+1); 
-        } 
-    } else { dates.push(tglRaw); } 
-    
-    let finalStatus = tipe; if(tipe === 'Izin') finalStatus = (durasi === 'Setengah Hari') ? 'Izin 1/2 Hari' : 'Izin'; 
-    let batch = db.batch(); 
-    dates.forEach(d => { 
-        let ref = db.collection('kehadiran').doc(nik + '_' + d); 
-        batch.set(ref, { date: d, nik: nik, status: finalStatus, shift: 'Pagi', lk: false, mk: false, lembur: 0, catatan: `Approval: ${tipe}` }, {merge: true}); 
-    }); 
-    batch.update(db.collection('pengajuan_izin').doc(id), {status: 'Disetujui'}); 
-
-    // --- BAGIAN YANG DIPERBAIKI ---
-    // 1. Tentukan jumlah potongan (default: jumlah hari kalender)
-    let jumlahPotongan = dates.length; 
-    
-    // 2. Jika durasinya "Setengah Hari", ubah potongannya menjadi 0.5
-    if (durasi === 'Setengah Hari') {
-        jumlahPotongan = 0.5;
-    }
-
-    // 3. Masukkan jumlahPotongan ke dalam increment
-    if(tipe === 'Cuti') { 
-        batch.update(db.collection('karyawan').doc(nik), {
-            sisaCuti: firebase.firestore.FieldValue.increment(-jumlahPotongan)
-        }); 
-    }
-    // ------------------------------
-
-    try { await batch.commit(); showToast("Pengajuan disetujui!"); } catch(e) { showToast("Gagal menyetujui!", "error"); btnDOM.disabled = false; } 
-};
-
-window.rejectIzinReq = async (btnDOM, id) => { btnDOM.disabled = true; await db.collection("pengajuan_izin").doc(id).update({ status: "Ditolak" }); showToast("Pengajuan ditolak."); };
+            btnDOM.disabled = true; let dates = []; 
+            if(tglRaw.includes(' to ')) { 
+                let parts = tglRaw.split(' to '); let d1 = new Date(parts[0]); let d2 = new Date(parts[1]); 
+                while(d1 <= d2) { 
+                    let safeDateStr = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
+                    dates.push(safeDateStr); 
+                    d1.setDate(d1.getDate()+1); 
+                } 
+            } else { dates.push(tglRaw); } 
+            
+            let finalStatus = tipe; if(tipe === 'Izin') finalStatus = (durasi === 'Setengah Hari') ? 'Izin 1/2 Hari' : 'Izin'; 
+            let batch = db.batch(); 
+            dates.forEach(d => { 
+                let ref = db.collection('kehadiran').doc(nik + '_' + d); 
+                batch.set(ref, { date: d, nik: nik, status: finalStatus, shift: 'Pagi', lk: false, mk: false, lembur: 0, catatan: `Approval: ${tipe}` }, {merge: true}); 
+            }); 
+            batch.update(db.collection('pengajuan_izin').doc(id), {status: 'Disetujui'}); 
+            if(tipe === 'Cuti') { batch.update(db.collection('karyawan').doc(nik), {sisaCuti: firebase.firestore.FieldValue.increment(-dates.length)}); } 
+            try { await batch.commit(); showToast("Pengajuan disetujui!"); } catch(e) { showToast("Gagal menyetujui!", "error"); btnDOM.disabled = false; } 
+        };
+        window.rejectIzinReq = async (btnDOM, id) => { btnDOM.disabled = true; await db.collection("pengajuan_izin").doc(id).update({ status: "Ditolak" }); showToast("Pengajuan ditolak."); };
 
         window.prosesKasbon = async (id, status, nik, nom) => {
             const ok = await showConfirm(`Konfirmasi ${status}?`, `Yakin ingin memproses pengajuan ini menjadi ${status}?`, "Ya, Proses");
@@ -2933,24 +2874,10 @@ if(filterBln) {
                 let html = '';
                 
                 db_reimburse.filter(r => r.nik === currentDetailNik).forEach(r => {
-                    let badgeCls = r.status === 'Pending' ? 'badge-pending' : (r.status === 'Disetujui' ? 'badge-success' : 'badge-danger');
+                    let badgeCls = r.status==='Pending'?'badge-pending':(r.status==='Disetujui'?'badge-success':'badge-danger');
                     
-                    // Format Tanggal
-                    let tglNotaStr = r.tanggalNota || new Date(r.tanggal || r.tanggalSubmit).toLocaleDateString('id-ID');
-                    let tglSubmitStr = new Date(r.tanggalSubmit || r.tanggal).toLocaleDateString('id-ID');
-
-                    html += `<tr>
-                        <td>
-                            <b>${tglNotaStr}</b><br>
-                            <small style="color:#94a3b8">Submit: ${tglSubmitStr}</small>
-                        </td>
-                        <td><b>${r.jenis}</b></td>
-                        <td><small>${r.keterangan}</small></td>
-                        <td style="color:var(--primary); font-weight:600;">Rp ${r.nominal.toLocaleString('id-ID')}</td>
-                        <td><span class="badge ${badgeCls}">${r.status}</span></td>
-                    </tr>`;
+                    html += `<tr><td>${r.tanggalNota||new Date(r.tanggal).toLocaleDateString('id-ID')}</td><td>${r.jenis}</td><td><small>${r.keterangan}</small></td><td>Rp ${r.nominal.toLocaleString('id-ID')}</td><td><span class="badge ${badgeCls}">${r.status}</span></td></tr>`;
                 });
-                
                 el('tbody-det-reimburse').innerHTML = html || '<tr><td colspan="5" align="center">Belum ada riwayat klaim.</td></tr>';
             }
 
@@ -2963,27 +2890,23 @@ if(filterBln) {
             }
 
             // MODUL REIMBURSEMENT
-            if (el('reim-file')) {
-    el('reim-file').addEventListener('change', function(e) {
-        const file = e.target.files[0]; if(!file) return;
-        const canvas = el('reim-canvas'); const ctx = canvas.getContext('2d');
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const img = new Image();
-            img.onload = function() {
-                // Resolusi 600px sudah cukup optimal untuk nota/kuitansi tanpa membebani Firebase Storage
-                const MAX_WIDTH = 600; 
-                let scaleSize = MAX_WIDTH / img.width; 
-                if (scaleSize > 1) scaleSize = 1;
-                canvas.width = img.width * scaleSize; 
-                canvas.height = img.height * scaleSize;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            };
-            img.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-}
+            if(el('reim-file')) {
+                el('reim-file').addEventListener('change', function(e) {
+                    const file = e.target.files[0]; if(!file) return;
+                    const canvas = el('reim-canvas'); const ctx = canvas.getContext('2d');
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = new Image();
+                        img.onload = function() {
+                            const MAX_WIDTH = 600; let scaleSize = MAX_WIDTH / img.width; if(scaleSize > 1) scaleSize = 1;
+                            canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
 
             if(el('form-ess-reimburse')) {
                 el('form-ess-reimburse').addEventListener('submit', async e => {
@@ -3076,106 +2999,64 @@ if(filterBln) {
             };
             
             // ADMIN MANUAL KASBON
-            if (el('form-kasbon-admin')) {
-    el('form-kasbon-admin').addEventListener('submit', async (e) => {
-        e.preventDefault(); 
-        const nik = el('kasbon-nik').value; 
-        const nom = parseFloat(el('kasbon-nominal').value); 
-        const ket = el('kasbon-ket').value; 
-        
-        if(!nik) return window.showToast("Pilih pegawai!", "error");
-        
-        const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
-        const empRef = db.collection("karyawan").doc(nik); 
-        const emp = db_karyawan.find(k => k.nik === nik);
-        
-        // PERBAIKAN: Guard clause jika karyawan tiba-tiba dihapus/tidak valid
-        if(!emp) {
-            btn.disabled = false; btn.innerText = "Potong Limit & Proses";
-            return window.showToast("Data Pegawai tidak valid/ditemukan!", "error");
-        }
+            if(el('form-kasbon-admin')) {
+                el('form-kasbon-admin').addEventListener('submit', async (e) => {
+                    e.preventDefault(); const nik = el('kasbon-nik').value; const nom = parseFloat(el('kasbon-nominal').value); const ket = el('kasbon-ket').value; if(!nik) return showToast("Pilih pegawai!", "error");
+                    const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
+                    const empRef = db.collection("karyawan").doc(nik); const emp = db_karyawan.find(k => k.nik === nik);
+                    const sisaSkrg = parseFloat(emp.sisaKasbon)||0; const limit = parseFloat(emp.limitKasbon)||0;
+                    if((sisaSkrg + nom) > limit) { btn.disabled = false; btn.innerText = "Potong Limit & Proses"; return showToast("Gagal: Total hutang akan melebihi Limit Kasbon yang diizinkan!", "error"); }
+                    const batch = db.batch();
+                    batch.update(empRef, { sisaKasbon: firebase.firestore.FieldValue.increment(nom) });
+                    batch.set(db.collection("kasbon_log").doc(), { nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: "Pencairan (Admin)", nominal: nom, keterangan: ket, status: "Selesai" });
+                    try { await batch.commit(); showToast("Kasbon manual berhasil dicatat!"); el('form-kasbon-admin').reset(); el('info-sisa-kasbon').innerText="Rp 0"; el('info-limit-kasbon').innerText="(Limit: 0)"; } catch(err) { showToast("Gagal proses", "error"); } finally { btn.disabled = false; btn.innerText = "Potong Limit & Proses"; }
+                });
 
-        const sisaSkrg = parseFloat(emp.sisaKasbon) || 0; 
-        const limit = parseFloat(emp.limitKasbon) || 0;
-        
-        if ((sisaSkrg + nom) > limit) { 
-            btn.disabled = false; btn.innerText = "Potong Limit & Proses"; 
-            return window.showToast("Gagal: Total hutang akan melebihi Limit Kasbon yang diizinkan!", "error"); 
-        }
-        
-        const batch = db.batch();
-        batch.update(empRef, { sisaKasbon: firebase.firestore.FieldValue.increment(nom) });
-        batch.set(db.collection("kasbon_log").doc(), { 
-            nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), 
-            jenis: "Pencairan (Admin)", nominal: nom, keterangan: ket, status: "Selesai" 
-        });
-        
-        try { 
-            await batch.commit(); 
-            window.showToast("Kasbon manual berhasil dicatat!"); 
-            el('form-kasbon-admin').reset(); 
-            el('info-sisa-kasbon').innerText="Rp 0"; 
-            el('info-limit-kasbon').innerText="(Limit: 0)"; 
-        } catch(err) { 
-            window.showToast("Gagal proses", "error"); 
-        } finally { 
-            btn.disabled = false; btn.innerText = "Potong Limit & Proses"; 
-        }
-    });
-
-    el('kasbon-nik').addEventListener('change', function() { 
-        const emp = db_karyawan.find(k => k.nik === this.value); 
-        if(emp) { 
-            el('info-sisa-kasbon').innerText = "Rp " + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID'); 
-            el('info-limit-kasbon').innerText = `(Limit: Rp ${(parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID')})`; 
-        } else { 
-            el('info-sisa-kasbon').innerText = "Rp 0"; el('info-limit-kasbon').innerText = "(Limit: 0)"; 
-        } 
-    });
-}
+                el('kasbon-nik').addEventListener('change', function() { 
+                    const emp = db_karyawan.find(k => k.nik === this.value); 
+                    if(emp) { 
+                        el('info-sisa-kasbon').innerText = "Rp " + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID'); 
+                        el('info-limit-kasbon').innerText = `(Limit: Rp ${(parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID')})`; 
+                    } else { 
+                        el('info-sisa-kasbon').innerText = "Rp 0"; el('info-limit-kasbon').innerText = "(Limit: 0)"; 
+                    } 
+                });
+            }
 
 // --- SCRIPT FORM IZIN MANUAL (ADMIN) ---
-if (el('form-izin-admin')) {
-    el('form-izin-admin').addEventListener('submit', async e => {
-        e.preventDefault();
-        const nik = el('admin-izin-nik').value;
-        const tipe = el('admin-izin-tipe').value;
-        const durasi = el('admin-izin-durasi').value;
-        const alasan = el('admin-izin-alasan').value;
-        
-        let tglRaw = '';
-        if (durasi === 'Beberapa Hari') {
-            tglRaw = el('admin-izin-tgl-range').value;
-            if(!tglRaw.includes(' to ') && tglRaw.length === 10) tglRaw = `${tglRaw} to ${tglRaw}`;
-            if(!tglRaw.includes(' to ')) return window.showToast('Pilih rentang dengan benar!', 'error');
-        } else {
-            tglRaw = el('admin-izin-tgl-single').value;
-        }
+el('form-izin-admin').addEventListener('submit', async e => {
+    e.preventDefault();
+    const nik = el('admin-izin-nik').value;
+    const tipe = el('admin-izin-tipe').value;
+    const durasi = el('admin-izin-durasi').value;
+    const alasan = el('admin-izin-alasan').value;
+    
+    let tglRaw = '';
+    if(durasi === 'Beberapa Hari') {
+        tglRaw = el('admin-izin-tgl-range').value;
+        if(!tglRaw.includes(' to ') && tglRaw.length === 10) tglRaw = `${tglRaw} to ${tglRaw}`;
+        if(!tglRaw.includes(' to ')) return showToast('Pilih rentang dengan benar!', 'error');
+    } else {
+        tglRaw = el('admin-izin-tgl-single').value;
+    }
 
-        const emp = db_karyawan.find(k => k.nik === nik);
-        if (!emp) return window.showToast("Pegawai tidak ditemukan!", "error");
+    const emp = db_karyawan.find(k => k.nik === nik);
+    if(!emp) return showToast("Pegawai tidak ditemukan!", "error");
 
-        const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
-        try {
-            await db.collection("pengajuan_izin").add({
-                nik: nik, nama: emp.nama, tipe: tipe, durasi: durasi, tglRaw: tglRaw,
-                alasan: alasan, status: "Pending", waktuSubmit: new Date().toISOString(), fotoBukti: "" 
-            });
-            window.showToast("Pengajuan berhasil dimasukkan ke antrean Pending!");
-            el('form-izin-admin').reset();
-            
-            // PERBAIKAN: Gunakan optional chaining (?.) untuk mencegah error jika flatpickr belum me-load
-            el('admin-izin-tgl-single')?._flatpickr?.clear();
-            el('admin-izin-tgl-range')?._flatpickr?.clear();
-            
-            if(typeof window.aturInputTanggalIzinAdmin === 'function') window.aturInputTanggalIzinAdmin();
-        } catch(err) { 
-            window.showToast("Gagal memproses pengajuan.", "error"); 
-        } finally { 
-            btn.disabled = false; btn.innerText = "Masukkan ke Antrean"; 
-        }
-    });
-}
+    const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
+    try {
+        await db.collection("pengajuan_izin").add({
+            nik: nik, nama: emp.nama, tipe: tipe, durasi: durasi, tglRaw: tglRaw,
+            alasan: alasan, status: "Pending", waktuSubmit: new Date().toISOString(), fotoBukti: "" 
+        });
+        showToast("Pengajuan berhasil dimasukkan ke antrean Pending!");
+        el('form-izin-admin').reset();
+        el('admin-izin-tgl-single')._flatpickr.clear();
+        if(el('admin-izin-tgl-range')._flatpickr) el('admin-izin-tgl-range')._flatpickr.clear();
+        window.aturInputTanggalIzinAdmin();
+    } catch(err) { showToast("Gagal memproses pengajuan.", "error"); } 
+    finally { btn.disabled = false; btn.innerText = "Masukkan ke Antrean"; }
+});
 
 // --- SCRIPT FORM REIMBURSE MANUAL (ADMIN) ---
 el('form-reimburse-admin').addEventListener('submit', async e => {
@@ -3217,15 +3098,12 @@ window.cekDataAbsenSatuan = () => {
 
     // 1. CEK APAKAH TANGGAL INI SUDAH MASUK KE SLIP GAJI
     let isLocked = db_slip.some(s => {
-    if(s.nik !== n) return false;
-    // PERBAIKAN: Tambahkan baris proteksi ini agar sistem tidak crash jika data lama kosong
-    if(!s.tglMulai || !s.tglAkhir) return false; 
-    
-    let sStart = new Date(s.tglMulai).setHours(0,0,0,0);
-    let sEnd = new Date(s.tglAkhir).setHours(23,59,59,999);
-    let tCek = new Date(d).getTime();
-    return tCek >= sStart && tCek <= sEnd;
-});
+        if(s.nik !== n) return false;
+        let sStart = new Date(s.tglMulai).setHours(0,0,0,0);
+        let sEnd = new Date(s.tglAkhir).setHours(23,59,59,999);
+        let tCek = new Date(d).getTime();
+        return tCek >= sStart && tCek <= sEnd;
+    });
 
     if(isLocked) {
         // Tampilkan peringatan & matikan tombol
@@ -3280,483 +3158,6 @@ el('satuan-nik').addEventListener('change', window.cekDataAbsenSatuan);
             }
             db.collection("kasbon_log").onSnapshot(() => renderKasbonList());
 
-
-        // ==========================================
-// SCRIPT TAMBAHAN: MODUL REIMBURSEMENT
-// ==========================================
-
-// 1. Preview & Kompresi Foto Struk/Kuitansi
-if(el('reim-file')) {
-    el('reim-file').addEventListener('change', function(e) {
-        const file = e.target.files[0]; if(!file) return;
-        const canvas = el('reim-canvas'); const ctx = canvas.getContext('2d');
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const img = new Image();
-            img.onload = function() {
-                const MAX_WIDTH = 600; let scaleSize = MAX_WIDTH / img.width; if(scaleSize > 1) scaleSize = 1;
-                canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            };
-            img.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-// 2. Submit Pengajuan Klaim Karyawan (ESS)
-if (el('form-ess-reimburse')) {
-    el('form-ess-reimburse').addEventListener('submit', async e => {
-        e.preventDefault();
-        // Menggunakan e.submitter lebih aman daripada mengambil dari ID
-        const btn = e.submitter; 
-        btn.disabled = true; btn.innerText = "Mengirim...";
-
-        let base64Foto = '';
-        const canvas = el('reim-canvas');
-        if (canvas && canvas.width > 0) base64Foto = canvas.toDataURL('image/jpeg', 0.6);
-
-        // Tambahan keamanan data dengan optional chaining (?.)
-        const dataKlaim = {
-            nik: window.currentUserData?.nik || '-',
-            nama: window.currentUserData?.nama || '-',
-            tanggal: new Date().toISOString(), // Waktu submit sistem
-            tanggalNota: el('reim-tgl-nota').value,
-            jenis: el('reim-jenis').value,
-            nominal: parseFloat(el('reim-nominal').value) || 0,
-            keterangan: el('reim-ket').value,
-            fotoBukti: base64Foto,
-            status: "Pending" // Masuk antrean HRD
-        };
-
-        try {
-            await db.collection("reimbursements").add(dataKlaim);
-            window.showToast("Pengajuan Reimburse berhasil dikirim ke HRD!");
-            el('form-ess-reimburse').reset();
-            if (canvas) { canvas.width = 0; canvas.height = 0; }
-        } catch(err) {
-            window.showToast("Gagal mengirim data klaim.", "error");
-        } finally {
-            btn.disabled = false; btn.innerText = "Kirim Pengajuan Klaim";
-        }
-    });
-}
-
-// 3. Render Tabel Riwayat Klaim Karyawan (ESS)
-window.renderESSReimburseLog = () => {
-    // Tambahan pengaman: Hanya render jika login sebagai karyawan
-    if(window.loginMode !== 'karyawan' || !window.currentUserData) return;
-    
-    let tbody = '';
-    db_reimburse.filter(r => r.nik === window.currentUserData.nik).forEach(r => {
-        let stBadge = r.status === 'Pending' ? 'badge-pending' : (r.status === 'Disetujui' ? 'badge-success' : 'badge-danger');
-        
-        // Tambahkan window. pada pemanggilan fungsi
-        let btnBukti = r.fotoBukti ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; border-color:var(--info); color:var(--info);" onclick="window.bukaViewerFoto('${r.fotoBukti}')">🔍 Cek Bukti</button>` : '-';
-        
-        // Tambahan fitur "Batal" jika masih pending
-        let actionBtn = r.status === 'Pending' ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusPengajuan('reimbursements', '${r.id}')">Batal</button>` : '-';
-
-        tbody += `<tr>
-            <td>${new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
-            <td><b>${r.jenis}</b><br><small>${r.keterangan}</small><br><small style="color:var(--primary);">Tgl Nota: ${r.tanggalNota||'-'}</small></td>
-            <td>Rp ${(r.nominal||0).toLocaleString('id-ID')}</td>
-            <td>${btnBukti}</td>
-            <td><span class="badge ${stBadge}">${r.status}</span></td>
-            <td style="text-align:center;">${actionBtn}</td>
-        </tr>`;
-    });
-    
-    if(el('tbody-ess-reimburse-log')) {
-        // Ubah colspan menjadi 6 untuk mengakomodasi kolom Aksi
-        el('tbody-ess-reimburse-log').innerHTML = tbody || '<tr><td colspan="6" align="center">Belum ada riwayat klaim.</td></tr>';
-    }
-};
-
-// 4. Render Tabel Antrean Klaim di Dashboard Admin
-window.renderAdminReimburse = () => {
-    // Tambahan pengaman: Hanya render jika login sebagai admin
-    if(window.loginMode !== 'admin') return;
-    
-    let tbody = '';
-    let pendingR = db_reimburse.filter(r => r.status === 'Pending');
-    let historyR = db_reimburse.filter(r => r.status !== 'Pending').slice(0, 30); // Limit 30 riwayat terakhir
-    let allToShow = [...pendingR, ...historyR];
-
-    allToShow.forEach(r => {
-        // Tambahkan window. pada pemanggilan fungsi
-        let btnBukti = r.fotoBukti ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; border-color:var(--info); color:var(--info);" onclick="window.bukaViewerFoto('${r.fotoBukti}')">🔍 Cek Bukti</button>` : '-';
-        
-        let aksi = r.status === 'Pending' ? `
-            <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.prosesReimburse('${r.id}', 'Disetujui')">Setujui</button>
-            <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.prosesReimburse('${r.id}', 'Ditolak')">Tolak</button>
-        ` : `<span class="badge ${r.status==='Disetujui'?'badge-success':'badge-danger'}">${r.status}</span>`;
-
-        tbody += `<tr>
-            <td><b>${r.nama}</b><br><small>${new Date(r.tanggal).toLocaleDateString('id-ID')}</small></td>
-            <td><b>${r.jenis}</b><br><small>${r.keterangan}</small><br><small style="color:var(--primary);">Tgl Nota: ${r.tanggalNota||'-'}</small></td>
-            <td style="color:var(--primary); font-weight:bold;">Rp ${(r.nominal||0).toLocaleString('id-ID')}</td>
-            <td>${btnBukti}</td>
-            <td style="text-align:center; display:flex; gap:5px; justify-content:center;">${aksi}</td>
-        </tr>`;
-    });
-    
-    if(el('tbody-admin-reimburse')) {
-        el('tbody-admin-reimburse').innerHTML = tbody || '<tr><td colspan="5" align="center">Tidak ada antrean / data klaim.</td></tr>';
-    }
-};
-
-// 5. Fungsi Admin Memproses Persetujuan Klaim
-window.prosesReimburse = async (id, status) => {
-    // Tambahkan window. pada showConfirm dan showToast
-    const ok = await window.showConfirm(`Konfirmasi ${status}?`, `Yakin ingin memproses klaim ini menjadi ${status}?`, "Ya, Proses");
-    if(ok) {
-        try {
-            await db.collection("reimbursements").doc(id).update({ status: status });
-            window.showToast(`Klaim berhasil ${status}!`);
-        } catch(err) {
-            window.showToast("Gagal memproses klaim.", "error");
-        }
-    }
-};
-
-// 6. Fungsi Admin Input Klaim Manual (REVISI: Status menjadi Pending)
-if(el('form-reimburse-admin')) {
-    el('form-reimburse-admin').addEventListener('submit', async e => {
-        e.preventDefault();
-        const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
-        const nik = el('admin-reim-nik').value;
-        const emp = db_karyawan.find(k => k.nik === nik);
-
-        const data = {
-            nik: nik,
-            nama: emp ? emp.nama : "Unknown",
-            tanggal: new Date().toISOString(),
-            tanggalNota: el('admin-reim-tgl-nota').value,
-            jenis: el('admin-reim-jenis').value,
-            nominal: parseFloat(el('admin-reim-nominal').value) || 0,
-            keterangan: el('admin-reim-ket').value,
-            status: "Pending", // <-- Diubah: Sekarang masuk antrean Pending terlebih dahulu
-            fotoBukti: ""
-        };
-
-        try {
-            await db.collection("reimbursements").add(data);
-            showToast("Reimburse berhasil dimasukkan ke antrean (Pending)!");
-            el('form-reimburse-admin').reset();
-        } catch(err) {
-            showToast("Gagal menambah klaim.", "error");
-        } finally {
-            btn.disabled = false; btn.innerText = "Masukkan ke Antrean";
-        }
-    });
-}
-
-// 7. Render Data Reimburse di Halaman Detail Karyawan (Menu Admin)
-window.renderDetailReimburse = () => {
-    if(!currentDetailNik) return;
-    let tbody = '';
-    db_reimburse.filter(r => r.nik === currentDetailNik).forEach(r => {
-        let stBadge = r.status==='Pending'?'badge-pending':(r.status==='Disetujui'?'badge-success':'badge-danger');
-        tbody += `<tr>
-            <td>${r.tanggalNota||'-'}<br><small>Submit: ${new Date(r.tanggal).toLocaleDateString('id-ID')}</small></td>
-            <td><b>${r.jenis}</b></td>
-            <td><small>${r.keterangan}</small></td>
-            <td style="color:var(--primary); font-weight:bold;">Rp ${(r.nominal||0).toLocaleString('id-ID')}</td>
-            <td><span class="badge ${stBadge}">${r.status}</span></td>
-        </tr>`;
-    });
-    if(el('tbody-det-reimburse')) {
-        el('tbody-det-reimburse').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada riwayat reimburse</td></tr>';
-    }
-};
-
-// ==========================================
-// 1. FUNGSI GLOBAL: HAPUS DATA (Bisa dipakai Izin, Kasbon, Reimburse)
-// ==========================================
-window.hapusDokumen = async (koleksi, id) => {
-    // Gunakan showConfirm jika Bapak punya modal konfirmasi custom, 
-    // atau gunakan confirm bawaan JS di bawah ini:
-    const ok = confirm("Yakin ingin menghapus data ini secara permanen? Tindakan ini tidak bisa dibatalkan.");
-    if(ok) {
-        try {
-            await db.collection(koleksi).doc(id).delete();
-            showToast("Data berhasil dihapus dari sistem!");
-            // Note: Firebase onSnapshot biasanya akan otomatis memicu render ulang UI
-        } catch(err) {
-            showToast("Gagal menghapus data.", "error");
-        }
-    }
-};
-
-// ==========================================
-// 2. FUNGSI EDIT / REVISI DATA
-// ==========================================
-// Pendekatan tercepat: menggunakan Prompt untuk revisi langsung.
-// Untuk tampilan yang lebih "modern", Bapak bisa menghubungkan 
-// fungsi ini untuk membuka Modal Form Edit di HTML nantinya.
-
-window.editDataReimburse = async (id, nominalLama, ketLama) => {
-    const nominalBaru = prompt("Revisi Nominal (Rp):", nominalLama);
-    if (nominalBaru === null) return; // Dibatalkan admin
-    
-    const ketBaru = prompt("Revisi Keterangan:", ketLama);
-    if (ketBaru === null) return; // Dibatalkan admin
-
-    try {
-        await db.collection("reimbursements").doc(id).update({
-            nominal: parseFloat(nominalBaru) || 0,
-            keterangan: ketBaru
-        });
-        showToast("Data Reimburse berhasil direvisi!");
-    } catch(err) {
-        showToast("Gagal merevisi data.", "error");
-    }
-};
-
-window.editDataIzin = async (id, tglMulaiLama, tglSelesaiLama) => {
-    const tglMulaiBaru = prompt("Revisi Tanggal Mulai (YYYY-MM-DD):", tglMulaiLama);
-    if (tglMulaiBaru === null) return; // Dibatalkan admin
-    
-    // Karena tglSelesai bisa kosong jika izin hanya 1 hari
-    const tglSelesaiBaru = prompt("Revisi Tanggal Selesai (Opsional, YYYY-MM-DD):", tglSelesaiLama || "");
-    if (tglSelesaiBaru === null) return;
-
-    // Gabungkan kembali menjadi format 'tglRaw' yang dibaca oleh sistem
-    let tglRawBaru = tglSelesaiBaru ? `${tglMulaiBaru} to ${tglSelesaiBaru}` : tglMulaiBaru;
-
-    try {
-        // PERBAIKAN: Gunakan koleksi pengajuan_izin, bukan izin
-        await db.collection("pengajuan_izin").doc(id).update({
-            tglRaw: tglRawBaru
-        });
-        showToast("Tanggal Izin/Sakit berhasil direvisi!");
-    } catch(err) {
-        showToast("Gagal merevisi data izin.", "error");
-    }
-};
-
-
-// ==========================================
-// 3. RENDER TABEL: ANTREAN PERSETUJUAN (PENDING)
-// ==========================================
-window.renderAdminReimbursePending = () => {
-    let tbody = '';
-    // Hanya ambil yang Pending
-    let pendingR = db_reimburse.filter(r => r.status === 'Pending');
-
-    pendingR.forEach(r => {
-        let btnBukti = r.fotoBukti ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; border-color:var(--info); color:var(--info);" onclick="bukaViewerFoto('${r.fotoBukti}')">🔍 Cek Bukti</button>` : '-';
-        
-        // Tombol Aksi Lengkap: Setujui, Tolak, Edit, Hapus
-        let aksi = `
-            <div style="display:flex; gap:5px; justify-content:center; flex-wrap:wrap;">
-                <button class="btn-outline" style="padding:4px 8px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.prosesReimburse('${r.id}', 'Disetujui')">Setujui</button>
-                <button class="btn-outline" style="padding:4px 8px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.prosesReimburse('${r.id}', 'Ditolak')">Tolak</button>
-                <button class="btn-outline" style="padding:4px 8px; font-size:11px; border-color:var(--warning); color:var(--warning);" onclick="window.editDataReimburse('${r.id}', '${r.nominal}', '${r.keterangan}')">Edit</button>
-                <button class="btn-outline" style="padding:4px 8px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.hapusDokumen('reimbursements', '${r.id}')">Hapus</button>
-            </div>
-        `;
-
-        tbody += `<tr>
-            <td><b>${r.nama}</b><br><small>${new Date(r.tanggal).toLocaleDateString('id-ID')}</small></td>
-            <td><b>${r.jenis}</b><br><small>${r.keterangan}</small></td>
-            <td style="color:var(--primary); font-weight:bold;">Rp ${(r.nominal||0).toLocaleString('id-ID')}</td>
-            <td>${btnBukti}</td>
-            <td style="text-align:center;">${aksi}</td>
-        </tr>`;
-    });
-    
-    // Pastikan di HTML ada <tbody id="tbody-admin-reimburse-pending">
-    if(el('tbody-admin-reimburse-pending')) {
-        el('tbody-admin-reimburse-pending').innerHTML = tbody || '<tr><td colspan="5" align="center">Tidak ada antrean klaim.</td></tr>';
-    }
-};
-
-
-// ==========================================
-// 4. RENDER TABEL: RIWAYAT / ARSIP (DISETUJUI & DITOLAK)
-// ==========================================
-window.renderAdminReimburseHistory = () => {
-    let tbody = '';
-    // Ambil yang BUKAN Pending (Disetujui / Ditolak)
-    let historyR = db_reimburse.filter(r => r.status !== 'Pending').slice(0, 50); // Limit 50 data terakhir agar ringan
-
-    historyR.forEach(r => {
-        let btnBukti = r.fotoBukti ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; border-color:var(--info); color:var(--info);" onclick="bukaViewerFoto('${r.fotoBukti}')">🔍 Cek Bukti</button>` : '-';
-        
-        let stBadge = r.status === 'Disetujui' ? 'badge-success' : 'badge-danger';
-        
-        // Aksi untuk Riwayat: Hanya Edit dan Hapus
-        let aksi = `
-            <div style="display:flex; gap:5px; justify-content:center;">
-                <button class="btn-outline" style="padding:4px 8px; font-size:11px; border-color:var(--warning); color:var(--warning);" onclick="window.editDataReimburse('${r.id}', '${r.nominal}', '${r.keterangan}')">Edit</button>
-                <button class="btn-outline" style="padding:4px 8px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.hapusDokumen('reimbursements', '${r.id}')">Hapus</button>
-            </div>
-        `;
-
-        tbody += `<tr>
-            <td><b>${r.nama}</b><br><small>${new Date(r.tanggal).toLocaleDateString('id-ID')}</small></td>
-            <td><b>${r.jenis}</b><br><small>${r.keterangan}</small></td>
-            <td style="color:var(--primary); font-weight:bold;">Rp ${(r.nominal||0).toLocaleString('id-ID')}</td>
-            <td><span class="badge ${stBadge}">${r.status}</span></td>
-            <td style="text-align:center;">${aksi}</td>
-        </tr>`;
-    });
-    
-    // Pastikan di HTML ada <tbody id="tbody-admin-reimburse-history">
-    if(el('tbody-admin-reimburse-history')) {
-        el('tbody-admin-reimburse-history').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada riwayat arsip.</td></tr>';
-    }
-};
-
-// ==========================================
-        // MODUL REIMBURSEMENT (KLAIM DANA)
-        // ==========================================
-
-        // 1. Fungsi Tampil Riwayat Reimburse (Karyawan / ESS)
-        window.renderESSReimburseLog = () => {
-            let tbody = '';
-            db_reimburse.filter(r => r.nik === currentUserData.nik).forEach(r => {
-                let stBadge = r.status === 'Pending' ? 'badge-pending' : (r.status === 'Disetujui' ? 'badge-success' : 'badge-danger');
-                let btnBukti = r.fotoBukti ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; border-color:var(--info); color:var(--info);" onclick="bukaViewerFoto('${r.fotoBukti}')">🔍 Cek Bukti</button>` : '-';
-                
-                // Tombol batal hanya muncul jika masih Pending
-                let actionBtn = r.status === 'Pending' ? 
-                    `<button class="btn-outline" style="padding:4px 8px; font-size:10px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusPengajuan('reimbursements', '${r.id}')">Batal/Hapus</button>` : '-';
-
-                tbody += `<tr>
-                    <td>${new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
-                    <td><b>${r.jenis}</b><br><small>${r.keterangan}</small></td>
-                    <td style="color:var(--primary); font-weight:700;">Rp ${r.nominal.toLocaleString('id-ID')}</td>
-                    <td>${btnBukti}</td>
-                    <td><span class="badge ${stBadge}">${r.status}</span></td>
-                    <td style="text-align:center;">${actionBtn}</td>
-                </tr>`;
-            });
-            if(el('tbody-ess-reimburse-log')) el('tbody-ess-reimburse-log').innerHTML = tbody || '<tr><td colspan="6" align="center">Belum ada riwayat klaim/reimburse.</td></tr>';
-        };
-
-        // 2. Fungsi Tampil Antrean Reimburse (Admin)
-        window.renderAdminReimburse = () => {
-            let tbody = '';
-            db_reimburse.forEach(r => {
-                let stBadge = r.status === 'Pending' ? 'badge-pending' : (r.status === 'Disetujui' ? 'badge-success' : 'badge-danger');
-                let btnBukti = r.fotoBukti ? `<button class="btn-outline" style="padding:4px 8px; font-size:10px; border-color:var(--info); color:var(--info); margin-top:5px;" onclick="bukaViewerFoto('${r.fotoBukti}')">🔍 Cek Bukti</button>` : '-';
-
-                let actionBtn = '';
-                if(r.status === 'Pending') {
-                    actionBtn = `
-                        <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.prosesReimburse('${r.id}', 'Disetujui')">Setujui</button> 
-                        <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.prosesReimburse('${r.id}', 'Ditolak')">Tolak</button>
-                    `;
-                } else {
-                    actionBtn = `<button class="btn-outline" style="padding:4px 8px; font-size:10px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusPengajuan('reimbursements', '${r.id}')">Hapus Riwayat</button>`;
-                }
-
-                tbody += `<tr>
-                    <td><b>${r.nama}</b><br><small>${new Date(r.tanggal).toLocaleDateString('id-ID')}</small></td>
-                    <td><b>${r.jenis}</b><br><small>${r.keterangan}</small></td>
-                    <td style="color:var(--danger); font-weight:700;">Rp ${r.nominal.toLocaleString('id-ID')}</td>
-                    <td>${btnBukti}</td>
-                    <td style="text-align:center;">
-                        ${r.status === 'Pending' ? actionBtn : `<span class="badge ${stBadge}">${r.status}</span><div style="margin-top:6px;">${actionBtn}</div>`}
-                    </td>
-                </tr>`;
-            });
-            if(el('tbody-admin-reimburse')) el('tbody-admin-reimburse').innerHTML = tbody || '<tr><td colspan="5" align="center">Belum ada pengajuan klaim.</td></tr>';
-        };
-
-        // 3. Fungsi Admin Proses Setuju/Tolak Reimburse
-        window.prosesReimburse = async (id, status) => {
-            const ok = await showConfirm(`Konfirmasi ${status}?`, `Yakin ingin memproses pengajuan klaim ini menjadi ${status}?`, "Ya, Proses");
-            if(ok) {
-                await db.collection("reimbursements").doc(id).update({ status: status });
-                showToast(`Klaim berhasil ${status}!`);
-            }
-        };
-
-        // 4. Script Preview & Kompres Foto Bukti Nota
-        if(el('reim-file')) {
-            el('reim-file').addEventListener('change', function(e) {
-                const file = e.target.files[0]; if(!file) return;
-                const canvas = el('reim-canvas'); const ctx = canvas.getContext('2d');
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const MAX_WIDTH = 600; let scaleSize = MAX_WIDTH / img.width; if(scaleSize > 1) scaleSize = 1;
-                        canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // 5. Submit Form Klaim Karyawan (ESS)
-        if(el('form-ess-reimburse')) {
-            el('form-ess-reimburse').addEventListener('submit', async e => {
-                e.preventDefault();
-                const btn = el('btn-submit-reimburse'); btn.disabled = true; btn.innerText = "Mengirim...";
-                
-                // Ambil gambar dari canvas
-                let base64Foto = '';
-                const canvas = el('reim-canvas');
-                if(canvas && canvas.width > 0) base64Foto = canvas.toDataURL('image/jpeg', 0.6);
-
-                try {
-                    await db.collection("reimbursements").add({
-                        nik: currentUserData.nik,
-                        nama: currentUserData.nama,
-                        tanggalNota: el('reim-tgl-nota').value,
-                        jenis: el('reim-jenis').value,
-                        nominal: parseFloat(el('reim-nominal').value),
-                        keterangan: el('reim-ket').value,
-                        fotoBukti: base64Foto,
-                        status: "Pending",
-                        tanggal: new Date().toISOString()
-                    });
-                    showToast("Klaim berhasil diajukan!");
-                    el('form-ess-reimburse').reset();
-                    if(canvas) { canvas.width = 0; canvas.height = 0; } // Bersihkan foto
-                } catch(err) {
-                    showToast("Gagal mengirim klaim.", "error");
-                } finally {
-                    btn.disabled = false; btn.innerText = "Kirim Pengajuan Klaim";
-                }
-            });
-        }
-
-        // 6. Submit Input Klaim Manual oleh Admin
-        if(el('form-reimburse-admin')) {
-            el('form-reimburse-admin').addEventListener('submit', async e => {
-                e.preventDefault();
-                const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
-                const nik = el('admin-reim-nik').value;
-                const emp = db_karyawan.find(k => k.nik === nik);
-                
-                try {
-                    await db.collection("reimbursements").add({
-                        nik: nik,
-                        nama: emp ? emp.nama : "-",
-                        tanggalNota: el('admin-reim-tgl-nota').value,
-                        jenis: el('admin-reim-jenis').value,
-                        nominal: parseFloat(el('admin-reim-nominal').value),
-                        keterangan: el('admin-reim-ket').value,
-                        status: "Disetujui", // Kalau Admin yang input, otomatis disetujui
-                        tanggal: new Date().toISOString()
-                    });
-                    showToast("Reimburse manual berhasil ditambahkan!");
-                    el('form-reimburse-admin').reset();
-                } catch(err) {
-                    showToast("Gagal memproses klaim manual.", "error");
-                } finally {
-                    btn.disabled = false; btn.innerText = "Masukkan ke Antrean";
-                }
-            });
-        }
         // }); // <-- Buka komentar baris ini jika seluruh fungsi JS Anda dibungkus oleh document.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
