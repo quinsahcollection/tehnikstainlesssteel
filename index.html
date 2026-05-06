@@ -958,6 +958,16 @@
                 </div>
                 
                 <div class="card" style="margin-bottom: 25px;">
+                    <h3 class="section-title">Riwayat Pengajuan Cuti & Izin</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Tanggal Input</th><th>Tipe & Durasi</th><th>Rentang Waktu</th><th>Alasan</th><th>Status</th></tr></thead>
+                            <tbody id="tbody-det-izin"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-bottom: 25px;">
                     <h3 class="section-title">Riwayat Reimbursement / Klaim</h3>
                     <div class="table-responsive">
                         <table>
@@ -1613,8 +1623,7 @@
         db.collection("kehadiran").onSnapshot(snap => { db_kehadiran = []; snap.forEach(doc => db_kehadiran.push(doc.data())); renderESSDashboard(); updateAdminDash(); if(currentDetailNik) { renderDetailRekapAbsen(); renderDetailAbsenHistory(); } if(!el('menu-laporan').classList.contains('hidden')) renderLaporan(); });
         db.collection("kasbon_log").orderBy("tanggal", "desc").onSnapshot(snap => { db_kasbon = []; snap.forEach(doc => db_kasbon.push({id: doc.id, ...doc.data()})); updateAdminDash(); renderESSDashboard(); });
         db.collection("slip_gaji").orderBy("tanggalBuat", "desc").onSnapshot(snap => { db_slip = []; snap.forEach(doc => db_slip.push({id: doc.id, ...doc.data()})); renderESSDashboard(); updateAdminDash(); window.renderAllSlips(); if(currentDetailNik) renderDetailSlipGaji();});
-        db.collection("pengajuan_izin").orderBy("waktuSubmit", "desc").onSnapshot(snap => { db_izin = []; snap.forEach(doc => db_izin.push({id: doc.id, ...doc.data()})); updateAdminDash(); renderESSDashboard(); });
-        
+        db.collection("pengajuan_izin").orderBy("waktuSubmit", "desc").onSnapshot(snap => { db_izin = []; snap.forEach(doc => db_izin.push({id: doc.id, ...doc.data()})); updateAdminDash(); renderESSDashboard(); if(currentDetailNik && typeof renderDetailIzin === 'function') renderDetailIzin(); });  
         db.collection("outlets").onSnapshot(snap => { db_outlet = []; snap.forEach(doc => db_outlet.push({id: doc.id, ...doc.data()})); updateAdminDash(); });
         db.collection("master_divisi").onSnapshot(snap => { db_divisi = []; snap.forEach(doc => db_divisi.push({id: doc.id, ...doc.data()})); updateAdminDash(); if(!el('view-setting-master').classList.contains('hidden') && el('master-type').value === 'divisi') window.renderTabelMaster('divisi'); });
         db.collection("master_jabatan").onSnapshot(snap => { db_jabatan = []; snap.forEach(doc => db_jabatan.push({id: doc.id, ...doc.data()})); updateAdminDash(); if(!el('view-setting-master').classList.contains('hidden') && el('master-type').value === 'jabatan') window.renderTabelMaster('jabatan'); });
@@ -2937,7 +2946,7 @@ if(filterBln) {
                 el('det-bonus').innerText = `Rp ${(parseFloat(k.bonusTetap)||0).toLocaleString('id-ID')}`;
                 el('det-alamat').innerText = k.alamat || '-';
                 
-                renderDetailRekapAbsen(); renderDetailAbsenHistory(); renderDetailReimburse(); renderDetailSlipGaji();
+                renderDetailRekapAbsen(); renderDetailAbsenHistory(); renderDetailReimburse(); renderDetailSlipGaji(); renderDetailIzin();
                 window.openMenu('menu-detail-karyawan');
             };
 
@@ -2988,6 +2997,16 @@ if(a.timesheet) {
                     html += `<tr><td><b>${s.periode}</b></td><td style="color:var(--danger)">Rp ${(s.potongan||0).toLocaleString('id-ID')}</td><td style="color:var(--success); font-weight:800;">${s.bersih}</td><td style="text-align:center;"><button class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="window.lihatDetailSlipAdminAtauKaryawan('${s.id}')">Rincian</button></td></tr>`;
                 });
                 el('tbody-det-slip').innerHTML = html || '<tr><td colspan="4" align="center">Tidak ada riwayat slip.</td></tr>';
+            }
+
+            function renderDetailIzin() {
+                if(!currentDetailNik) return;
+                let html = '';
+                db_izin.filter(i => i.nik === currentDetailNik).forEach(i => {
+                    let stBadge = i.status==='Pending'?'badge-pending':(i.status==='Disetujui'?'badge-success':'badge-danger');
+                    html += `<tr><td>${new Date(i.waktuSubmit).toLocaleDateString('id-ID')}</td><td><b>${i.tipe}</b><br><small>${i.durasi}</small></td><td>${i.tglRaw}</td><td><small>${i.alasan}</small></td><td><span class="badge ${stBadge}">${i.status}</span></td></tr>`;
+                });
+                if(el('tbody-det-izin')) el('tbody-det-izin').innerHTML = html || '<tr><td colspan="5" align="center">Belum ada riwayat cuti/izin.</td></tr>';
             }
 
             // MODUL REIMBURSEMENT
