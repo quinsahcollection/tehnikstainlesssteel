@@ -2211,6 +2211,13 @@ el('form-ess-izin').addEventListener('submit', async e => {
             if(el('notif-dot-kasbon')) el('notif-dot-kasbon').style.display = pendingReq.length > 0 ? 'block' : 'none';
             if(el('notif-dot-reimburse')) el('notif-dot-reimburse').style.display = pendingReim.length > 0 ? 'block' : 'none';
 
+            // RENDER ARSIP TRANSAKSI KASBON (ADMIN)
+            let tbodyKasbonList = '';
+            db_kasbon.forEach(k => {
+            tbodyKasbonList += `<tr><td>${k.nama}</td><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td><span class="badge badge-info">${k.jenis}</span></td><td>Rp ${k.nominal.toLocaleString('id-ID')}</td><td>${k.keterangan}</td><td style="text-align:center;"><button class="btn-outline" style="padding:4px 8px; font-size:10px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusPengajuan('kasbon_log', '${k.id}')">Hapus Data</button></td></tr>`;
+            });
+            if(el('tbody-kasbon-list')) el('tbody-kasbon-list').innerHTML = tbodyKasbonList || '<tr><td colspan="6" align="center">Belum ada transaksi kasbon.</td></tr>';
+            
             // RENDER TABEL APPROVAL PENDING AGAR ADMIN BISA PROSES & HILANGKAN DOT
             let tbodyKasbonApp = '';
             pendingReq.forEach(k => { tbodyKasbonApp += `<tr><td><b>${k.nama}</b><br><small>${k.nik}</small></td><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td><b style="color:var(--danger)">Rp ${k.nominal.toLocaleString('id-ID')}</b><br><small>${k.keterangan}</small></td><td style="text-align:center;"><button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--success); color:var(--success);" onclick="window.prosesKasbon('${k.id}', 'Disetujui', '${k.nik}', ${k.nominal})">Setujui</button> <button class="btn-outline" style="padding:5px 10px; font-size:11px; border-color:var(--danger); color:var(--danger);" onclick="window.prosesKasbon('${k.id}', 'Ditolak', '${k.nik}', 0)">Tolak</button></td></tr>`; });
