@@ -2408,26 +2408,38 @@ el('form-ess-izin').addEventListener('submit', async e => {
         el('tbody-massal').addEventListener('change', function(e) { if(e.target.classList.contains('m-status')) { const r = e.target.closest('tr'); aturDisableKehadiran(e.target.value, r.querySelector('.m-lk'), r.querySelector('.m-mk'), r.querySelector('.m-lembur'), r.querySelector('.wrap-m-lk'), r.querySelector('.wrap-m-mk')); } });
 
         window.approveIzinReq = async (btnDOM, id, nik, tipe, durasi, tglRaw) => { 
-            btnDOM.disabled = true; let dates = []; 
-            if(tglRaw.includes(' to ')) { 
-                let parts = tglRaw.split(' to '); let d1 = new Date(parts[0]); let d2 = new Date(parts[1]); 
-                while(d1 <= d2) { 
-                    let safeDateStr = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
-                    dates.push(safeDateStr); 
-                    d1.setDate(d1.getDate()+1); 
-                } 
-            } else { dates.push(tglRaw); } 
-            
-            let finalStatus = tipe; if(tipe === 'Izin') finalStatus = (durasi === 'Setengah Hari') ? 'Izin 1/2 Hari' : 'Izin'; 
-            let batch = db.batch(); 
-            dates.forEach(d => { 
-                let ref = db.collection('kehadiran').doc(nik + '_' + d); 
-                batch.set(ref, { date: d, nik: nik, status: finalStatus, shift: 'Pagi', lk: false, mk: false, lembur: 0, catatan: `Approval: ${tipe}` }, {merge: true}); 
-            }); 
-            batch.update(db.collection('pengajuan_izin').doc(id), {status: 'Disetujui'}); 
-            if(tipe === 'Cuti') { batch.update(db.collection('karyawan').doc(nik), {sisaCuti: firebase.firestore.FieldValue.increment(-dates.length)}); } 
-            try { await batch.commit(); showToast("Pengajuan disetujui!"); } catch(e) { showToast("Gagal menyetujui!", "error"); btnDOM.disabled = false; } 
-        };
+    btnDOM.disabled = true; let dates = []; 
+    if(tglRaw.includes(' to ')) { 
+        let parts = tglRaw.split(' to '); 
+        // Tambahkan T12:00:00 agar tidak meleset zona waktu saat dilooping
+        let d1 = new Date(parts[0] + "T12:00:00"); let d2 = new Date(parts[1] + "T12:00:00"); 
+        while(d1 <= d2) { 
+            let safeDateStr = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
+            dates.push(safeDateStr); 
+            d1.setDate(d1.getDate()+1); 
+        } 
+    } else { dates.push(tglRaw); } 
+
+    // BLOKIR JIKA CUTI MINUS
+    if(tipe === 'Cuti') {
+        const emp = db_karyawan.find(k => k.nik === nik);
+        if(!emp || (emp.sisaCuti || 0) < dates.length) {
+            showToast(`Ditolak: Sisa cuti (${emp ? emp.sisaCuti : 0} Hari) tidak cukup untuk pengajuan ${dates.length} hari!`, "error");
+            btnDOM.disabled = false;
+            return;
+        }
+    }
+    
+    let finalStatus = tipe; if(tipe === 'Izin') finalStatus = (durasi === 'Setengah Hari') ? 'Izin 1/2 Hari' : 'Izin'; 
+    let batch = db.batch(); 
+    dates.forEach(d => { 
+        let ref = db.collection('kehadiran').doc(nik + '_' + d); 
+        batch.set(ref, { date: d, nik: nik, status: finalStatus, shift: 'Pagi', lk: false, mk: false, lembur: 0, catatan: `Approval: ${tipe}` }, {merge: true}); 
+    }); 
+    batch.update(db.collection('pengajuan_izin').doc(id), {status: 'Disetujui'}); 
+    if(tipe === 'Cuti') { batch.update(db.collection('karyawan').doc(nik), {sisaCuti: firebase.firestore.FieldValue.increment(-dates.length)}); } 
+    try { await batch.commit(); showToast("Pengajuan disetujui!"); } catch(e) { showToast("Gagal menyetujui!", "error"); btnDOM.disabled = false; } 
+};
         window.rejectIzinReq = async (btnDOM, id) => { btnDOM.disabled = true; await db.collection("pengajuan_izin").doc(id).update({ status: "Ditolak" }); showToast("Pengajuan ditolak."); };
 
         window.prosesKasbon = async (id, status, nik, nom) => {
