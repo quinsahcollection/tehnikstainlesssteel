@@ -586,7 +586,7 @@
                 </div>
                 <div class="card">
                     <h3 class="section-title">Riwayat Pengajuan Anda</h3>
-                    <div class="table-responsive"><table><thead><tr><th>Tanggal Input</th><th>Tipe & Durasi</th><th>Rentang Waktu</th><th>Alasan</th><th>Status HRD</th></tr></thead><tbody id="tbody-ess-izin-log"></tbody></table></div>
+                    <div class="table-responsive"><table><thead><tr><th>Tanggal Input</th><th>Tipe & Durasi</th><th>Rentang Waktu</th><th>Alasan</th><th>Status HRD</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-ess-izin-log"></tbody></table></div>
                 </div>
             </div>
 
@@ -603,7 +603,7 @@
         </div>
     </div>
                 <div class="card"><h3 class="section-title">Ajukan Kasbon (Pinjaman)</h3><form id="form-ess-kasbon"><div class="form-row"><div class="form-group"><label>Nominal Pengajuan (Rp)</label><input type="number" id="ess-req-nominal" required min="10000" placeholder="Misal: 500000"></div><div class="form-group"><label>Alasan / Keperluan</label><input type="text" id="ess-req-ket" required placeholder="Jelaskan kebutuhan Anda"></div></div><div style="text-align: right;"><button type="submit" class="btn">Ajukan ke HRD</button></div></form></div>
-                <div class="card"><h3 class="section-title">Status Pengajuan Kasbon</h3><div class="table-responsive"><table><thead><tr><th>Tanggal</th><th>Nominal</th><th>Keterangan</th><th>Status</th></tr></thead><tbody id="tbody-ess-kasbon-log"></tbody></table></div></div>
+                <div class="card"><h3 class="section-title">Status Pengajuan Kasbon</h3><div class="table-responsive"><table><thead><tr><th>Tanggal</th><th>Nominal</th><th>Keterangan</th><th>Status</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-ess-kasbon-log"></tbody></table></div></div>
             </div>
 
             <div id="menu-ess-slip" class="menu-content hidden">
@@ -1242,7 +1242,7 @@
                     <h3 class="section-title">Riwayat Klaim Anda</h3>
                     <div class="table-responsive">
                         <table>
-                            <thead><tr><th>Tanggal Input</th><th>Jenis & Keterangan</th><th>Nominal</th><th>Bukti</th><th>Status HRD</th></tr></thead>
+                            <thead><tr><th>Tanggal Input</th><th>Jenis & Keterangan</th><th>Nominal</th><th>Bukti</th><th>Status HRD</th><th style="text-align:center;">Aksi</th></tr></thead>
                             <tbody id="tbody-ess-reimburse-log"></tbody>
                         </table>
                     </div>
@@ -1871,7 +1871,18 @@
         window.hapusPengumuman = async (id) => { const ok = await showConfirm("Hapus Pengumuman?", "Data akan dihapus permanen dari history.", "Hapus", true); if(ok) { await db.collection("pengumuman").doc(id).delete(); showToast("Pengumuman dihapus!"); } };
         window.ubahStatusPengumuman = async (id, currentStatus) => { const newStatus = currentStatus === 'Aktif' ? 'Draft' : 'Aktif'; await db.collection("pengumuman").doc(id).update({status: newStatus}); showToast(`Status diubah menjadi ${newStatus}!`); };
 
-
+        // FUNGSI GLOBAL UNTUK MENGHAPUS PENGAJUAN (Bisa dipakai Admin & Karyawan)
+window.hapusPengajuan = async (koleksiTarget, docId) => {
+    const ok = await showConfirm("Batalkan/Hapus Pengajuan?", "Apakah Anda yakin ingin menghapus data ini secara permanen?", "Ya, Hapus", true);
+    if(ok) {
+        try {
+            await db.collection(koleksiTarget).doc(docId).delete();
+            showToast("Data berhasil dihapus!");
+        } catch (error) {
+            showToast("Gagal menghapus data.", "error");
+        }
+    }
+};
         // ==========================================
         // MODUL 1: ESS (DASHBOARD, CAMERA CHECK-IN/OUT)
         // ==========================================
@@ -1911,10 +1922,33 @@ if(el('ess-info-sisa-kasbon')) el('ess-info-sisa-kasbon').innerText = "Rp " + (p
             });
             el('tbody-ess-kehadiran').innerHTML = tbodyAbs || '<tr><td colspan="4" align="center">Belum ada absen tercatat</td></tr>';
 
-            let tbodyKas = ''; db_kasbon.filter(k => k.nik === nik).slice(0, 10).forEach(k => { let b = k.status==='Pending' ? 'badge-pending' : (k.status==='Disetujui'||k.jenis==='Potongan Gaji' ? 'badge-success' : 'badge-danger'); let stTxt = k.status || (k.jenis==='Potongan Gaji'?'Lunas':'Selesai'); tbodyKas += `<tr><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td>Rp ${k.nominal.toLocaleString('id-ID')}</td><td><small>${k.keterangan}</small></td><td><span class="badge ${b}">${stTxt}</span></td></tr>`; }); el('tbody-ess-kasbon-log').innerHTML = tbodyKas || '<tr><td colspan="4" align="center">Kosong</td></tr>';
+            // --- RIWAYAT KASBON KARYAWAN ---
+let tbodyKas = ''; 
+db_kasbon.filter(k => k.nik === nik).slice(0, 10).forEach(k => { 
+    let b = k.status==='Pending' ? 'badge-pending' : (k.status==='Disetujui'||k.jenis==='Potongan Gaji' ? 'badge-success' : 'badge-danger'); 
+    let stTxt = k.status || (k.jenis==='Potongan Gaji'?'Lunas':'Selesai'); 
+    
+    // Tombol Aksi (Hanya muncul jika Pending)
+    let actionBtn = k.status === 'Pending' ? 
+        `<button class="btn-outline" style="padding:4px 8px; font-size:10px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusPengajuan('kasbon_log', '${k.id}')">Batal/Hapus</button>` : '-';
+        
+    tbodyKas += `<tr><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td>Rp ${k.nominal.toLocaleString('id-ID')}</td><td><small>${k.keterangan}</small></td><td><span class="badge ${b}">${stTxt}</span></td><td style="text-align:center;">${actionBtn}</td></tr>`; 
+}); 
+el('tbody-ess-kasbon-log').innerHTML = tbodyKas || '<tr><td colspan="5" align="center">Kosong</td></tr>';
             let tbodySlip = ''; db_slip.filter(s => s.nik === nik).forEach(s => { tbodySlip += `<tr><td><b>${s.periode}</b></td><td style="color:var(--success); font-weight:800;">${s.bersih}</td><td><button class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="lihatDetailSlipAdminAtauKaryawan('${s.id}')">Rincian</button></td></tr>`; }); el('tbody-ess-slip').innerHTML = tbodySlip || '<tr><td colspan="3" align="center">Kosong</td></tr>';
-            let tbodyIzin = ''; db_izin.filter(i => i.nik === nik).forEach(i => { let stBadge = i.status==='Pending'?'badge-pending':(i.status==='Disetujui'?'badge-success':'badge-danger'); tbodyIzin += `<tr><td>${new Date(i.waktuSubmit).toLocaleDateString('id-ID')}</td><td><b>${i.tipe}</b><br><small>${i.durasi}</small></td><td>${i.tglRaw}</td><td><small>${i.alasan}</small></td><td><span class="badge ${stBadge}">${i.status}</span></td></tr>`; }); el('tbody-ess-izin-log').innerHTML = tbodyIzin || '<tr><td colspan="5" align="center">Belum ada riwayat</td></tr>';
-        }
+// --- RIWAYAT IZIN/CUTI KARYAWAN ---
+let tbodyIzin = ''; 
+db_izin.filter(i => i.nik === nik).forEach(i => { 
+    let stBadge = i.status==='Pending'?'badge-pending':(i.status==='Disetujui'?'badge-success':'badge-danger'); 
+    
+    // Tombol Aksi (Hanya muncul jika Pending)
+    let actionBtn = i.status === 'Pending' ? 
+        `<button class="btn-outline" style="padding:4px 8px; font-size:10px; color:var(--danger); border-color:var(--danger);" onclick="window.hapusPengajuan('pengajuan_izin', '${i.id}')">Batal/Hapus</button>` : '-';
+        
+    tbodyIzin += `<tr><td>${new Date(i.waktuSubmit).toLocaleDateString('id-ID')}</td><td><b>${i.tipe}</b><br><small>${i.durasi}</small></td><td>${i.tglRaw}</td><td><small>${i.alasan}</small></td><td><span class="badge ${stBadge}">${i.status}</span></td><td style="text-align:center;">${actionBtn}</td></tr>`; 
+}); 
+el('tbody-ess-izin-log').innerHTML = tbodyIzin || '<tr><td colspan="6" align="center">Belum ada riwayat</td></tr>';
+}
 
         let gpsWatcher = null;
         async function startCamera() { 
