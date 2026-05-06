@@ -3127,6 +3127,9 @@ el('form-izin-admin').addEventListener('submit', async e => {
     let tglRaw = '';
     if(durasi === 'Beberapa Hari') {
         tglRaw = el('admin-izin-tgl-range').value;
+        // Normalisasi kata penghubung rentang
+        tglRaw = tglRaw.replace(' sampai ', ' to ').replace(' s.d. ', ' to ');
+        
         if(!tglRaw.includes(' to ') && tglRaw.length === 10) tglRaw = `${tglRaw} to ${tglRaw}`;
         if(!tglRaw.includes(' to ')) return showToast('Pilih rentang dengan benar!', 'error');
     } else {
