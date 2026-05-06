@@ -2119,13 +2119,15 @@ el('form-ess-izin').addEventListener('submit', async e => {
     
     let tglRaw = ''; 
     if(durasi === 'Beberapa Hari') { 
-        tglRaw = el('ess-izin-tgl-range').value; 
+        tglRaw = el('ess-izin-tgl-range').value;
+        if(!tglRaw || tglRaw.trim() === '') return showToast('Pilih rentang tanggal!', 'error');
         if(!tglRaw.includes(' to ')) {
             if(tglRaw.length === 10) tglRaw = `${tglRaw} to ${tglRaw}`;
-            else return showToast('Pilih rentang dengan benar!', 'error'); 
+            else return showToast('Pilih rentang tanggal dengan benar (Tgl Mulai & Akhir)!', 'error'); 
         }
     } else { 
         tglRaw = el('ess-izin-tgl-single').value; 
+        if(!tglRaw) return showToast('Pilih tanggal!', 'error');
     }
     
     const btn = e.submitter; btn.disabled = true; btn.innerText = "Mengirim..."; 
