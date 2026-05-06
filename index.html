@@ -2956,23 +2956,27 @@ if(filterBln) {
             }
 
             // MODUL REIMBURSEMENT
-            if(el('reim-file')) {
-                el('reim-file').addEventListener('change', function(e) {
-                    const file = e.target.files[0]; if(!file) return;
-                    const canvas = el('reim-canvas'); const ctx = canvas.getContext('2d');
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        const img = new Image();
-                        img.onload = function() {
-                            const MAX_WIDTH = 600; let scaleSize = MAX_WIDTH / img.width; if(scaleSize > 1) scaleSize = 1;
-                            canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
-                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        };
-                        img.src = event.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
+            if (el('reim-file')) {
+    el('reim-file').addEventListener('change', function(e) {
+        const file = e.target.files[0]; if(!file) return;
+        const canvas = el('reim-canvas'); const ctx = canvas.getContext('2d');
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                // Resolusi 600px sudah cukup optimal untuk nota/kuitansi tanpa membebani Firebase Storage
+                const MAX_WIDTH = 600; 
+                let scaleSize = MAX_WIDTH / img.width; 
+                if (scaleSize > 1) scaleSize = 1;
+                canvas.width = img.width * scaleSize; 
+                canvas.height = img.height * scaleSize;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
 
             if(el('form-ess-reimburse')) {
                 el('form-ess-reimburse').addEventListener('submit', async e => {
