@@ -1509,17 +1509,48 @@
         });
 
         el('login-form').addEventListener('submit', async e => {
-            e.preventDefault(); const usr = el('login-user').value; const pass = el('login-pass').value; const btn = el('btn-login'); btn.innerText = "Memeriksa..."; btn.disabled = true; 
-            try {
-                if(loginMode === 'admin') { if(usr==='admin' && pass==='admin') { enterApp('admin', {nama: 'Super Admin', role: 'HR Director'}); } else { showToast('Admin/Pass salah', 'error'); } } 
-                else {
-                    await auth.signInWithEmailAndPassword(usr, pass);
-                    const q = await db.collection("karyawan").where("email", "==", usr).get();
-                    if(!q.empty) { const empData = q.docs[0].data(); if(empData.status === "Nonaktif") { showToast("Akun dinonaktifkan!", "error"); await auth.signOut(); } else { enterApp('karyawan', empData); } } 
-                    else { showToast('Email tidak terkait ke data NIK manapun!', 'error'); await auth.signOut(); }
-                }
-            } catch (err) { showToast('Login Gagal: Periksa Email/Password', 'error'); } finally { btn.innerText = "Masuk Aplikasi"; btn.disabled = false; }
-        });
+    e.preventDefault(); 
+    const usr = el('login-user').value; 
+    const pass = el('login-pass').value; 
+    const btn = el('btn-login'); 
+    btn.innerText = "Memeriksa..."; btn.disabled = true; 
+    
+    try {
+        // Autentikasi lewat Firebase Auth untuk SEMUA mode (Admin & Karyawan)
+        await auth.signInWithEmailAndPassword(usr, pass);
+
+        if(loginMode === 'admin') { 
+            // Cek apakah email ini terdaftar di database sebagai admin
+            const adminDoc = await db.collection("admins").doc(usr).get();
+            if(adminDoc.exists) {
+                enterApp('admin', {nama: 'HR Admin', role: 'Super Admin'}); 
+            } else {
+                showToast('Akses Ditolak! Akun bukan Admin.', 'error');
+                await auth.signOut();
+            }
+        } else {
+            // Mode Karyawan
+            const q = await db.collection("karyawan").where("email", "==", usr).get();
+            if(!q.empty) { 
+                const empData = q.docs[0].data(); 
+                // Cek jika akun dinonaktifkan atau masih pending
+                if(empData.status === "Nonaktif" || empData.status === "Pending") { 
+                    showToast(`Akses ditolak: Akun berstatus ${empData.status}!`, "error"); 
+                    await auth.signOut(); 
+                } else { 
+                    enterApp('karyawan', empData); 
+                } 
+            } else { 
+                showToast('Email tidak terkait ke data NIK manapun!', 'error'); 
+                await auth.signOut(); 
+            }
+        }
+    } catch (err) { 
+        showToast('Login Gagal: Periksa Email/Password', 'error'); 
+    } finally { 
+        btn.innerText = "Masuk Aplikasi"; btn.disabled = false; 
+    }
+});
 
         el('register-form').addEventListener('submit', async e => {
             e.preventDefault(); const nik = el('reg-nik').value; const nama = el('reg-nama').value; const email = el('reg-email').value; const pass = el('reg-pass').value; const btn = el('btn-register'); btn.innerText = "Mendaftarkan..."; btn.disabled = true;
