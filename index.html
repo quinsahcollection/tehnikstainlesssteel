@@ -2139,6 +2139,9 @@ el('form-ess-izin').addEventListener('submit', async e => {
     let tglRaw = ''; 
     if(durasi === 'Beberapa Hari') { 
         tglRaw = el('ess-izin-tgl-range').value;
+        // Normalisasi kata penghubung rentang
+        tglRaw = tglRaw.replace(' sampai ', ' to ').replace(' s.d. ', ' to ');
+        
         if(!tglRaw || tglRaw.trim() === '') return showToast('Pilih rentang tanggal!', 'error');
         if(!tglRaw.includes(' to ')) {
             if(tglRaw.length === 10) tglRaw = `${tglRaw} to ${tglRaw}`;
