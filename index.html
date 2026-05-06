@@ -1556,7 +1556,7 @@
             e.preventDefault(); const nik = el('reg-nik').value; const nama = el('reg-nama').value; const email = el('reg-email').value; const pass = el('reg-pass').value; const btn = el('btn-register'); btn.innerText = "Mendaftarkan..."; btn.disabled = true;
             try {
                 await auth.createUserWithEmailAndPassword(email, pass);
-                const docData = { nik: nik, nama: nama, email: email, status: "Tetap", sisaCuti: 12, limitKasbon: 0, sisaKasbon: 0, gajiPokok: 0, gajiHarian: 0, bonusTetap: 0, outletId: "", divisi: "" };
+                const docData = { nik: nik, nama: nama, email: email, status: "Pending", sisaCuti: 0, limitKasbon: 0, sisaKasbon: 0, gajiPokok: 0, gajiHarian: 0, bonusTetap: 0, outletId: "", divisi: "" };
                 await db.collection("karyawan").doc(nik).set(docData, { merge: true });
                 showToast("Berhasil!"); enterApp('karyawan', docData);
             } catch (err) { showToast("Gagal mendaftar: " + err.message, "error"); } finally { btn.innerText = "Daftar & Buat Akun"; btn.disabled = false; }
