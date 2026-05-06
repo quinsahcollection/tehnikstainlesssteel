@@ -2400,27 +2400,45 @@ el('form-ess-izin').addEventListener('submit', async e => {
         el('tbody-massal').addEventListener('change', function(e) { if(e.target.classList.contains('m-status')) { const r = e.target.closest('tr'); aturDisableKehadiran(e.target.value, r.querySelector('.m-lk'), r.querySelector('.m-mk'), r.querySelector('.m-lembur'), r.querySelector('.wrap-m-lk'), r.querySelector('.wrap-m-mk')); } });
 
         window.approveIzinReq = async (btnDOM, id, nik, tipe, durasi, tglRaw) => { 
-            btnDOM.disabled = true; let dates = []; 
-            if(tglRaw.includes(' to ')) { 
-                let parts = tglRaw.split(' to '); let d1 = new Date(parts[0]); let d2 = new Date(parts[1]); 
-                while(d1 <= d2) { 
-                    let safeDateStr = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
-                    dates.push(safeDateStr); 
-                    d1.setDate(d1.getDate()+1); 
-                } 
-            } else { dates.push(tglRaw); } 
-            
-            let finalStatus = tipe; if(tipe === 'Izin') finalStatus = (durasi === 'Setengah Hari') ? 'Izin 1/2 Hari' : 'Izin'; 
-            let batch = db.batch(); 
-            dates.forEach(d => { 
-                let ref = db.collection('kehadiran').doc(nik + '_' + d); 
-                batch.set(ref, { date: d, nik: nik, status: finalStatus, shift: 'Pagi', lk: false, mk: false, lembur: 0, catatan: `Approval: ${tipe}` }, {merge: true}); 
-            }); 
-            batch.update(db.collection('pengajuan_izin').doc(id), {status: 'Disetujui'}); 
-            if(tipe === 'Cuti') { batch.update(db.collection('karyawan').doc(nik), {sisaCuti: firebase.firestore.FieldValue.increment(-dates.length)}); } 
-            try { await batch.commit(); showToast("Pengajuan disetujui!"); } catch(e) { showToast("Gagal menyetujui!", "error"); btnDOM.disabled = false; } 
-        };
-        window.rejectIzinReq = async (btnDOM, id) => { btnDOM.disabled = true; await db.collection("pengajuan_izin").doc(id).update({ status: "Ditolak" }); showToast("Pengajuan ditolak."); };
+    btnDOM.disabled = true; let dates = []; 
+    if(tglRaw.includes(' to ')) { 
+        let parts = tglRaw.split(' to '); let d1 = new Date(parts[0]); let d2 = new Date(parts[1]); 
+        while(d1 <= d2) { 
+            let safeDateStr = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
+            dates.push(safeDateStr); 
+            d1.setDate(d1.getDate()+1); 
+        } 
+    } else { dates.push(tglRaw); } 
+    
+    let finalStatus = tipe; if(tipe === 'Izin') finalStatus = (durasi === 'Setengah Hari') ? 'Izin 1/2 Hari' : 'Izin'; 
+    let batch = db.batch(); 
+    dates.forEach(d => { 
+        let ref = db.collection('kehadiran').doc(nik + '_' + d); 
+        batch.set(ref, { date: d, nik: nik, status: finalStatus, shift: 'Pagi', lk: false, mk: false, lembur: 0, catatan: `Approval: ${tipe}` }, {merge: true}); 
+    }); 
+    batch.update(db.collection('pengajuan_izin').doc(id), {status: 'Disetujui'}); 
+
+    // --- BAGIAN YANG DIPERBAIKI ---
+    // 1. Tentukan jumlah potongan (default: jumlah hari kalender)
+    let jumlahPotongan = dates.length; 
+    
+    // 2. Jika durasinya "Setengah Hari", ubah potongannya menjadi 0.5
+    if (durasi === 'Setengah Hari') {
+        jumlahPotongan = 0.5;
+    }
+
+    // 3. Masukkan jumlahPotongan ke dalam increment
+    if(tipe === 'Cuti') { 
+        batch.update(db.collection('karyawan').doc(nik), {
+            sisaCuti: firebase.firestore.FieldValue.increment(-jumlahPotongan)
+        }); 
+    }
+    // ------------------------------
+
+    try { await batch.commit(); showToast("Pengajuan disetujui!"); } catch(e) { showToast("Gagal menyetujui!", "error"); btnDOM.disabled = false; } 
+};
+
+window.rejectIzinReq = async (btnDOM, id) => { btnDOM.disabled = true; await db.collection("pengajuan_izin").doc(id).update({ status: "Ditolak" }); showToast("Pengajuan ditolak."); };
 
         window.prosesKasbon = async (id, status, nik, nom) => {
             const ok = await showConfirm(`Konfirmasi ${status}?`, `Yakin ingin memproses pengajuan ini menjadi ${status}?`, "Ya, Proses");
@@ -3146,12 +3164,15 @@ window.cekDataAbsenSatuan = () => {
 
     // 1. CEK APAKAH TANGGAL INI SUDAH MASUK KE SLIP GAJI
     let isLocked = db_slip.some(s => {
-        if(s.nik !== n) return false;
-        let sStart = new Date(s.tglMulai).setHours(0,0,0,0);
-        let sEnd = new Date(s.tglAkhir).setHours(23,59,59,999);
-        let tCek = new Date(d).getTime();
-        return tCek >= sStart && tCek <= sEnd;
-    });
+    if(s.nik !== n) return false;
+    // PERBAIKAN: Tambahkan baris proteksi ini agar sistem tidak crash jika data lama kosong
+    if(!s.tglMulai || !s.tglAkhir) return false; 
+    
+    let sStart = new Date(s.tglMulai).setHours(0,0,0,0);
+    let sEnd = new Date(s.tglAkhir).setHours(23,59,59,999);
+    let tCek = new Date(d).getTime();
+    return tCek >= sStart && tCek <= sEnd;
+});
 
     if(isLocked) {
         // Tampilkan peringatan & matikan tombol
@@ -3423,15 +3444,19 @@ window.editDataReimburse = async (id, nominalLama, ketLama) => {
 
 window.editDataIzin = async (id, tglMulaiLama, tglSelesaiLama) => {
     const tglMulaiBaru = prompt("Revisi Tanggal Mulai (YYYY-MM-DD):", tglMulaiLama);
-    if (tglMulaiBaru === null) return;
+    if (tglMulaiBaru === null) return; // Dibatalkan admin
     
-    const tglSelesaiBaru = prompt("Revisi Tanggal Selesai (YYYY-MM-DD):", tglSelesaiLama);
+    // Karena tglSelesai bisa kosong jika izin hanya 1 hari
+    const tglSelesaiBaru = prompt("Revisi Tanggal Selesai (Opsional, YYYY-MM-DD):", tglSelesaiLama || "");
     if (tglSelesaiBaru === null) return;
 
+    // Gabungkan kembali menjadi format 'tglRaw' yang dibaca oleh sistem
+    let tglRawBaru = tglSelesaiBaru ? `${tglMulaiBaru} to ${tglSelesaiBaru}` : tglMulaiBaru;
+
     try {
-        await db.collection("izin").doc(id).update({ // Sesuaikan dengan nama koleksi izin Bapak
-            tanggalMulai: tglMulaiBaru,
-            tanggalSelesai: tglSelesaiBaru
+        // PERBAIKAN: Gunakan koleksi pengajuan_izin, bukan izin
+        await db.collection("pengajuan_izin").doc(id).update({
+            tglRaw: tglRawBaru
         });
         showToast("Tanggal Izin/Sakit berhasil direvisi!");
     } catch(err) {
