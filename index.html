@@ -3093,10 +3093,17 @@ ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 el('kasbon-nik').addEventListener('change', function() { 
                     const emp = db_karyawan.find(k => k.nik === this.value); 
                     if(emp) { 
-                        el('info-sisa-kasbon').innerText = "Rp " + (parseFloat(emp.sisaKasbon)||0).toLocaleString('id-ID'); 
-                        el('info-limit-kasbon').innerText = `(Limit: Rp ${(parseFloat(emp.limitKasbon)||0).toLocaleString('id-ID')})`; 
+                        let limit = parseFloat(emp.limitKasbon) || 0;
+                        let hutang = parseFloat(emp.sisaKasbon) || 0;
+                        let sisaLimit = limit - hutang; 
+                        if(sisaLimit < 0) sisaLimit = 0;
+
+                        el('info-sisa-kasbon').innerText = "Rp " + hutang.toLocaleString('id-ID'); 
+                        el('info-limit-kasbon').innerText = `(Limit: Rp ${limit.toLocaleString('id-ID')})`; 
+                        if(el('info-sisa-limit-admin')) el('info-sisa-limit-admin').innerText = `Sisa Limit Tersedia: Rp ${sisaLimit.toLocaleString('id-ID')}`;
                     } else { 
                         el('info-sisa-kasbon').innerText = "Rp 0"; el('info-limit-kasbon').innerText = "(Limit: 0)"; 
+                        if(el('info-sisa-limit-admin')) el('info-sisa-limit-admin').innerText = "Sisa Limit Tersedia: Rp 0";
                     } 
                 });
             }
