@@ -2218,12 +2218,20 @@ el('form-ess-izin').addEventListener('submit', async e => {
     let tglRaw = ''; 
     if(durasi === 'Beberapa Hari') { 
         tglRaw = el('ess-izin-tgl-range').value;
-        tglRaw = tglRaw.replace(' sampai ', ' to ').replace(' s.d. ', ' to ');
+        
+        // NORMALISASI: Jaring semua kemungkinan pemisah tanggal, termasuk " - "
+        tglRaw = tglRaw.replace(' sampai ', ' to ')
+                       .replace(' s.d. ', ' to ')
+                       .replace(' - ', ' to ');
         
         if(!tglRaw || tglRaw.trim() === '') return showToast('Pilih rentang tanggal!', 'error');
         if(!tglRaw.includes(' to ')) {
-            if(tglRaw.length === 10) tglRaw = `${tglRaw} to ${tglRaw}`;
-            else return showToast('Pilih rentang tanggal dengan benar (Tgl Mulai & Akhir)!', 'error'); 
+            // Jika user klik 1 hari saja, panjang karakter adalah 10 (YYYY-MM-DD)
+            if(tglRaw.length === 10) {
+                tglRaw = `${tglRaw} to ${tglRaw}`;
+            } else {
+                return showToast('Pilih rentang tanggal dengan benar (Tgl Mulai & Akhir)!', 'error'); 
+            }
         }
     } else { 
         tglRaw = el('ess-izin-tgl-single').value; 
@@ -3220,7 +3228,7 @@ ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 // --- SCRIPT FORM IZIN MANUAL (ADMIN) ---
 el('form-izin-admin').addEventListener('submit', async e => {
     e.preventDefault();
-    const nik = el('admin-izin-nik').value;
+    const nikTarget = el('admin-izin-nik').value; // Mengambil NIK karyawan yang dipilih admin
     const tipe = el('admin-izin-tipe').value;
     const durasi = el('admin-izin-durasi').value;
     const alasan = el('admin-izin-alasan').value;
@@ -3228,31 +3236,79 @@ el('form-izin-admin').addEventListener('submit', async e => {
     let tglRaw = '';
     if(durasi === 'Beberapa Hari') {
         tglRaw = el('admin-izin-tgl-range').value;
-        // Normalisasi kata penghubung rentang
-        tglRaw = tglRaw.replace(' sampai ', ' to ').replace(' s.d. ', ' to ');
+        // Normalisasi pemisah tanggal
+        tglRaw = tglRaw.replace(' sampai ', ' to ').replace(' s.d. ', ' to ').replace(' - ', ' to ');
         
         if(!tglRaw.includes(' to ') && tglRaw.length === 10) tglRaw = `${tglRaw} to ${tglRaw}`;
         if(!tglRaw.includes(' to ')) return showToast('Pilih rentang dengan benar!', 'error');
     } else {
         tglRaw = el('admin-izin-tgl-single').value;
+        if(!tglRaw) return showToast('Pilih tanggal!', 'error');
     }
 
-    const emp = db_karyawan.find(k => k.nik === nik);
-    if(!emp) return showToast("Pegawai tidak ditemukan!", "error");
+    // --- BLOKIR TANGGAL DUPLIKAT/OVERLAP (PENDING & DISETUJUI) ---
+    let reqDates = window.getDatesFromRange(tglRaw);
+    let isDuplicate = db_izin.some(i => {
+        // Cek apakah NIK sama, dan statusnya Pending atau Disetujui
+        if(i.nik === nikTarget && (i.status === 'Pending' || i.status === 'Disetujui')) {
+            let extDates = window.getDatesFromRange(i.tglRaw);
+            // Cek apakah ada irisan tanggal antara yang mau diajukan dengan yang ada di database
+            return reqDates.some(d => extDates.includes(d)); 
+        }
+        return false;
+    });
 
-    const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
+    if(isDuplicate) {
+        return showToast("Gagal: Karyawan ini sudah memiliki pengajuan Pending/Disetujui di tanggal tersebut!", "error");
+    }
+    // -------------------------------------------------------------
+
+    const btn = e.submitter; btn.disabled = true; btn.innerText = "Menyimpan...";
+    
+    // Ambil nama dari database lokal
+    const empData = db_karyawan.find(k => k.nik === nikTarget);
+    const namaTarget = empData ? empData.nama : "Tanpa Nama";
+
     try {
         await db.collection("pengajuan_izin").add({
-            nik: nik, nama: emp.nama, tipe: tipe, durasi: durasi, tglRaw: tglRaw,
-            alasan: alasan, status: "Pending", waktuSubmit: new Date().toISOString(), fotoBukti: "" 
+            nik: nikTarget,
+            nama: namaTarget,
+            tipe: tipe,
+            durasi: durasi,
+            tglRaw: tglRaw,
+            alasan: alasan + " (Input Admin)",
+            status: "Disetujui", // Jika admin yang buat, otomatis langsung disetujui (ubah jika perlu)
+            waktuSubmit: new Date().toISOString(),
+            fotoBukti: "" // Admin biasanya tidak butuh upload bukti
         });
-        showToast("Pengajuan berhasil dimasukkan ke antrean Pending!");
+
+        // Langsung eksekusi approval/potong cuti jika statusnya Disetujui
+        let batch = db.batch();
+        let finalStatus = tipe; 
+        if(tipe === 'Izin') finalStatus = (durasi === 'Setengah Hari') ? 'Izin 1/2 Hari' : 'Izin';
+        
+        reqDates.forEach(d => {
+            let ref = db.collection('kehadiran').doc(nikTarget + '_' + d);
+            batch.set(ref, { date: d, nik: nikTarget, status: finalStatus, shift: 'Pagi', lk: false, mk: false, lembur: 0, catatan: `Manual Admin: ${tipe}` }, {merge: true});
+        });
+        
+        if(tipe === 'Cuti') {
+            batch.update(db.collection('karyawan').doc(nikTarget), {sisaCuti: firebase.firestore.FieldValue.increment(-reqDates.length)});
+        }
+        await batch.commit();
+
+        showToast("Data izin/cuti berhasil ditambahkan!");
         el('form-izin-admin').reset();
         el('admin-izin-tgl-single')._flatpickr.clear();
         if(el('admin-izin-tgl-range')._flatpickr) el('admin-izin-tgl-range')._flatpickr.clear();
         window.aturInputTanggalIzinAdmin();
-    } catch(err) { showToast("Gagal memproses pengajuan.", "error"); } 
-    finally { btn.disabled = false; btn.innerText = "Masukkan ke Antrean"; }
+
+    } catch(err) {
+        console.error(err);
+        showToast("Gagal menyimpan data.", "error");
+    } finally {
+        btn.disabled = false; btn.innerText = "Simpan Data Izin/Cuti";
+    }
 });
 
 // --- SCRIPT FORM REIMBURSE MANUAL (ADMIN) ---
