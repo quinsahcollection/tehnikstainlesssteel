@@ -1986,7 +1986,36 @@ if(el('ess-info-sisa-limit-kasbon')) el('ess-info-sisa-limit-kasbon').innerText 
             });
             el('tbody-ess-kehadiran').innerHTML = tbodyAbs || '<tr><td colspan="4" align="center">Belum ada absen tercatat</td></tr>';
 
-            let tbodyKas = ''; db_kasbon.filter(k => k.nik === nik).slice(0, 10).forEach(k => { let b = k.status==='Pending' ? 'badge-pending' : (k.status==='Disetujui'||k.jenis==='Potongan Gaji' ? 'badge-success' : 'badge-danger'); let stTxt = k.status || (k.jenis==='Potongan Gaji'?'Lunas':'Selesai'); tbodyKas += `<tr><td>${new Date(k.tanggal).toLocaleDateString('id-ID')}</td><td>Rp ${k.nominal.toLocaleString('id-ID')}</td><td><small>${k.keterangan}</small></td><td><span class="badge ${b}">${stTxt}</span></td></tr>`; }); el('tbody-ess-kasbon-log').innerHTML = tbodyKas || '<tr><td colspan="4" align="center">Kosong</td></tr>';
+            let tbodyKas = ''; 
+db_kasbon.filter(k => k.nik === nik).slice(0, 10).forEach(k => { 
+    // 1. Penentuan Warna Badge
+    let b = 'badge-danger'; // Default merah
+    if(k.status === 'Pending') b = 'badge-pending';
+    else if(k.status === 'Disetujui' || k.jenis === 'Potongan Gaji' || k.jenis.includes('Pengembalian')) b = 'badge-success';
+    else if(k.status === 'Dibatalkan') b = 'badge-secondary'; // Warna abu-abu
+
+    // 2. Teks Status
+    let stTxt = k.status || (k.jenis === 'Potongan Gaji' ? 'Lunas' : 'Selesai'); 
+
+    // 3. Tampilan Nominal (Merah untuk hutang, Hijau untuk bayar)
+    let nomTxt = (k.jenis === 'Potongan Gaji' || k.jenis.includes('Pengembalian') || k.jenis.includes('Pembatalan')) 
+        ? `<span style="color:var(--success); font-weight:bold;">+ Rp ${k.nominal.toLocaleString('id-ID')}</span>` 
+        : `<span style="color:var(--danger); font-weight:bold;">- Rp ${k.nominal.toLocaleString('id-ID')}</span>`;
+
+    // 4. Tombol Batalkan (Muncul hanya saat Pending)
+    let btnBatal = (k.status === 'Pending') 
+        ? `<br><button type="button" style="margin-top:5px; padding:4px 8px; font-size:10px; border:1px solid var(--danger); background:transparent; color:var(--danger); border-radius:4px; cursor:pointer; font-weight:bold;" onclick="window.batalkanKasbonKaryawan('${k.id}')">Batalkan</button>` 
+        : '';
+
+    // 5. Susun Baris Tabel
+    tbodyKas += `<tr>
+        <td>${new Date(k.tanggal).toLocaleDateString('id-ID')}<br><small style="color:var(--primary); font-weight:bold;">${k.jenis}</small></td>
+        <td>${nomTxt}</td>
+        <td><small>${k.keterangan}</small></td>
+        <td><span class="badge ${b}">${stTxt}</span>${btnBatal}</td>
+    </tr>`; 
+}); 
+el('tbody-ess-kasbon-log').innerHTML = tbodyKas || '<tr><td colspan="4" align="center">Belum ada riwayat kasbon.</td></tr>';
             let tbodySlip = ''; db_slip.filter(s => s.nik === nik).forEach(s => { tbodySlip += `<tr><td><b>${s.periode}</b></td><td style="color:var(--success); font-weight:800;">${s.bersih}</td><td><button class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="lihatDetailSlipAdminAtauKaryawan('${s.id}')">Rincian</button></td></tr>`; }); el('tbody-ess-slip').innerHTML = tbodySlip || '<tr><td colspan="3" align="center">Kosong</td></tr>';
             let tbodyIzin = ''; 
 db_izin.filter(i => i.nik === nik).forEach(i => { 
@@ -2205,6 +2234,22 @@ window.getDatesFromRange = (rangeStr) => {
                 }
             } catch(e) {
                 showToast("Gagal membatalkan.", "error");
+            }
+        };
+        
+        // --- FUNGSI PEMBATALAN KASBON KARYAWAN ---
+        window.batalkanKasbonKaryawan = async (id) => {
+            const ok = confirm("Apakah Anda yakin ingin membatalkan pengajuan Kasbon ini?");
+            if(!ok) return;
+
+            try {
+                // Karena status masih 'Pending', kita cukup mengubah statusnya saja 
+                // tanpa perlu mengembalikan limit (karena limit belum terpotong)
+                await db.collection("kasbon_log").doc(id).update({ status: "Dibatalkan" });
+                showToast("Pengajuan Kasbon berhasil dibatalkan.");
+            } catch(e) {
+                console.error(e);
+                showToast("Gagal membatalkan Kasbon.", "error");
             }
         };
         
@@ -3194,36 +3239,80 @@ ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             };
             
             // ADMIN MANUAL KASBON
-            if(el('form-kasbon-admin')) {
-                el('form-kasbon-admin').addEventListener('submit', async (e) => {
-                    e.preventDefault(); const nik = el('kasbon-nik').value; const nom = parseFloat(el('kasbon-nominal').value); const ket = el('kasbon-ket').value; if(!nik) return showToast("Pilih pegawai!", "error");
-                    const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
-                    const empRef = db.collection("karyawan").doc(nik); const emp = db_karyawan.find(k => k.nik === nik);
-                    const sisaSkrg = parseFloat(emp.sisaKasbon)||0; const limit = parseFloat(emp.limitKasbon)||0;
-                    if((sisaSkrg + nom) > limit) { btn.disabled = false; btn.innerText = "Potong Limit & Proses"; return showToast("Gagal: Total hutang akan melebihi Limit Kasbon yang diizinkan!", "error"); }
-                    const batch = db.batch();
-                    batch.update(empRef, { sisaKasbon: firebase.firestore.FieldValue.increment(nom) });
-                    batch.set(db.collection("kasbon_log").doc(), { nik: nik, nama: emp.nama, tanggal: new Date().toISOString(), jenis: "Pencairan (Admin)", nominal: nom, keterangan: ket, status: "Selesai" });
-                    try { await batch.commit(); showToast("Kasbon manual berhasil dicatat!"); el('form-kasbon-admin').reset(); el('info-sisa-kasbon').innerText="Rp 0"; el('info-limit-kasbon').innerText="(Limit: 0)"; } catch(err) { showToast("Gagal proses", "error"); } finally { btn.disabled = false; btn.innerText = "Potong Limit & Proses"; }
-                });
+if(el('form-kasbon-admin')) {
+    el('form-kasbon-admin').addEventListener('submit', async (e) => {
+        e.preventDefault(); 
+        const nik = el('kasbon-nik').value; 
+        const nom = parseFloat(el('kasbon-nominal').value); 
+        const ket = el('kasbon-ket').value; 
+        
+        if(!nik) return showToast("Pilih pegawai!", "error");
+        if(nom <= 0) return showToast("Nominal harus lebih dari 0!", "error");
 
-                el('kasbon-nik').addEventListener('change', function() { 
-                    const emp = db_karyawan.find(k => k.nik === this.value); 
-                    if(emp) { 
-                        let limit = parseFloat(emp.limitKasbon) || 0;
-                        let hutang = parseFloat(emp.sisaKasbon) || 0;
-                        let sisaLimit = limit - hutang; 
-                        if(sisaLimit < 0) sisaLimit = 0;
+        const btn = e.submitter; 
+        btn.disabled = true; 
+        btn.innerText = "Memproses...";
+        
+        const emp = db_karyawan.find(k => k.nik === nik);
+        if(!emp) return showToast("Pegawai tidak ditemukan!", "error");
 
-                        el('info-sisa-kasbon').innerText = "Rp " + hutang.toLocaleString('id-ID'); 
-                        el('info-limit-kasbon').innerText = `(Limit: Rp ${limit.toLocaleString('id-ID')})`; 
-                        if(el('info-sisa-limit-admin')) el('info-sisa-limit-admin').innerText = `Sisa Limit Tersedia: Rp ${sisaLimit.toLocaleString('id-ID')}`;
-                    } else { 
-                        el('info-sisa-kasbon').innerText = "Rp 0"; el('info-limit-kasbon').innerText = "(Limit: 0)"; 
-                        if(el('info-sisa-limit-admin')) el('info-sisa-limit-admin').innerText = "Sisa Limit Tersedia: Rp 0";
-                    } 
-                });
-            }
+        const sisaSkrg = parseFloat(emp.sisaKasbon)||0; 
+        const limit = parseFloat(emp.limitKasbon)||0;
+        const sisaLimit = limit - sisaSkrg;
+
+        // Cek apakah nominal pinjaman melebihi sisa limit yang tersedia
+        if(nom > sisaLimit) { 
+            btn.disabled = false; 
+            btn.innerText = "Simpan Pengajuan"; // Sesuaikan teks dengan tombol asli
+            return showToast(`Gagal: Nominal melebihi sisa limit! (Sisa Tersedia: Rp ${sisaLimit.toLocaleString('id-ID')})`, "error"); 
+        }
+        
+        try { 
+            // HANYA MASUKKAN KE ANTREAN (PENDING), TIDAK MEMOTONG LIMIT DULU
+            await db.collection("kasbon_log").add({ 
+                nik: nik, 
+                nama: emp.nama, 
+                tanggal: new Date().toISOString(), 
+                jenis: "Pinjaman", // Disamakan dengan ESS agar rapi di tabel Persetujuan
+                nominal: nom, 
+                keterangan: ket + " (Input Admin)", 
+                status: "Pending" // Berubah dari Selesai menjadi Pending
+            }); 
+            
+            showToast("Pengajuan Kasbon berhasil masuk ke antrean Persetujuan!"); 
+            el('form-kasbon-admin').reset(); 
+            el('info-sisa-kasbon').innerText = "Rp 0"; 
+            el('info-limit-kasbon').innerText = "(Limit: 0)"; 
+            if(el('info-sisa-limit-admin')) el('info-sisa-limit-admin').innerText = "Sisa Limit Tersedia: Rp 0";
+            
+        } catch(err) { 
+            console.error(err);
+            showToast("Gagal memproses pengajuan.", "error"); 
+        } finally { 
+            btn.disabled = false; 
+            btn.innerText = "Simpan Pengajuan"; 
+        }
+    });
+
+    // Event listener 'change' untuk update info di layar (Sama seperti milik Bapak)
+    el('kasbon-nik').addEventListener('change', function() { 
+        const emp = db_karyawan.find(k => k.nik === this.value); 
+        if(emp) { 
+            let limit = parseFloat(emp.limitKasbon) || 0;
+            let hutang = parseFloat(emp.sisaKasbon) || 0;
+            let sisaLimit = limit - hutang; 
+            if(sisaLimit < 0) sisaLimit = 0;
+
+            el('info-sisa-kasbon').innerText = "Rp " + hutang.toLocaleString('id-ID'); 
+            el('info-limit-kasbon').innerText = `(Limit: Rp ${limit.toLocaleString('id-ID')})`; 
+            if(el('info-sisa-limit-admin')) el('info-sisa-limit-admin').innerText = `Sisa Limit Tersedia: Rp ${sisaLimit.toLocaleString('id-ID')}`;
+        } else { 
+            el('info-sisa-kasbon').innerText = "Rp 0"; 
+            el('info-limit-kasbon').innerText = "(Limit: 0)"; 
+            if(el('info-sisa-limit-admin')) el('info-sisa-limit-admin').innerText = "Sisa Limit Tersedia: Rp 0";
+        } 
+    });
+}
 
 // --- SCRIPT FORM IZIN MANUAL (ADMIN) ---
 el('form-izin-admin').addEventListener('submit', async e => {
