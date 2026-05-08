@@ -1640,8 +1640,8 @@
         flatpickr("#filter-bulan-slip", { locale: "id", dateFormat: "Y-m", disableMobile: true, plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "F Y", theme: "light" })], onChange: () => window.renderAllSlips() });
         flatpickr("#gaji-periode-range", { locale: "id", mode: "range", altFormat: "d M Y", dateFormat: "Y-m-d", disableMobile: true, onChange: () => jalankanAutoCalc() });
         flatpickr("#gaji-massal-periode", { locale: "id", mode: "range", altFormat: "d M Y", dateFormat: "Y-m-d", disableMobile: true, onChange: () => window.kalkulasiGajiMassal() });   
-        flatpickr("#ess-izin-tgl-single", { locale: "id", dateFormat: "Y-m-d", disableMobile: true });
-        flatpickr("#ess-izin-tgl-range", { locale: "id", mode: "range", dateFormat: "Y-m-d", disableMobile: true, rangeSeparator: " to " });
+        flatpickr("#ess-izin-tgl-single", { locale: "id", dateFormat: "Y-m-d",minDate: "today", disableMobile: true });
+        flatpickr("#ess-izin-tgl-range", { locale: "id", mode: "range", dateFormat: "Y-m-d",minDate: "today", disableMobile: true, rangeSeparator: " to " });
         flatpickr("#admin-izin-tgl-single", { locale: "id", dateFormat: "Y-m-d", disableMobile: true });
         flatpickr("#admin-izin-tgl-range", { locale: "id", mode: "range", dateFormat: "Y-m-d", disableMobile: true, rangeSeparator: " to " });
 
