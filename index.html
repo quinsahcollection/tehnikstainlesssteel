@@ -2935,7 +2935,7 @@ if(filterBln) {
             };
 
             // MODUL LAPORAN 
-            function renderLaporan() {
+function renderLaporan() {
     const bth = el('filter-bulan-laporan').value; if(!bth) return;
     const year = parseInt(bth.split('-')[0]); const month = parseInt(bth.split('-')[1]);
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -2951,8 +2951,17 @@ if(filterBln) {
         thHtml += `<th class="${thCls}">${i}</th>`; 
     }
     
-    // Kolom Total diletakkan DI AKHIR (Paling Kanan)
-    thHtml += `<th style="background:#e2e8f0; color:#2b3445; border-left:2px solid #cbd5e1;" title="Hadir Penuh">ΣH</th><th style="background:#e2e8f0; color:#2b3445;" title="Izin Setengah Hari">Σ½</th><th style="background:#e2e8f0; color:#2b3445;" title="Izin Penuh">ΣI</th><th style="background:#e2e8f0; color:#2b3445;" title="Sakit">ΣS</th><th style="background:#e2e8f0; color:#2b3445;" title="Cuti">ΣC</th><th style="background:#e2e8f0; color:#2b3445;" title="Absen/Alpa">ΣA</th>`;
+    // Kolom Total diletakkan DI AKHIR (Paling Kanan) beserta tambahan LK dan MK
+    thHtml += `
+        <th style="background:#e2e8f0; color:#2b3445; border-left:2px solid #cbd5e1;" title="Hadir Penuh">ΣH</th>
+        <th style="background:#e2e8f0; color:#2b3445;" title="Izin Setengah Hari">Σ½</th>
+        <th style="background:#e2e8f0; color:#2b3445;" title="Izin Penuh">ΣI</th>
+        <th style="background:#e2e8f0; color:#2b3445;" title="Sakit">ΣS</th>
+        <th style="background:#e2e8f0; color:#2b3445;" title="Cuti">ΣC</th>
+        <th style="background:#e2e8f0; color:#2b3445;" title="Absen/Alpa">ΣA</th>
+        <th style="background:#e0f2fe; color:#0369a1;" title="Luar Kota">ΣLK</th>
+        <th style="background:#ffe4e6; color:#be123c;" title="Minggu Kerja">ΣMK</th>
+    `;
     
     let tblHtml = `<thead><tr>${thHtml}</tr></thead><tbody>`;
 
@@ -2961,7 +2970,7 @@ if(filterBln) {
         let isArsip = k.status === 'Nonaktif';
         let trBg = isArsip ? 'background:#f1f5f9; opacity:0.8;' : '';
         
-        let totH=0, totSetengah=0, totI=0, totS=0, totC=0, totA=0;
+        let totH=0, totSetengah=0, totI=0, totS=0, totC=0, totA=0, totLK=0, totMK=0;
         let daysHtml = '';
         
         for(let i=1; i<=daysInMonth; i++) {
@@ -2971,15 +2980,27 @@ if(filterBln) {
             
             let att = db_kehadiran.find(a => a.nik === k.nik && a.date === tglStr);
             let cellTxt = '-';
+            let extraTxt = ''; // Untuk menampung badge LK dan MK
+
             if(att) {
                 if(att.status === 'Hadir') { cellTxt = '<span style="color:var(--success);font-weight:bold;">H</span>'; totH++; }
                 else if(att.status === 'Izin 1/2 Hari') { cellTxt = '<span style="color:var(--info);font-weight:bold;">½</span>'; totSetengah++; }
                 else if(att.status === 'Sakit') { cellTxt = '<span style="color:var(--info);font-weight:bold;">S</span>'; totS++; }
                 else if(att.status === 'Cuti') { cellTxt = '<span style="color:var(--purple);font-weight:bold;">C</span>'; totC++; }
                 else if(att.status === 'Absen') { cellTxt = '<span style="color:var(--danger);font-weight:bold;">A</span>'; totA++; }
-                else { cellTxt = '<span style="color:var(--warning);font-weight:bold;">I</span>'; totI++; }
+                else { cellTxt = '<span style="color:var(--warning);font-weight:bold;">I</span>'; totI++; } // Default Izin Penuh
+
+                // Pengecekan atribut Luar Kota & Minggu Kerja
+                if(att.lk) { 
+                    extraTxt += `<br><span style="background:var(--info); color:#fff; font-size:9px; padding:2px 4px; border-radius:4px; margin-top:2px; display:inline-block; line-height:1;">LK</span>`; 
+                    totLK++; 
+                }
+                if(att.mk) { 
+                    extraTxt += `<br><span style="background:var(--danger); color:#fff; font-size:9px; padding:2px 4px; border-radius:4px; margin-top:2px; display:inline-block; line-height:1;">MK</span>`; 
+                    totMK++; 
+                }
             }
-            daysHtml += `<td class="${tdCls}">${cellTxt}</td>`;
+            daysHtml += `<td class="${tdCls}" style="text-align:center; vertical-align:middle;">${cellTxt}${extraTxt}</td>`;
         }
         
         let rowHtml = `<tr style="${trBg}"><td class="sticky-col"><b>${k.nama}</b><br><small>${k.nik}</small></td>`;
@@ -2988,13 +3009,21 @@ if(filterBln) {
         rowHtml += daysHtml;
         
         // Angka total digabungkan DI AKHIR
-        rowHtml += `<td style="font-weight:800; color:var(--success); text-align:center; border-left:2px solid #cbd5e1;">${totH}</td><td style="font-weight:800; color:var(--info); text-align:center;">${totSetengah}</td><td style="font-weight:800; color:var(--warning); text-align:center;">${totI}</td><td style="font-weight:800; color:var(--info); text-align:center;">${totS}</td><td style="font-weight:800; color:var(--purple); text-align:center;">${totC}</td><td style="font-weight:800; color:var(--danger); text-align:center;">${totA}</td></tr>`;
+        rowHtml += `
+            <td style="font-weight:800; color:var(--success); text-align:center; border-left:2px solid #cbd5e1;">${totH}</td>
+            <td style="font-weight:800; color:var(--info); text-align:center;">${totSetengah}</td>
+            <td style="font-weight:800; color:var(--warning); text-align:center;">${totI}</td>
+            <td style="font-weight:800; color:var(--info); text-align:center;">${totS}</td>
+            <td style="font-weight:800; color:var(--purple); text-align:center;">${totC}</td>
+            <td style="font-weight:800; color:var(--danger); text-align:center;">${totA}</td>
+            <td style="font-weight:800; color:#0369a1; background:#e0f2fe; text-align:center;">${totLK}</td>
+            <td style="font-weight:800; color:#be123c; background:#ffe4e6; text-align:center;">${totMK}</td>
+        </tr>`;
         
         tblHtml += rowHtml;
     });
     tblHtml += `</tbody>`; el('tabel-laporan').innerHTML = tblHtml;
 }
-
             window.exportLaporanCSV = () => {
                 const bth = el('filter-bulan-laporan').value; if(!bth) return;
                 const year = parseInt(bth.split('-')[0]); const month = parseInt(bth.split('-')[1]);
