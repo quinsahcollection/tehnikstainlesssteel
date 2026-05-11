@@ -1051,15 +1051,6 @@
                     <div class="section-header" style="flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
                         <h3 class="section-title">Manajemen Cuti & Izin</h3>
                     </div>
-                    <div class="card" style="margin-bottom:20px;">
-                        <h3 class="section-title">Persetujuan Cuti/Izin</h3>
-                        <div class="table-responsive">
-                            <table>
-                                <thead><tr><th>Nama & Tgl Pengajuan</th><th>Tipe & Durasi</th><th>Rentang Tanggal</th><th>Alasan</th><th style="text-align:center;">Aksi Persetujuan</th></tr></thead>
-                                <tbody id="tbody-approval-izin"></tbody>
-                            </table>
-                        </div>
-                    </div>
                     <div class="card">
                         <h3 class="section-title">Input Cuti/Izin Manual (Admin)</h3>
                         <form id="form-izin-admin">
@@ -1073,6 +1064,7 @@
                                     </select>
                                 </div>
                             </div>
+                            
                             <div class="form-row">
                                 <div class="form-group"><label>Durasi / Lama</label><select id="admin-izin-durasi" required onchange="window.aturInputTanggalIzinAdmin()"><option value="Setengah Hari">Setengah Hari (1/2 Hari Kerja)</option><option value="1 Hari">Penuh 1 Hari</option><option value="Beberapa Hari">Lebih dari 1 Hari (Rentang)</option></select></div>
                                 <div class="form-group" id="wrap-admin-izin-tgl-single"><label>Pilih Tanggal</label><input type="date" id="admin-izin-tgl-single" required></div>
@@ -1081,6 +1073,15 @@
                             <div class="form-group" style="margin-bottom:15px;"><label>Alasan / Keterangan</label><input type="text" id="admin-izin-alasan" required></div>
                             <div style="text-align: right;"><button type="submit" class="btn">Masukkan ke Antrean</button></div>
                         </form>
+                    </div>
+                    <div class="card" style="margin-bottom:20px;">
+                        <h3 class="section-title">Persetujuan Cuti/Izin</h3>
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>Nama & Tgl Pengajuan</th><th>Tipe & Durasi</th><th>Rentang Tanggal</th><th>Alasan</th><th style="text-align:center;">Aksi Persetujuan</th></tr></thead>
+                                <tbody id="tbody-approval-izin"></tbody>
+                            </table>
+                        </div>
                     </div>
                     <div class="card" style="margin-bottom:20px;">
                         <h3 class="section-title">Riwayat Keputusan Cuti & Izin</h3>
@@ -1096,7 +1097,6 @@
 
             <!-- MODUL KASBON, SLIP, LAPORAN, PENGGAJIAN -->
             <div id="menu-kasbon" class="menu-content hidden">
-                <div class="card"><h3 class="section-title">Persetujuan Pengajuan Kasbon</h3><div class="table-responsive"><table><thead><tr><th>Pegawai</th><th>Tanggal</th><th>Nominal & Alasan</th><th style="text-align:center;">Aksi HRD</th></tr></thead><tbody id="tbody-approval-kasbon"></tbody></table></div></div>
                 <div class="card"><h3 class="section-title">Beri Kasbon Manual (Via Admin)</h3><form id="form-kasbon-admin"><div class="form-row"><div class="form-group"><label>Pilih Pegawai</label><select id="kasbon-nik" required></select></div>
                     <div class="form-group" style="background:#f8fafc; padding:15px; border-radius:10px; border:1px solid #e2e8f0;">
     <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Hutang Aktif Saat Ini <span id="info-limit-kasbon" style="color:var(--primary); font-weight:800;">(Limit: 0)</span></div>
@@ -1105,6 +1105,8 @@
 </div>
                 </div>
                     <div class="form-row"><div class="form-group"><label>Nominal Pencairan</label><input type="number" id="kasbon-nominal" required min="1"></div><div class="form-group"><label>Keterangan</label><input type="text" id="kasbon-ket" required placeholder="Cth: Pinjaman berobat"></div></div><div style="text-align: right;"><button type="submit" class="btn">Potong Limit & Proses</button></div></form></div>
+                                    <div class="card"><h3 class="section-title">Persetujuan Pengajuan Kasbon</h3><div class="table-responsive"><table><thead><tr><th>Pegawai</th><th>Tanggal</th><th>Nominal & Alasan</th><th style="text-align:center;">Aksi HRD</th></tr></thead><tbody id="tbody-approval-kasbon"></tbody></table></div></div>
+
                 <div class="card"><h3 class="section-title">Arsip Transaksi Kasbon</h3><input type="text" id="search-kasbon" class="search-box" placeholder="Cari Nama Karyawan..." onkeyup="searchTable('search-kasbon', 'tbody-kasbon-list')" style="margin-bottom:20px;"><div class="table-responsive"><table><thead><tr><th>Nama Pegawai</th><th>Tgl Sistem</th><th>Jenis Transaksi</th><th>Nominal (Rp)</th><th>Keterangan</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-kasbon-list"></tbody></table></div></div>
             </div>
 
@@ -1282,18 +1284,7 @@
             <!-- ========================================================= -->
             <!-- MODUL BARU: APPROVAL REIMBURSEMENT (ADMIN)                -->
             <!-- ========================================================= -->
-            <div id="menu-reimburse" class="menu-content hidden">
-                <div class="card">
-                    <h3 class="section-title">Persetujuan Klaim (Reimbursement)</h3>
-                    <span class="section-subtitle">Daftar pengajuan ganti rugi dana dari karyawan. Jika disetujui, dana akan diakumulasikan otomatis ke dalam Slip Gaji mereka di akhir bulan.</span>
-                    <div class="table-responsive">
-                        <table>
-                            <thead><tr><th>Tgl Submit & Nama</th><th>Detail Pengeluaran</th><th>Nominal Claim</th><th>Bukti Kuitansi</th><th style="text-align:center;">Aksi HRD</th></tr></thead>
-                            <tbody id="tbody-admin-reimburse"></tbody>
-                        </table>
-                    </div>
-                </div>
-                
+            <div id="menu-reimburse" class="menu-content hidden">        
                 <div class="card">
                     <h3 class="section-title">Input Reimburse Manual (Admin)</h3>
                     <form id="form-reimburse-admin">
@@ -1314,6 +1305,17 @@
                         </div>
                         <div class="form-group" style="margin-bottom:15px;"><label>Keterangan</label><input type="text" id="admin-reim-ket" required></div>
                         <div style="text-align: right;"><button type="submit" class="btn">Masukkan ke Antrean</button></div>
+                        
+                        <div class="card">
+                    <h3 class="section-title">Persetujuan Klaim (Reimbursement)</h3>
+                    <span class="section-subtitle">Daftar pengajuan ganti rugi dana dari karyawan. Jika disetujui, dana akan diakumulasikan otomatis ke dalam Slip Gaji mereka di akhir bulan.</span>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Tgl Submit & Nama</th><th>Detail Pengeluaran</th><th>Nominal Claim</th><th>Bukti Kuitansi</th><th style="text-align:center;">Aksi HRD</th></tr></thead>
+                            <tbody id="tbody-admin-reimburse"></tbody>
+                        </table>
+                    </div>
+                </div>
                     </form>
                 </div>
             </div>
