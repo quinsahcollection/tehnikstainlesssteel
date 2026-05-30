@@ -1241,45 +1241,67 @@
             <!-- MODUL BARU: REIMBURSEMENT (KARYAWAN)                      -->
             <!-- ========================================================= -->
             <div id="menu-ess-reimburse" class="menu-content hidden">
-                <div class="card">
-                    <h3 class="section-title">Form Klaim & Reimbursement</h3>
-                    <span class="section-subtitle">Ajukan ganti rugi biaya operasional (Bensin, Parkir, Medis, dll). Saldo yang disetujui akan cair bersamaan dengan Slip Gaji bulan ini.</span>
-                    <form id="form-ess-reimburse">
-                        <div class="form-row">
-                            <div class="form-group"><label>Tanggal Transaksi / Nota</label><input type="date" id="reim-tgl-nota" required></div>
-                            <div class="form-group"><label>Jenis Klaim</label>
-                                <select id="reim-jenis" required>
-                                    <option value="Transportasi">Transportasi (Bensin, Tol, Parkir)</option>
-                                    <option value="Konsumsi">Konsumsi Klien / Lembur</option>
-                                    <option value="Medis">Pengobatan / Medis</option>
-                                    <option value="Lainnya">Operasional Lainnya</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group"><label>Nominal Pengeluaran (Rp)</label><input type="number" id="reim-nominal" required min="1000"></div>
-                            <div class="form-group"><label>Keterangan Pengeluaran</label><input type="text" id="reim-ket" required placeholder="Contoh: Bensin motor untuk kunjungan"></div>
-                        </div>
-                        
-                        <div style="background:#fff1f2; border:1px dashed #fca5a5; padding:15px; border-radius:8px; margin-bottom:20px;">
-                            <label style="color:var(--danger); display:block; margin-bottom:10px;">📸 Upload Bukti Struk / Kuitansi (Wajib)</label>
-                            <input type="file" id="reim-file" accept="image/*" required style="font-size:12px; padding:5px; border:none; background:transparent;">
-                            <canvas id="reim-canvas" style="display:none;"></canvas>
-                        </div>
-                        <div style="text-align: right;"><button type="submit" class="btn" id="btn-submit-reimburse">Kirim Pengajuan Klaim</button></div>
-                    </form>
+    
+    <div class="card">
+        <h3 class="section-title">Formulir Klaim Dana (Reimbursement)</h3>
+        <span class="section-subtitle">Isi formulir ini untuk mengajukan penggantian dana operasional.</span>
+        
+        <form id="form-ess-reimburse">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tanggal Nota / Kejadian</label>
+                    <input type="date" id="reim-tgl-nota" required>
                 </div>
-
-                <div class="card">
-                    <h3 class="section-title">Riwayat Klaim Anda</h3>
-                    <div class="table-responsive">
-                        <table>
-                            <thead><tr><th>Tanggal Input</th><th>Jenis & Keterangan</th><th>Nominal</th><th>Bukti</th><th>Status HRD</th></tr></thead>
-                            <tbody id="tbody-ess-reimburse-log"></tbody>
-                        </table>
-                    </div>
+                <div class="form-group">
+                    <label>Jenis Pengeluaran</label>
+                    <select id="reim-jenis" required>
+                        <option value="Transportasi">Transportasi (Bensin, Tol, Parkir)</option>
+                        <option value="Konsumsi">Konsumsi Klien / Lembur</option>
+                        <option value="Medis">Pengobatan / Medis</option>
+                        <option value="Lainnya">Operasional Lainnya</option>
+                    </select>
                 </div>
             </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nominal Pengeluaran (Rp)</label>
+                    <input type="number" id="reim-nominal" required min="1000">
+                </div>
+                <div class="form-group">
+                    <label>Keterangan Pengeluaran</label>
+                    <input type="text" id="reim-ket" required placeholder="Contoh: Bensin motor untuk kunjungan">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:20px;">
+                <label>Upload Bukti Kuitansi (Opsional namun disarankan)</label>
+                <input type="file" id="reim-file-bukti" accept="image/*" style="padding:10px; border:1px dashed var(--primary); background:#e0f2fe;">
+            </div>
+            
+            <div style="text-align: right;">
+                <button type="submit" class="btn">Kirim Pengajuan</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3 class="section-title">Riwayat & Status Klaim Anda</h3>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tgl Nota / Submit</th>
+                        <th>Kategori & Keterangan</th>
+                        <th>Nominal Claim</th>
+                        <th>Bukti</th>
+                        <th style="text-align:center;">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-ess-reimburse-log"> 
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
             <!-- ========================================================= -->
             <!-- MODUL BARU: APPROVAL REIMBURSEMENT (ADMIN)                -->
@@ -3443,23 +3465,45 @@ el('form-reimburse-admin').addEventListener('submit', async e => {
     const emp = db_karyawan.find(k => k.nik === nik);
     
     const btn = e.submitter; btn.disabled = true; btn.innerText = "Memproses...";
+    
     try {
-        await db.collection("reimbursements").add({
+        // 1. Siapkan datanya
+        let newData = {
             nik: nik, 
             nama: emp.nama, 
             tanggalSubmit: new Date().toISOString(), 
-            tanggalNota: el('admin-reim-tgl-nota').value, // Waktu kejadian aslinya
+            tanggalNota: el('admin-reim-tgl-nota').value, 
             jenis: jenis,
             nominal: nominal, 
             keterangan: ket, 
             fileBukti: "", 
             status: "Pending"
-        });
+        };
+        
+        // 2. Simpan ke database
+        let docRef = await db.collection("reimbursements").add(newData);
+        
+        // 3. PERBAIKAN: Masukkan secara instan ke memori lokal
+        newData.id = docRef.id;
+        db_reimburse.push(newData);
+        
+        // 4. PERBAIKAN: Suruh tabel Admin menggambar ulang dirinya!
+        if (typeof window.renderAdminReimburse === 'function') {
+            window.renderAdminReimburse();
+            // Otomatis pindahkan tampilan ke tab Antrean Pending
+            if (typeof window.switchTabReimburse === 'function') window.switchTabReimburse('pending');
+        }
+
         showToast("Reimburse berhasil dimasukkan ke antrean Pending!");
         el('form-reimburse-admin').reset();
-    } catch(err) { showToast("Gagal memproses klaim.", "error"); } 
-    finally { btn.disabled = false; btn.innerText = "Masukkan ke Antrean"; }
+        
+    } catch(err) { 
+        showToast("Gagal memproses klaim.", "error"); 
+    } finally { 
+        btn.disabled = false; btn.innerText = "Masukkan ke Antrean"; 
+    }
 });
+
 // --- SCRIPT AGAR ADMIN BISA EDIT ABSENSI SATUAN ---
 window.cekDataAbsenSatuan = () => {
     const d = el('satuan-tgl').value; 
